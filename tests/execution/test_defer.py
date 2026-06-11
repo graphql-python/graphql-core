@@ -2234,6 +2234,87 @@ def describe_execute_defer_directive():
             ],
         }
 
+    async def stops_late_initial_path_completion_before_deferred_response():
+        """Stops late initial-path completion before publishing a deferred response"""
+        document = parse(
+            """
+            query {
+              hero {
+                nonNullName
+                nestedObject {
+                  name
+                }
+              }
+              g {
+                ... @defer {
+                  h
+                }
+              }
+            }
+            """
+        )
+        boom_future: Future[str] = Future()
+        side_event = Event()
+        late_value_calls = 0
+
+        def late_value(_info):  # pragma: no cover
+            nonlocal late_value_calls
+            late_value_calls += 1
+            return "late value"
+
+        async def resolve_nested_object(_info):
+            # never resumed: completion of the pending sibling is cancelled
+            # when the non-null error bubbles up
+            await side_event.wait()
+            return {"name": late_value}  # pragma: no cover
+
+        execute_result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "hero": {
+                    "nonNullName": lambda _info: boom_future,
+                    "nestedObject": resolve_nested_object,
+                },
+                "g": {"h": "value"},
+            },
+        )
+        boom_future.set_exception(RuntimeError("boom"))
+        assert is_awaitable(execute_result)
+        result = await execute_result
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        result1 = result.initial_result
+        assert result1.formatted == {
+            "data": {"hero": None, "g": {}},
+            "errors": [
+                {
+                    "message": "boom",
+                    "locations": [{"line": 4, "column": 17}],
+                    "path": ["hero", "nonNullName"],
+                },
+            ],
+            "pending": [{"id": "0", "path": ["g"]}],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        result2 = await anext(iterator)
+        assert result2.formatted == {
+            "incremental": [{"data": {"h": "value"}, "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": False,
+        }
+
+        side_event.set()
+        for _ in range(2):
+            await sleep(0)
+        assert late_value_calls == 0
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
     async def cancels_deferred_fields_when_deferred_result_exhibits_null_bubbling():
         """Cancels deferred fields when deferred result exhibits null bubbling"""
         document = parse(
@@ -2279,6 +2360,87 @@ def describe_execute_defer_directive():
                 "hasNext": False,
             },
         ]
+
+    async def stops_late_deferred_payload_completion_after_null_bubbling():
+        """Stops late deferred payload completion after deferred null bubbling"""
+        document = parse(
+            """
+            query {
+              ... @defer {
+                hero {
+                  nestedObject {
+                    name
+                  }
+                  nonNullName
+                }
+              }
+            }
+            """
+        )
+        boom_future: Future[str] = Future()
+        side_event = Event()
+        late_value_calls = 0
+
+        def late_value(_info):  # pragma: no cover
+            nonlocal late_value_calls
+            late_value_calls += 1
+            return "late value"
+
+        async def resolve_nested_object(_info):
+            # never resumed: completion of the pending sibling is cancelled
+            # when the non-null error bubbles up
+            await side_event.wait()
+            return {"name": late_value}  # pragma: no cover
+
+        execute_result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "hero": {
+                    "nestedObject": resolve_nested_object,
+                    "nonNullName": lambda _info: boom_future,
+                },
+            },
+            enable_early_execution=True,
+        )
+        boom_future.set_exception(RuntimeError("boom"))
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+
+        result1 = execute_result.initial_result
+        assert result1.formatted == {
+            "data": {},
+            "pending": [{"id": "0", "path": []}],
+            "hasNext": True,
+        }
+
+        iterator = execute_result.subsequent_results
+
+        result2 = await anext(iterator)
+        assert result2.formatted == {
+            "incremental": [
+                {
+                    "data": {"hero": None},
+                    "errors": [
+                        {
+                            "message": "boom",
+                            "locations": [{"line": 8, "column": 19}],
+                            "path": ["hero", "nonNullName"],
+                        },
+                    ],
+                    "id": "0",
+                },
+            ],
+            "completed": [{"id": "0"}],
+            "hasNext": False,
+        }
+
+        side_event.set()
+        for _ in range(2):
+            await sleep(0)
+        assert late_value_calls == 0
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
 
     async def deduplicates_list_fields():
         """Deduplicates list fields"""

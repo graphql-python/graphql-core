@@ -1310,6 +1310,115 @@ def describe_execute_stream_directive():
             },
         ]
 
+    async def stops_late_stream_item_completion_after_item_null_bubbling():
+        """Stops late stream item completion after item null bubbling"""
+        late_metadata_type = GraphQLObjectType(
+            "LateStreamMetadata", {"value": GraphQLField(GraphQLString)}
+        )
+        late_friend_type = GraphQLObjectType(
+            "LateStreamFriend",
+            {
+                "metadata": GraphQLField(late_metadata_type),
+                "nonNullName": GraphQLField(GraphQLNonNull(GraphQLString)),
+            },
+        )
+        late_schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "LateStreamQuery",
+                {"friendList": GraphQLField(GraphQLList(late_friend_type))},
+            )
+        )
+        document = parse(
+            """
+            query {
+              friendList @stream(initialCount: 1) {
+                metadata {
+                  value
+                }
+                nonNullName
+              }
+            }
+            """
+        )
+        metadata_event = Event()
+        late_metadata_value_calls = 0
+
+        def late_metadata_value(_info):  # pragma: no cover
+            nonlocal late_metadata_value_calls
+            late_metadata_value_calls += 1
+            return "late value"
+
+        async def pending_metadata(_info):
+            # never resumed: completion of the pending sibling is cancelled
+            # when the non-null error bubbles up
+            await metadata_event.wait()
+            return {"value": late_metadata_value}  # pragma: no cover
+
+        async def throw(_info):
+            raise RuntimeError("Oops")
+
+        async def first_friend():
+            return {"metadata": {"value": "ready"}, "nonNullName": friends[0].name}
+
+        async def second_friend():
+            return {"metadata": pending_metadata, "nonNullName": throw}
+
+        async def third_friend():
+            return {"metadata": {"value": "later"}, "nonNullName": friends[1].name}
+
+        def get_friends(_info):
+            return [first_friend(), second_friend(), third_friend()]
+
+        execute_result = experimental_execute_incrementally(
+            late_schema, document, {"friendList": get_friends}
+        )
+        assert isinstance(execute_result, Awaitable)
+        result = await execute_result
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        results = [result.initial_result.formatted] + [
+            patch.formatted async for patch in result.subsequent_results
+        ]
+
+        assert results == [
+            {
+                "data": {
+                    "friendList": [
+                        {"metadata": {"value": "ready"}, "nonNullName": "Luke"}
+                    ]
+                },
+                "pending": [{"id": "0", "path": ["friendList"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {
+                        "items": [None],
+                        "id": "0",
+                        "errors": [
+                            {
+                                "message": "Oops",
+                                "locations": [{"line": 7, "column": 17}],
+                                "path": ["friendList", 1, "nonNullName"],
+                            },
+                        ],
+                    },
+                    {
+                        "items": [
+                            {"metadata": {"value": "later"}, "nonNullName": "Han"}
+                        ],
+                        "id": "0",
+                    },
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+
+        metadata_event.set()
+        for _ in range(2):
+            await sleep(0)
+        assert late_metadata_value_calls == 0
+
     async def handles_async_error_in_complete_value_after_initial_count_non_null():
         """Handles async errors in completeValue after initialCount, non-null list
 

@@ -623,6 +623,71 @@ def describe_execute_cancellation():
             ],
         )
 
+    async def stops_late_sibling_object_completion_after_non_null_bubbling():
+        boom_future: Future[str] = Future()
+        side_event = Event()
+        late_value_calls = 0
+
+        def late_value(_info):  # pragma: no cover
+            nonlocal late_value_calls
+            late_value_calls += 1
+            return "late value"
+
+        async def side(*_args):
+            # never resumed: completion of the pending sibling is cancelled
+            # when the non-null error bubbles up
+            await side_event.wait()
+            return {"value": late_value}  # pragma: no cover
+
+        side_type = GraphQLObjectType(
+            "LateSide", {"value": GraphQLField(GraphQLString)}
+        )
+        parent_type = GraphQLObjectType(
+            "LateParent",
+            {
+                "boom": GraphQLField(
+                    GraphQLNonNull(GraphQLString), resolve=lambda *_args: boom_future
+                ),
+                "side": GraphQLField(side_type, resolve=side),
+            },
+        )
+        bubble_schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "LateQuery",
+                {
+                    "parent": GraphQLField(parent_type, resolve=lambda *_args: {}),
+                    "other": GraphQLField(GraphQLString, resolve=lambda *_args: "ok"),
+                },
+            )
+        )
+
+        document = parse("{ parent { boom side { value } } other }")
+        awaitable_result = execute(bubble_schema, document)
+        assert isinstance(awaitable_result, Awaitable)
+        task = ensure_future(awaitable_result)
+
+        boom_future.set_exception(RuntimeError("boom"))
+        # wait for boom to bubble up
+        for _ in range(3):
+            await sleep(0)
+        result = await task
+
+        side_event.set()
+        for _ in range(2):
+            await sleep(0)
+        assert late_value_calls == 0
+
+        assert result == (
+            {"parent": None, "other": "ok"},
+            [
+                {
+                    "message": "boom",
+                    "locations": [(1, 12)],
+                    "path": ["parent", "boom"],
+                }
+            ],
+        )
+
     async def stops_the_execution_when_aborted_mid_mutation():
         abort_controller = AbortController()
         document = parse(
