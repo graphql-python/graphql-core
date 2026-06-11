@@ -591,3 +591,75 @@ def describe_execute_union_and_intersection_types():
             },
             None,
         )
+
+    @pytest.mark.filterwarnings("error:.*was never awaited:RuntimeWarning")
+    async def handles_pending_is_type_of_rejections_when_a_later_one_throws_sync():
+        throwing_searchable_interface = GraphQLInterfaceType(
+            "ThrowingSearchable",
+            {"id": GraphQLField(GraphQLString)},
+        )
+
+        async def is_type_of_async_reject(_value, _info) -> bool:
+            raise RuntimeError("TypeAsyncReject_isTypeOf_rejected")
+
+        type_async_reject = GraphQLObjectType(
+            "TypeAsyncReject",
+            lambda: {
+                "id": GraphQLField(GraphQLString),
+                "nameAsyncReject": GraphQLField(GraphQLString),
+            },
+            interfaces=[throwing_searchable_interface],
+            is_type_of=is_type_of_async_reject,
+        )
+
+        def is_type_of_throwing(_value, _info) -> bool:
+            raise RuntimeError("TypeThrowing_isTypeOf_threw")
+
+        type_throwing = GraphQLObjectType(
+            "TypeThrowing",
+            lambda: {
+                "id": GraphQLField(GraphQLString),
+                "nameThrowing": GraphQLField(GraphQLString),
+            },
+            interfaces=[throwing_searchable_interface],
+            is_type_of=is_type_of_throwing,
+        )
+
+        schema_with_throwing_is_type_of = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "search": GraphQLField(
+                        throwing_searchable_interface,
+                        resolve=lambda *_args: {
+                            "id": "x",
+                            "nameThrowing": "Object X",
+                        },
+                    )
+                },
+            ),
+            types=[type_async_reject, type_throwing],
+        )
+
+        document = parse(
+            """
+            {
+              search {
+                __typename
+                id
+                ... on TypeThrowing {
+                  nameThrowing
+                }
+              }
+            }
+            """
+        )
+
+        result = execute(schema_with_throwing_is_type_of, document)
+        assert not isinstance(result, ExecutionResult)
+        result = await result
+        assert isinstance(result, ExecutionResult)
+
+        assert result.data == {"search": None}
+        assert result.errors
+        assert result.errors[0].message == "TypeThrowing_isTypeOf_threw"

@@ -2673,25 +2673,36 @@ def default_type_resolver(
     awaitable_types: list[GraphQLObjectType] = []
     append_awaitable_type = awaitable_types.append
 
-    for type_ in possible_types:
-        if type_.is_type_of:
-            is_type_of_result = type_.is_type_of(value, info)
+    try:
+        for type_ in possible_types:
+            if type_.is_type_of:
+                is_type_of_result = type_.is_type_of(value, info)
 
-            if is_awaitable(is_type_of_result):
-                append_awaitable_result(cast("Awaitable[bool]", is_type_of_result))
-                append_awaitable_type(type_)
-            elif is_type_of_result:
-                if awaitable_is_type_of_results:
+                if is_awaitable(is_type_of_result):
+                    append_awaitable_result(cast("Awaitable[bool]", is_type_of_result))
+                    append_awaitable_type(type_)
+                elif is_type_of_result:
+                    if awaitable_is_type_of_results:
 
-                    async def await_is_type_of_and_return_type(
-                        resolved_type_name: str = type_.name,
-                    ) -> str:
-                        with suppress(Exception):
-                            await gather_with_cancel(*awaitable_is_type_of_results)
-                        return resolved_type_name
+                        async def await_is_type_of_and_return_type(
+                            resolved_type_name: str = type_.name,
+                        ) -> str:
+                            with suppress(Exception):
+                                await gather_with_cancel(*awaitable_is_type_of_results)
+                            return resolved_type_name
 
-                    return await_is_type_of_and_return_type()
-                return type_.name
+                        return await_is_type_of_and_return_type()
+                    return type_.name
+    except Exception as error:
+        if awaitable_is_type_of_results:
+            # Settle the pending isTypeOf results so that their errors can be
+            # observed before they would be orphaned.
+            async def settle_and_raise(error: Exception = error) -> NoReturn:
+                await gather(*awaitable_is_type_of_results, return_exceptions=True)
+                raise error  # noqa: TRY201
+
+            return settle_and_raise()
+        raise
 
     if awaitable_is_type_of_results:
 
