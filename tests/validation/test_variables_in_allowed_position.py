@@ -498,3 +498,27 @@ def describe_validate_variables_are_in_allowed_positions():
             }
             """
         )
+
+
+def describe_non_specified_behavior_of_variables_within_custom_scalars():
+    def allows_using_variables_inside_object_literal_in_custom_scalar():
+        assert_valid(
+            """
+            query Query($x: Float) {
+              dog {
+                distanceFrom(loc: {x: $x, y: 10.0})
+              }
+            }
+            """
+        )
+
+    def allows_using_variables_inside_list_literal_in_custom_scalar():
+        assert_valid(
+            """
+            query Query($x: Float) {
+              dog {
+                distanceFrom(loc: [$x, 10.0])
+              }
+            }
+            """
+        )

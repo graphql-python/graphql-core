@@ -298,6 +298,8 @@ class ValidationContext(ASTValidationContext):
     def get_input_type(self) -> GraphQLInputType | None:
         return self._type_info.get_input_type()
 
+    # Note: continues to expose the closest enclosing valid input type if
+    # traversal descends into syntax with no corresponding GraphQL input type.
     def get_parent_input_type(self) -> GraphQLInputType | None:
         return self._type_info.get_parent_input_type()
 

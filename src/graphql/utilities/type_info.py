@@ -116,6 +116,8 @@ class TypeInfo:
             return self._input_type_stack[-1]
         return None
 
+    # Note: continues to expose the closest enclosing valid input type if
+    # traversal descends into syntax with no corresponding GraphQL input type.
     def get_parent_input_type(self) -> GraphQLInputType | None:
         if len(self._input_type_stack) > 1:
             return self._input_type_stack[-2]
@@ -238,7 +240,7 @@ class TypeInfo:
 
     def enter_list_value(self, _node: ListValueNode) -> None:
         list_type = get_nullable_type(self.get_input_type())
-        item_type = list_type.of_type if is_list_type(list_type) else list_type
+        item_type = list_type.of_type if is_list_type(list_type) else None
         # List positions never have a default value.
         self._default_value_stack.append(Undefined)
         self._input_type_stack.append(item_type if is_input_type(item_type) else None)

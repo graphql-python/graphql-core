@@ -40,6 +40,8 @@ test_schema = build_schema(
       DOWN
     }
 
+    scalar GeoPoint
+
     type Dog implements Pet & Mammal & Canine {
       name(surname: Boolean): String
       nickname: String
@@ -48,6 +50,7 @@ test_schema = build_schema(
       doesKnowCommand(dogCommand: DogCommand): Boolean
       isHouseTrained(atOtherHomes: Boolean = true): Boolean
       isAtLocation(x: Int, y: Int): Boolean
+      distanceFrom(loc: GeoPoint): Float
       mother: Dog
       father: Dog
     }

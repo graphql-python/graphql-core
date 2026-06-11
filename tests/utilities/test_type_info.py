@@ -544,6 +544,133 @@ def describe_visit_with_type_info():
             ("leave", "selection_set", None, "Human", "Human"),
         ]
 
+    def supports_traversals_of_object_literals_in_custom_scalar_positions():
+        visited = []
+
+        schema = build_schema(
+            """
+            scalar GeoPoint
+            """
+        )
+        ast = parse_value("{x: 4.0, y: 2.0}")
+        scalar_type = schema.get_type("GeoPoint")
+        assert scalar_type is not None
+
+        type_info = TypeInfo(schema, scalar_type)
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(node: Node, *_args):
+                type_ = type_info.get_input_type()
+                parent_type = type_info.get_parent_input_type()
+                visited.append(
+                    (
+                        "enter",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(type_),
+                        str(parent_type),
+                    )
+                )
+
+            @staticmethod
+            def leave(node: Node, *_args):
+                type_ = type_info.get_input_type()
+                parent_type = type_info.get_parent_input_type()
+                visited.append(
+                    (
+                        "leave",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(type_),
+                        str(parent_type),
+                    )
+                )
+
+        visit(ast, TypeInfoVisitor(type_info, TestVisitor()))
+
+        assert visited == [
+            # Everything within ObjectValue should have type: None since the
+            # contents of custom scalars are not part of the GraphQL type system.
+            # get_parent_input_type() continues to report the closest enclosing
+            # valid input type even after traversal leaves the GraphQL input
+            # type system.
+            ("enter", "object_value", None, "GeoPoint", "None"),
+            ("enter", "object_field", None, "None", "GeoPoint"),
+            ("enter", "name", "x", "None", "GeoPoint"),
+            ("leave", "name", "x", "None", "GeoPoint"),
+            ("enter", "float_value", None, "None", "GeoPoint"),
+            ("leave", "float_value", None, "None", "GeoPoint"),
+            ("leave", "object_field", None, "None", "GeoPoint"),
+            ("enter", "object_field", None, "None", "GeoPoint"),
+            ("enter", "name", "y", "None", "GeoPoint"),
+            ("leave", "name", "y", "None", "GeoPoint"),
+            ("enter", "float_value", None, "None", "GeoPoint"),
+            ("leave", "float_value", None, "None", "GeoPoint"),
+            ("leave", "object_field", None, "None", "GeoPoint"),
+            ("leave", "object_value", None, "GeoPoint", "None"),
+        ]
+
+    def supports_traversals_of_list_literals_in_custom_scalar_positions():
+        visited = []
+
+        schema = build_schema(
+            """
+            scalar GeoPoint
+            """
+        )
+        ast = parse_value("[4.0, 2.0]")
+        scalar_type = schema.get_type("GeoPoint")
+        assert scalar_type is not None
+
+        type_info = TypeInfo(schema, scalar_type)
+
+        class TestVisitor(Visitor):
+            @staticmethod
+            def enter(node: Node, *_args):
+                type_ = type_info.get_input_type()
+                parent_type = type_info.get_parent_input_type()
+                visited.append(
+                    (
+                        "enter",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(type_),
+                        str(parent_type),
+                    )
+                )
+
+            @staticmethod
+            def leave(node: Node, *_args):
+                type_ = type_info.get_input_type()
+                parent_type = type_info.get_parent_input_type()
+                visited.append(
+                    (
+                        "leave",
+                        node.kind,
+                        node.value if isinstance(node, NameNode) else None,
+                        str(type_),
+                        str(parent_type),
+                    )
+                )
+
+        visit(ast, TypeInfoVisitor(type_info, TestVisitor()))
+
+        assert visited == [
+            # Everything including ListValue should have type: None since the
+            # contents of custom scalars are not part of the GraphQL type system.
+            # ListValues carry the item type, so the item type is also None.
+            # get_parent_input_type() continues to report the closest enclosing
+            # valid input type even after traversal leaves the GraphQL input
+            # type system.
+            ("enter", "list_value", None, "None", "GeoPoint"),
+            ("enter", "float_value", None, "None", "GeoPoint"),
+            ("leave", "float_value", None, "None", "GeoPoint"),
+            ("enter", "float_value", None, "None", "GeoPoint"),
+            ("leave", "float_value", None, "None", "GeoPoint"),
+            ("leave", "list_value", None, "None", "GeoPoint"),
+        ]
+
     def supports_traversals_of_fragment_arguments():
         type_info = TypeInfo(test_schema)
 
