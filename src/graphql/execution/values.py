@@ -142,8 +142,8 @@ def coerce_variable_values(
 
         var_name = var_signature.name
         var_type = var_signature.type
-        value: Any = Undefined
-        if var_name not in inputs:
+        value = inputs.get(var_name, Undefined)
+        if value is Undefined:
             sources[var_name] = VariableValueSource(var_signature)
             if var_def_node.default_value:
                 coerced[var_name] = coerce_input_literal(
@@ -154,7 +154,6 @@ def coerce_variable_values(
                 # Non-provided values for nullable variables are omitted.
                 continue
         else:
-            value = inputs[var_name]
             sources[var_name] = VariableValueSource(var_signature, value)
 
         coerced_value = coerce_input_value(value, var_type)

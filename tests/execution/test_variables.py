@@ -441,6 +441,21 @@ def describe_execute_handles_inputs():
 
                 assert result == ({"fieldWithNullableStringInput": "None"}, None)
 
+            def treats_explicitly_undefined_variable_values_as_omitted():
+                result = execute_query(
+                    """
+                    query q($input: String = "Default value") {
+                      fieldWithNullableStringInput(input: $input)
+                    }
+                    """,
+                    {"input": Undefined},
+                )
+
+                assert result == (
+                    {"fieldWithNullableStringInput": "'Default value'"},
+                    None,
+                )
+
             def uses_null_default_value_when_not_provided():
                 result = execute_query(
                     """
@@ -1567,3 +1582,24 @@ def describe_execute_handles_inputs():
                     " error limit reached. Execution aborted."
                 },
             ]
+
+    def describe_get_variable_values_explicit_undefined_values():
+        doc = parse(
+            """
+            query ($input: String) {
+              fieldWithNullableStringInput(input: $input)
+            }
+            """
+        )
+
+        operation = doc.definitions[0]
+        assert isinstance(operation, OperationDefinitionNode)
+        variable_definitions = operation.variable_definitions
+        assert variable_definitions is not None
+
+        def treats_explicit_undefined_values_as_omitted():
+            result = get_variable_values(
+                schema, variable_definitions, {"input": Undefined}
+            )
+            assert not isinstance(result, list)
+            assert "input" not in result.coerced
