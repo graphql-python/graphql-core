@@ -565,6 +565,66 @@ def describe_execute_defer_directive():
             },
         ]
 
+    async def returns_label_from_defer_directive():
+        """Returns label from defer directive"""
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                id
+                ...NameFragment @defer(label: "defer-label")
+              }
+            }
+            fragment NameFragment on Hero {
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {"hero": {"id": "1"}},
+                "pending": [{"id": "0", "path": ["hero"], "label": "defer-label"}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+
+    async def treats_null_defer_label_the_same_as_no_label():
+        """Treats null defer label the same as no label"""
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                id
+                ...NameFragment @defer(label: null)
+              }
+            }
+            fragment NameFragment on Hero {
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {"hero": {"id": "1"}},
+                "pending": [{"id": "0", "path": ["hero"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+
     async def can_disable_defer_using_if_argument():
         """Can disable defer using if argument"""
         document = parse(

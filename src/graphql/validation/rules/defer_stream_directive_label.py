@@ -3,7 +3,7 @@
 from typing import Any
 
 from ...error import GraphQLError
-from ...language import DirectiveNode, Node, StringValueNode
+from ...language import DirectiveNode, Node, NullValueNode, StringValueNode
 from ...type import GraphQLDeferDirective, GraphQLStreamDirective
 from . import ASTValidationRule, ValidationContext
 
@@ -41,6 +41,8 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
         except StopIteration:
             return
         label_value = label_argument.value
+        if isinstance(label_value, NullValueNode):
+            return
         if not isinstance(label_value, StringValueNode):
             self.report_error(
                 GraphQLError(

@@ -357,6 +357,27 @@ def describe_execute_stream_directive():
             },
         ]
 
+    async def treats_null_stream_label_the_same_as_no_label():
+        """Treats null stream label the same as no label"""
+        document = parse("{ scalarList @stream(initialCount: 1, label: null) }")
+        result = await complete(
+            document, {"scalarList": ["apple", "banana", "coconut"]}
+        )
+        assert result == [
+            {
+                "data": {"scalarList": ["apple"]},
+                "pending": [{"id": "0", "path": ["scalarList"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {"items": ["banana", "coconut"], "id": "0"},
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+
     async def throws_an_error_for_stream_directive_with_non_string_label():
         """Throws an error for stream directive with non-string label"""
         document = parse("{ scalarList @stream(initialCount: 1, label: 42) }")

@@ -46,6 +46,20 @@ def describe_defer_stream_directive_labels():
             """
         )
 
+    def defer_fragment_with_null_label():
+        assert_valid(
+            """
+            {
+              dog {
+                ...dogFragmentA @defer(label: null)
+              }
+            }
+            fragment dogFragmentA on Dog {
+              name
+            }
+            """
+        )
+
     def defer_fragment_with_variable_label():
         assert_errors(
             """
@@ -126,6 +140,17 @@ def describe_defer_stream_directive_labels():
             }
             fragment dogFragment on Dog {
               name
+            }
+            """
+        )
+
+    def stream_with_null_label():
+        assert_valid(
+            """
+            {
+              pets @stream(label: null) {
+                name
+              }
             }
             """
         )
