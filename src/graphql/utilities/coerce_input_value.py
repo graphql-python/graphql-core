@@ -199,7 +199,7 @@ def coerce_input_literal(
             field_node = field_nodes.get(field_name)
             if field_node is None or (
                 isinstance(field_node.value, VariableNode)
-                and _variable_value_is_null(
+                and _is_missing_variable(
                     field_node.value, variable_values, fragment_variable_values
                 )
             ):
@@ -290,6 +290,18 @@ def get_coerced_variable_value(
     if variable_values:
         return variable_values.coerced.get(var_name, Undefined)
     return Undefined
+
+
+def _is_missing_variable(
+    variable_node: VariableNode,
+    variable_values: VariableValues | None,
+    fragment_variable_values: FragmentVariableValues | None,
+) -> bool:
+    """Check whether the given variable node has no runtime value."""
+    variable_value = get_coerced_variable_value(
+        variable_node, variable_values, fragment_variable_values
+    )
+    return variable_value is Undefined
 
 
 def _variable_value_is_null(

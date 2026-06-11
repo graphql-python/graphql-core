@@ -579,6 +579,15 @@ def describe_coerce_input_literal():
             {"int": 42, "requiredBool": True},
         )
 
+    def preserves_explicit_null_variables_in_input_object_fields():
+        _test_with_variables(
+            "($foo: Boolean)",
+            {"foo": None},
+            "{ int: $foo, requiredBool: true }",
+            test_input_obj,
+            {"int": None, "requiredBool": True},
+        )
+
     def transforms_names_using_out_name():
         # This is an extension of GraphQL.js.
         complex_input_obj = GraphQLInputObjectType(

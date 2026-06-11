@@ -399,6 +399,21 @@ def describe_execute_handles_inputs():
 
                 assert result == ({"fieldWithNullableStringInput": "None"}, None)
 
+            def preserves_explicit_null_variables_within_input_object_literals():
+                result = execute_query(
+                    """
+                    query q($input: String) {
+                      fieldWithObjectInput(input: { a: $input, c: "baz" })
+                    }
+                    """,
+                    {"input": None},
+                )
+
+                assert result == (
+                    {"fieldWithObjectInput": "{'a': None, 'c': 'baz'}"},
+                    None,
+                )
+
             def uses_default_value_when_not_provided():
                 result = execute_query(
                     """
