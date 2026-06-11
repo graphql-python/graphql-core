@@ -217,10 +217,14 @@ def describe_value_from_ast():
         assert _value_from("$var", GraphQLBoolean, {"var": True}) is True
         assert _value_from("$var", GraphQLBoolean, {"var": None}) is None
         assert _value_from("$var", non_null_bool, {"var": None}) is Undefined
+        assert _value_from("$toString", GraphQLBoolean, {}) is Undefined
+        assert _value_from("$var", GraphQLBoolean, {"var": Undefined}) is Undefined
 
     def asserts_variables_are_provided_as_items_in_lists():
         assert _value_from("[ $foo ]", list_of_bool, {}) == [None]
+        assert _value_from("[ $foo ]", list_of_bool, {"foo": Undefined}) == [None]
         assert _value_from("[ $foo ]", list_of_non_null_bool, {}) is Undefined
+        assert _value_from("[ $toString ]", list_of_bool, {}) == [None]
         assert _value_from("[ $foo ]", list_of_non_null_bool, {"foo": True}) == [True]
         # Note: variables are expected to have already been coerced, so we
         # do not expect the singleton wrapping behavior for variables.
@@ -236,6 +240,9 @@ def describe_value_from_ast():
             "int": 42,
             "requiredBool": True,
         }
+        assert _value_from(
+            "{ int: $toString, requiredBool: true }", test_input_obj, {}
+        ) == {"int": 42, "requiredBool": True}
 
     def transforms_names_using_out_name():
         # This is an extension of GraphQL.js.
