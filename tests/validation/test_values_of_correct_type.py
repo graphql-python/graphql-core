@@ -1250,8 +1250,9 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "Field 'OneOfInput.stringField' used for"
-                        " OneOf Input Object must be non-null.",
+                        "message": "Within OneOf Input Object type 'OneOfInput',"
+                        " exactly one field must be specified,"
+                        " and the value for that field must be non-null.",
                         "locations": [(4, 45)],
                     },
                 ],
@@ -1268,8 +1269,9 @@ def describe_validate_values_of_correct_type():
                 """,
                 [
                     {
-                        "message": "OneOf Input Object 'OneOfInput'"
-                        " must specify exactly one key.",
+                        "message": "Within OneOf Input Object type 'OneOfInput',"
+                        " exactly one field must be specified,"
+                        " and the value for that field must be non-null.",
                         "locations": [(4, 45)],
                     },
                 ],

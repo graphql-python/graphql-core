@@ -67,8 +67,9 @@ def describe_execute_handles_one_of_input_objects():
                 [
                     {
                         "message": "Variable '$input' has invalid default value:"
-                        " OneOf Input Object 'TestInputObject'"
-                        " must specify exactly one key.",
+                        " Within OneOf Input Object type 'TestInputObject',"
+                        " exactly one field must be specified,"
+                        " and the value for that field must be non-null.",
                         "locations": [(2, 24)],
                     }
                 ],
@@ -100,6 +101,30 @@ def describe_execute_handles_one_of_input_objects():
 
             assert result == ({"test": {"a": "abc", "b": None}}, None)
 
+        def rejects_a_variable_with_a_nulled_key():
+            query = """
+                query ($input: TestInputObject!) {
+                  test(input: $input) {
+                    a
+                    b
+                  }
+                }
+                """
+            result = execute_query(query, root_value, {"input": {"a": None}})
+
+            assert result == (
+                None,
+                [
+                    {
+                        "message": "Variable '$input' has invalid value at .a:"
+                        " Within OneOf Input Object type 'TestInputObject',"
+                        " exactly one field must be specified,"
+                        " and the value for that field must be non-null.",
+                        "locations": [(2, 24)],
+                    }
+                ],
+            )
+
         def rejects_a_variable_with_multiple_non_null_keys():
             query = """
                 query ($input: TestInputObject!) {
@@ -116,8 +141,9 @@ def describe_execute_handles_one_of_input_objects():
                 [
                     {
                         "message": "Variable '$input' has invalid value:"
-                        " Exactly one key must be specified"
-                        " for OneOf type 'TestInputObject'.",
+                        " Within OneOf Input Object type 'TestInputObject',"
+                        " exactly one field must be specified,"
+                        " and the value for that field must be non-null.",
                         "locations": [(2, 24)],
                     }
                 ],
@@ -141,8 +167,9 @@ def describe_execute_handles_one_of_input_objects():
                 [
                     {
                         "message": "Variable '$input' has invalid value:"
-                        " Exactly one key must be specified"
-                        " for OneOf type 'TestInputObject'.",
+                        " Within OneOf Input Object type 'TestInputObject',"
+                        " exactly one field must be specified,"
+                        " and the value for that field must be non-null.",
                         "locations": [(2, 24)],
                     }
                 ],

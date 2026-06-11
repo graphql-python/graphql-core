@@ -405,8 +405,10 @@ def describe_validate_input_value():
                 TestInputObject,
                 [
                     {
-                        "error": "Exactly one key must be specified"
-                        " for OneOf type 'TestInputObject'.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     }
                 ],
@@ -421,9 +423,11 @@ def describe_validate_input_value():
                 TestInputObject,
                 [
                     {
-                        "error": "Field 'bar' for OneOf type 'TestInputObject'"
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
                         " must be non-null.",
-                        "path": [],
+                        "path": ["bar"],
                     }
                 ],
             )
@@ -454,8 +458,10 @@ def describe_validate_input_value():
                         "path": ["bar"],
                     },
                     {
-                        "error": "Exactly one key must be specified"
-                        " for OneOf type 'TestInputObject'.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     },
                 ],
@@ -473,8 +479,10 @@ def describe_validate_input_value():
                         "path": [],
                     },
                     {
-                        "error": "Exactly one key must be specified"
-                        " for OneOf type 'TestInputObject'.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     },
                 ],
@@ -1060,8 +1068,10 @@ def describe_validate_input_literal():
                 TestInputObject,
                 [
                     {
-                        "error": "OneOf Input Object 'TestInputObject'"
-                        " must specify exactly one key.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     }
                 ],
@@ -1073,8 +1083,10 @@ def describe_validate_input_literal():
                 TestInputObject,
                 [
                     {
-                        "error": "Field 'TestInputObject.bar' used for OneOf"
-                        " Input Object must be non-null.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": ["bar"],
                     }
                 ],
@@ -1117,8 +1129,10 @@ def describe_validate_input_literal():
                         "path": [],
                     },
                     {
-                        "error": "OneOf Input Object 'TestInputObject'"
-                        " must specify exactly one key.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     },
                 ],
@@ -1136,8 +1150,10 @@ def describe_validate_input_literal():
                         "path": [],
                     },
                     {
-                        "error": "OneOf Input Object 'TestInputObject'"
-                        " must specify exactly one key.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     },
                 ],
@@ -1185,8 +1201,10 @@ def describe_validate_input_literal():
                         "path": [],
                     },
                     {
-                        "error": "OneOf Input Object 'TestInputObject'"
-                        " must specify exactly one key.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     },
                 ],
@@ -1204,8 +1222,10 @@ def describe_validate_input_literal():
                         "path": [],
                     },
                     {
-                        "error": "OneOf Input Object 'TestInputObject'"
-                        " must specify exactly one key.",
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
                         "path": [],
                     },
                 ],

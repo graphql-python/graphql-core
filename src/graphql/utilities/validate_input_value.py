@@ -159,7 +159,7 @@ def validate_input_value_impl(
             if len(fields) != 1:
                 report_invalid_value(
                     on_error,
-                    f"Exactly one key must be specified for OneOf type '{type_}'.",
+                    get_one_of_input_object_error_message(type_),
                     path,
                 )
 
@@ -168,8 +168,8 @@ def validate_input_value_impl(
             if value is None:
                 report_invalid_value(
                     on_error,
-                    f"Field '{field_name}' for OneOf type '{type_}' must be non-null.",
-                    path,
+                    get_one_of_input_object_error_message(type_),
+                    Path(path, field_name, type_.name),
                 )
     else:
         assert_leaf_type(type_)
@@ -417,7 +417,7 @@ def validate_input_literal_impl(
             if is_not_exactly_one_field:
                 report_invalid_literal(
                     context.on_error,
-                    f"OneOf Input Object '{type_}' must specify exactly one key.",
+                    get_one_of_input_object_error_message(type_),
                     value_node,
                     path,
                 )
@@ -428,8 +428,7 @@ def validate_input_literal_impl(
                 field_name = fields[0].name.value
                 report_invalid_literal(
                     context.on_error,
-                    f"Field '{type_}.{field_name}' used for OneOf Input Object"
-                    " must be non-null.",
+                    get_one_of_input_object_error_message(type_),
                     value_node,
                     Path(path, field_name, None),
                 )
@@ -505,4 +504,11 @@ def report_invalid_literal(
     on_error(
         GraphQLError(message, value_node, original_error=original_error),
         path.as_list() if path else [],
+    )
+
+
+def get_one_of_input_object_error_message(type_: GraphQLInputType) -> str:
+    return (
+        f"Within OneOf Input Object type '{type_}', exactly one field must be"
+        " specified, and the value for that field must be non-null."
     )
