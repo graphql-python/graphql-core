@@ -156,7 +156,7 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                     raise RuntimeError("bad")
                 raise StopIteration
 
-            def close(self):
+            def close(self):  # pragma: no cover
                 nonlocal returned
                 returned = True
 
@@ -190,7 +190,7 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                 index += 1
                 return value
 
-            def close(self):
+            def close(self):  # pragma: no cover
                 nonlocal returned
                 returned = True
 
@@ -232,7 +232,7 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                     return reject("later bad")
                 raise StopIteration
 
-            def close(self):
+            def close(self):  # pragma: no cover
                 nonlocal returned
                 returned = True
                 raise RuntimeError("ignored return error")
@@ -274,7 +274,7 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
                     raise StopIteration
                 return values[next_calls - 1]
 
-            def close(self):
+            def close(self):  # pragma: no cover
                 nonlocal returned
                 returned = True
                 raise RuntimeError("ignored return error")

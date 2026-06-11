@@ -3043,7 +3043,7 @@ def describe_execute_stream_directive_cancellation():
 
         # a late resolution of the pending item has no effect any more
         # (the item may have already been cancelled together with its executor)
-        if not item_future.cancelled():
+        if not item_future.cancelled():  # pragma: no branch
             item_future.set_result("value")
         await sleep(0)
         with pytest.raises(StopAsyncIteration):
@@ -3135,9 +3135,9 @@ def describe_execute_stream_directive_cancellation():
             def __aiter__(self):
                 return self
 
-            async def __anext__(self):
+            async def __anext__(self):  # pragma: no cover
                 await Future()  # never resolves
-                raise StopAsyncIteration  # pragma: no cover
+                raise StopAsyncIteration
 
             async def aclose(self):
                 self.aclose_calls += 1
