@@ -257,7 +257,9 @@ def describe_execute_handles_basic_execution_tasks():
         assert len(resolved_infos) == 1
         async_helpers = resolved_infos[0].async_helpers
         assert isinstance(async_helpers, GraphQLResolveInfoHelpers)
-        assert async_helpers._fields == ("track",)
+        assert async_helpers._fields == ("gather", "track")
+        gather = async_helpers.gather
+        assert callable(gather)
         track = async_helpers.track
         assert callable(track)
         track(["not awaitable"])  # non-awaitable values are ignored

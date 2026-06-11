@@ -67,6 +67,10 @@ class IncrementalPublisherContext(Protocol):
         """Cancel all pending incremental work and close the stream sources."""
         ...  # pragma: no cover
 
+    def run_async_work_finished_hook(self) -> None:
+        """Run the hook signaling that all asynchronous work has finished."""
+        ...  # pragma: no cover
+
 
 class SubsequentIncrementalExecutionResultContext(NamedTuple):
     """The context for subsequent incremental execution results."""
@@ -193,6 +197,7 @@ class IncrementalPublisher:
                         batch = next_batch.result()
         finally:
             await self._stop_async_iterators()
+            self._context.run_async_work_finished_hook()
 
     async def _stop_async_iterators(self) -> None:
         """Stop the incremental execution and finish all async iterators."""

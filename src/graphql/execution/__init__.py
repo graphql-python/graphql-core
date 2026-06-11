@@ -40,14 +40,18 @@ from .execute import (
     default_field_resolver,
     default_type_resolver,
     subscribe,
+    AsyncWorkFinishedInfo,
+    ExecutionHooks,
     Executor,
     GraphQLWrappedResult,
     Middleware,
 )
 
 __all__ = [
+    "AsyncWorkFinishedInfo",
     "CompletedResult",
     "DeferredFragmentRecord",
+    "ExecutionHooks",
     "ExecutionResult",
     "Executor",
     "ExperimentalIncrementalExecutionResults",

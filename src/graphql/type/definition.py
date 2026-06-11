@@ -635,11 +635,17 @@ TContext = TypeVar("TContext")  # pylint: disable=invalid-name
 class GraphQLResolveInfoHelpers(NamedTuple):
     """Helpers for resolvers to interact with the execution engine.
 
+    The ``gather`` helper concurrently awaits the given values as one unit of
+    asynchronous work of the execution; when one of the values fails, the
+    others are cancelled and settled before the error is propagated, so that
+    no asynchronous work is orphaned.
+
     The ``track`` helper registers possibly awaitable values as pending
     asynchronous work of the execution, so that they are still settled and
     their errors observed when they would otherwise be abandoned.
     """
 
+    gather: Callable[[Sequence[Awaitable[Any]]], Awaitable[list[Any]]]
     track: Callable[[Sequence[Any]], None]
 
 

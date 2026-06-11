@@ -38,7 +38,13 @@ from graphql.language import (
     ValueNode,
     parse_value,
 )
-from graphql.pyutils import AbortSignal, Path, Undefined, is_awaitable
+from graphql.pyutils import (
+    AbortSignal,
+    Path,
+    Undefined,
+    gather_with_cancel,
+    is_awaitable,
+)
 from graphql.type import (
     GraphQLArgument,
     GraphQLDefaultInput,
@@ -1631,7 +1637,9 @@ def describe_resolve_info():
         "variable_values": VariableValues({}, {}),
         "is_awaitable": is_awaitable,
         "abort_signal": None,
-        "async_helpers": GraphQLResolveInfoHelpers(track=lambda _values: None),
+        "async_helpers": GraphQLResolveInfoHelpers(
+            gather=lambda _values: gather_with_cancel(), track=lambda _values: None
+        ),
     }
 
     def resolve_info_with_unspecified_context_type_can_use_any_type():

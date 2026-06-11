@@ -133,6 +133,8 @@ if TYPE_CHECKING:
     from .get_variable_signature import GraphQLVariableSignature
 
 __all__ = [
+    "AsyncWorkFinishedInfo",
+    "ExecutionHooks",
     "Executor",
     "GraphQLWrappedResult",
     "Middleware",
@@ -194,6 +196,25 @@ class IncrementalContext:
         self.defer_usage_set = defer_usage_set
 
 
+class AsyncWorkFinishedInfo(NamedTuple):
+    """Information passed to the ``async_work_finished`` execution hook."""
+
+    executor: Executor
+
+
+class ExecutionHooks(NamedTuple):
+    """Hooks for observing the execution of a GraphQL operation.
+
+    The ``async_work_finished`` hook is run when all asynchronous work tracked
+    by the execution has finished. Cancelled asynchronous work may still be
+    running even after the result has been delivered; this hook allows
+    interested execution harnesses to track when this asynchronous work
+    completes. Errors raised by the hook are ignored.
+    """
+
+    async_work_finished: Callable[[AsyncWorkFinishedInfo], None] | None = None
+
+
 class Executor(IncrementalPublisherContext):
     """Data that must be available at all points during query execution.
 
@@ -218,11 +239,13 @@ class Executor(IncrementalPublisherContext):
     enable_early_execution: bool
     hide_suggestions: bool
     abort_signal: AbortSignal | None
+    hooks: ExecutionHooks | None
     async_helpers: GraphQLResolveInfoHelpers
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     pending_incremental_futures: set[Future[Any]]
     background_futures: set[Future[Any]]
+    async_work_finished_hook_task: Future[None] | None
     middleware_manager: MiddlewareManager | None
     error_propagation: bool
 
@@ -253,6 +276,7 @@ class Executor(IncrementalPublisherContext):
         | None = None,
         hide_suggestions: bool = False,
         abort_signal: AbortSignal | None = None,
+        hooks: ExecutionHooks | None = None,
     ) -> None:
         self.schema = schema
         self.fragment_definitions = fragment_definitions
@@ -268,7 +292,10 @@ class Executor(IncrementalPublisherContext):
         self.enable_early_execution = enable_early_execution
         self.hide_suggestions = hide_suggestions
         self.abort_signal = abort_signal
-        self.async_helpers = GraphQLResolveInfoHelpers(track=self.track_async_work)
+        self.hooks = hooks
+        self.async_helpers = GraphQLResolveInfoHelpers(
+            gather=self.gather_async_work, track=self.track_async_work
+        )
         self.middleware_manager = middleware_manager
         self.error_propagation = not any(
             directive.name.value == GraphQLDisableErrorPropagationDirective.name
@@ -280,6 +307,7 @@ class Executor(IncrementalPublisherContext):
         self.cancellable_streams = None
         self.pending_incremental_futures = set()
         self.background_futures = set()
+        self.async_work_finished_hook_task = None
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
@@ -305,6 +333,7 @@ class Executor(IncrementalPublisherContext):
         | None = None,
         hide_suggestions: bool = False,
         abort_signal: AbortSignal | None = None,
+        hooks: ExecutionHooks | None = None,
         **custom_args: Any,
     ) -> list[GraphQLError] | Executor:
         """Build an executor
@@ -397,6 +426,7 @@ class Executor(IncrementalPublisherContext):
             per_event_executor=per_event_executor,
             hide_suggestions=hide_suggestions,
             abort_signal=abort_signal,
+            hooks=hooks,
             **custom_args,
         )
 
@@ -431,6 +461,7 @@ class Executor(IncrementalPublisherContext):
         """
         abort_signal = self.abort_signal
         if abort_signal is not None and abort_signal.aborted:
+            self.run_async_work_finished_hook()
             raise self.abort_error()
         try:
             operation = self.operation
@@ -477,11 +508,13 @@ class Executor(IncrementalPublisherContext):
                     try:
                         resolved = await self.with_abort_signal(graphql_wrapped_result)
                     except GraphQLError as error:
+                        self.run_async_work_finished_hook()
                         return ExecutionResult(None, with_error(self.errors, error))
                     except Exception:
                         # cancel incremental work started early and close the
                         # stream sources before re-raising, e.g. the abort reason
                         await self.cancel_incremental_work()
+                        self.run_async_work_finished_hook()
                         raise
                     return self.build_data_response(
                         resolved.result, resolved.increments
@@ -492,6 +525,7 @@ class Executor(IncrementalPublisherContext):
             resolved = cast("GraphQLWrappedResult", graphql_wrapped_result)
 
         except GraphQLError as error:
+            self.run_async_work_finished_hook()
             return ExecutionResult(None, with_error(self.errors, error))
 
         return self.build_data_response(resolved.result, resolved.increments)
@@ -1077,6 +1111,45 @@ class Executor(IncrementalPublisherContext):
         ]
         if awaitables:
             self.settle_in_background(awaitables)
+
+    def gather_async_work(
+        self, values: Sequence[Awaitable[Any]]
+    ) -> Awaitable[list[Any]]:
+        """Concurrently await the given values as one unit of asynchronous work.
+
+        This allows resolvers to await multiple concurrent operations together.
+        When one of the values fails, the others are cancelled and settled before
+        the error is propagated, so that no asynchronous work is orphaned.
+        """
+        return gather_with_cancel(*values)
+
+    def run_async_work_finished_hook(self) -> None:
+        """Run the hook signaling that all asynchronous work has finished.
+
+        If an ``async_work_finished`` execution hook is provided, run it as soon as
+        all tracked pending asynchronous work has been settled - synchronously when
+        there is no pending asynchronous work, which allows synchronous execution
+        paths to remain synchronous. Errors raised by the hook are ignored.
+        """
+        hooks = self.hooks
+        hook = hooks.async_work_finished if hooks is not None else None
+        if hook is None:
+            return
+        info = AsyncWorkFinishedInfo(self)
+        background_futures = self.background_futures
+        if not background_futures:
+            with suppress_exceptions:
+                hook(info)
+            return
+
+        async def wait_and_run_hook() -> None:
+            while background_futures:
+                await wait(list(background_futures))
+            with suppress_exceptions:
+                hook(info)
+
+        # keep a reference to the task so that it is not garbage collected
+        self.async_work_finished_hook_task = ensure_future(wait_and_run_hook())
 
     def cancellable_iterable(self, iterable: AsyncIterable[T]) -> AsyncIterable[T]:
         """Wrap an async iterable so pending iteration is cancelled on abort.
@@ -2296,6 +2369,7 @@ class Executor(IncrementalPublisherContext):
     ) -> ExecutionResult | ExperimentalIncrementalExecutionResults:
         """Build the data response."""
         if not incremental_data_records:
+            self.run_async_work_finished_hook()
             return ExecutionResult(data, self.errors or None)
         return build_incremental_response(
             self,
@@ -2390,6 +2464,7 @@ def execute(  # noqa: PLR0913
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
+    hooks: ExecutionHooks | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
@@ -2428,6 +2503,7 @@ def execute(  # noqa: PLR0913
         is_async_iterable,
         hide_suggestions=hide_suggestions,
         abort_signal=abort_signal,
+        hooks=hooks,
         **custom_context_args,
     )
     if isinstance(result, ExecutionResult):
@@ -2462,6 +2538,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
+    hooks: ExecutionHooks | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
     """Execute GraphQL operation incrementally (internal implementation).
@@ -2496,6 +2573,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913
         is_async_iterable,
         hide_suggestions=hide_suggestions,
         abort_signal=abort_signal,
+        hooks=hooks,
         **custom_context_args,
     )
 
@@ -2526,6 +2604,7 @@ def execute_sync(
     check_sync: bool = False,
     hide_suggestions: bool = False,
     abort_signal: AbortSignal | None = None,
+    hooks: ExecutionHooks | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -2559,6 +2638,7 @@ def execute_sync(
         is_awaitable,
         hide_suggestions=hide_suggestions,
         abort_signal=abort_signal,
+        hooks=hooks,
     )
 
     # Assert that the execution was synchronous.
@@ -2738,7 +2818,9 @@ def default_type_resolver(
     if awaitable_is_type_of_results:
 
         async def get_type() -> str | None:
-            is_type_of_results = await gather_with_cancel(*awaitable_is_type_of_results)
+            is_type_of_results = await info.async_helpers.gather(
+                awaitable_is_type_of_results
+            )
             for is_type_of_result, type_ in zip(
                 is_type_of_results, awaitable_types, strict=True
             ):

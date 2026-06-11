@@ -21,6 +21,10 @@ Execution
 
 .. autoclass:: Executor
 
+.. autoclass:: ExecutionHooks
+
+.. autoclass:: AsyncWorkFinishedInfo
+
 .. autoclass:: ExecutionResult
 
 .. autoclass:: FormattedExecutionResult
