@@ -194,6 +194,16 @@ def describe_coerce_input_value():
             is_one_of=True,
         )
 
+        TestInvalidOneOfInputObjectWithDefault = GraphQLInputObjectType(
+            "TestInvalidOneOfInputObjectWithDefault",
+            {
+                "foo": GraphQLInputField(
+                    GraphQLInt, default=GraphQLDefaultInput(value=123)
+                ),
+            },
+            is_one_of=True,
+        )
+
         def returns_for_valid_input():
             _test({"foo": 123}, TestInputObject, {"foo": 123})
 
@@ -202,6 +212,16 @@ def describe_coerce_input_value():
 
         def invalid_if_the_one_field_is_null():
             _test({"bar": None}, TestInputObject, Undefined)
+
+        def invalid_if_an_omitted_field_would_be_filled_by_a_default():
+            _test({}, TestInvalidOneOfInputObjectWithDefault, Undefined)
+
+        def invalid_if_an_undefined_field_would_be_filled_by_a_default():
+            _test(
+                {"foo": Undefined},
+                TestInvalidOneOfInputObjectWithDefault,
+                Undefined,
+            )
 
         def invalid_for_an_invalid_field():
             _test({"foo": nan}, TestInputObject, Undefined)

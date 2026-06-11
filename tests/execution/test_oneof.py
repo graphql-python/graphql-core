@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from graphql.execution import ExecutionResult, execute
 from graphql.language import parse
+from graphql.pyutils import Undefined
 from graphql.utilities import build_schema
 
 if TYPE_CHECKING:
@@ -97,7 +98,9 @@ def describe_execute_handles_one_of_input_objects():
                   }
                 }
                 """
-            result = execute_query(query, root_value, {"input": {"a": "abc"}})
+            result = execute_query(
+                query, root_value, {"input": {"a": "abc", "b": Undefined}}
+            )
 
             assert result == ({"test": {"a": "abc", "b": None}}, None)
 
