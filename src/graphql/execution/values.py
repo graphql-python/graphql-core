@@ -270,7 +270,8 @@ def coerce_argument(
             # before execution. This is a runtime check to ensure execution does
             # not continue with an invalid argument value.
             msg = (
-                f"Argument '{arg_name}' of required type '{arg_type}' was not provided."
+                f"{print_argument_or_fragment_variable(arg_def, arg_name, node)}"
+                f" of required type '{arg_type}' was not provided."
             )
             raise GraphQLError(msg, node)
         coerced_default_value = coerce_default_value(arg_def)
@@ -312,11 +313,10 @@ def coerce_argument(
         def on_argument_value_error(
             error: GraphQLError,
             path: list[str | int],
-            arg_name: str = arg_name,
         ) -> None:
             error.message = (
-                f"Argument '{arg_name}' has invalid value"
-                f"{print_path_list(path)}: {error.message}"
+                f"{print_argument_or_fragment_variable(arg_def, arg_name, node)}"
+                f" has invalid value{print_path_list(path)}: {error.message}"
             )
             raise error
 
@@ -332,6 +332,19 @@ def coerce_argument(
         msg = "Invalid argument"  # pragma: no cover
         raise GraphQLError(msg, value_node)  # pragma: no cover
     coerced_values[out_name] = coerced_value
+
+
+# TODO: clean up the naming of is_required_argument() and arg_def
+# if/when experimental fragment variables are merged
+def print_argument_or_fragment_variable(
+    arg_def: GraphQLArgument | GraphQLVariableSignature,
+    arg_name: str,
+    node: FieldNode | DirectiveNode | FragmentSpreadNode,
+) -> str:
+    """Describe an argument or fragment variable for use in error messages."""
+    if isinstance(arg_def, GraphQLVariableSignature):
+        return f"Variable '${arg_def.name}' defined by fragment '{node.name.value}'"
+    return f"Argument '{arg_name}'"
 
 
 NodeWithDirective: TypeAlias = (

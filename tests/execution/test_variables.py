@@ -1189,10 +1189,15 @@ def describe_execute_handles_inputs():
                 }
                 """
             )
-            assert result.errors is not None
-            assert len(result.errors) == 1
-            assert result.errors[0].message.startswith(
-                "Argument 'value' of required type 'String!'"
+            assert result == (
+                None,
+                [
+                    {
+                        "message": "Variable '$value' defined by fragment 'a'"
+                        " of required type 'String!' was not provided.",
+                        "locations": [(3, 19)],
+                    }
+                ],
             )
 
         def when_the_definition_has_a_default_and_is_provided():
@@ -1257,11 +1262,16 @@ def describe_execute_handles_inputs():
                 }
                 """
             )
-            assert result.errors is not None
-            assert len(result.errors) == 1
-            assert result.errors[0].message.startswith(
-                "Argument 'value' has invalid value:"
-                " Expected value of non-null type 'String!' not to be None."
+            assert result == (
+                None,
+                [
+                    {
+                        "message": "Variable '$value' defined by fragment 'a'"
+                        " has invalid value: Expected value of non-null type"
+                        " 'String!' not to be None.",
+                        "locations": [(3, 31)],
+                    }
+                ],
             )
 
         def when_the_definition_has_no_default_and_is_not_provided():
