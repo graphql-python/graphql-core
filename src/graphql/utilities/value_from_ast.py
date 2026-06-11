@@ -110,6 +110,9 @@ def value_from_ast(
         coerced_obj: dict[str, Any] = {}
         fields = type_.fields
         field_nodes = {field.name.value: field for field in value_node.fields}
+        # Ensure every provided field is defined.
+        if any(field_name not in fields for field_name in field_nodes):
+            return Undefined  # Invalid: intentionally return no value.
         for field_name, field in fields.items():
             field_node = field_nodes.get(field_name)
             if not field_node or is_missing_variable(field_node.value, variables):

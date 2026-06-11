@@ -198,6 +198,12 @@ def describe_value_from_ast():
             "requiredBool": False,
         }
         assert (
+            _value_from(
+                "{ bool: true, requiredBool: false, unknown: true }", test_input_obj
+            )
+            is Undefined
+        )
+        assert (
             _value_from("{ int: true, requiredBool: true }", test_input_obj)
             is Undefined
         )
@@ -209,6 +215,7 @@ def describe_value_from_ast():
         assert _value_from("{ a: null }", test_one_of_input_obj) is Undefined
         assert _value_from("{ a: 1 }", test_one_of_input_obj) is Undefined
         assert _value_from('{ a: "abc", b: "def" }', test_one_of_input_obj) is Undefined
+        assert _value_from('{ a: "abc", c: "def" }', test_one_of_input_obj) is Undefined
         assert _value_from("{}", test_one_of_input_obj) is Undefined
         assert _value_from('{ c: "abc" }', test_one_of_input_obj) is Undefined
 
