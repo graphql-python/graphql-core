@@ -617,6 +617,24 @@ def describe_coerce_input_literal():
             {"int": 42, "requiredBool": True},
         )
 
+    def rejects_multiple_one_of_fields_when_one_variable_is_unprovided():
+        _test_with_variables(
+            "($a: String, $b: String)",
+            {"a": "abc"},
+            "{ a: $a, b: $b }",
+            test_one_of_input_obj,
+            Undefined,
+        )
+
+    def rejects_one_of_field_when_variable_is_null():
+        _test_with_variables(
+            "($a: String)",
+            {"a": None},
+            "{ a: $a }",
+            test_one_of_input_obj,
+            Undefined,
+        )
+
     def preserves_explicit_null_variables_in_input_object_fields():
         _test_with_variables(
             "($foo: Boolean)",

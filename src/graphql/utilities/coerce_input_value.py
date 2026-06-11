@@ -222,13 +222,17 @@ def coerce_input_literal(
                 coerced_dict[field.out_name or field_name] = field_value
 
         if type_.is_one_of:
-            keys = list(coerced_dict)
-            if len(keys) != 1:
+            if len(field_nodes) != 1 or len(coerced_dict) != 1:
                 # Invalid: not exactly one key, intentionally return no value.
                 return Undefined
-            if coerced_dict[keys[0]] is None:
-                # Invalid: value not non-null, intentionally return no value.
-                return Undefined
+            for field_name, field_node in field_nodes.items():
+                out_name = field_defs[field_name].out_name or field_name
+                if (
+                    isinstance(field_node.value, NullValueNode)
+                    or coerced_dict.get(out_name, Undefined) is None
+                ):
+                    # Invalid: value not non-null, intentionally return no value.
+                    return Undefined
 
         return type_.out_type(coerced_dict)
 

@@ -1231,6 +1231,29 @@ def describe_validate_input_literal():
                 ],
             )
 
+        def errors_with_multiple_variables_when_one_is_missing():
+            _test_with_variables(
+                "($foo: Int, $bar: Int)",
+                {"foo": 123},
+                "{ foo: $foo, bar: $bar }",
+                TestInputObject,
+                [
+                    {
+                        "error": "Expected variable '$bar' provided to field 'bar'"
+                        " for OneOf Input Object type 'TestInputObject'"
+                        " to provide a runtime value.",
+                        "path": [],
+                    },
+                    {
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
+                        "path": [],
+                    },
+                ],
+            )
+
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)
 

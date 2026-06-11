@@ -244,6 +244,12 @@ def describe_value_from_ast():
             "{ int: $toString, requiredBool: true }", test_input_obj, {}
         ) == {"int": 42, "requiredBool": True}
 
+    def rejects_multiple_one_of_fields_when_one_variable_is_unprovided():
+        assert (
+            _value_from("{ a: $a, b: $b }", test_one_of_input_obj, {"a": "abc"})
+            is Undefined
+        )
+
     def transforms_names_using_out_name():
         # This is an extension of GraphQL.js.
         complex_input_obj = GraphQLInputObjectType(

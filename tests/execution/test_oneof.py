@@ -174,3 +174,28 @@ def describe_execute_handles_one_of_input_objects():
                     }
                 ],
             )
+
+        def errors_with_missing_variable_as_an_additional_field():
+            query = """
+                query ($a: String, $b: Int) {
+                  test(input: { a: $a, b: $b }) {
+                    a
+                    b
+                  }
+                }
+                """
+            result = execute_query(query, root_value, {"a": "abc"})
+
+            assert result == (
+                {"test": None},
+                [
+                    {
+                        "message": "Argument 'input' has invalid value:"
+                        " Expected variable '$b' provided to field 'b'"
+                        " for OneOf Input Object type 'TestInputObject'"
+                        " to provide a runtime value.",
+                        "locations": [(3, 31)],
+                        "path": ["test"],
+                    }
+                ],
+            )

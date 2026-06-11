@@ -125,12 +125,16 @@ def value_from_ast(
             coerced_obj[field.out_name or field_name] = field_value
 
         if type_.is_one_of:
-            keys = list(coerced_obj)
-            if len(keys) != 1:
+            if len(field_nodes) != 1 or len(coerced_obj) != 1:
                 return Undefined
 
-            if coerced_obj[keys[0]] is None:
-                return Undefined
+            for field_name, field_node in field_nodes.items():
+                out_name = fields[field_name].out_name or field_name
+                if (
+                    isinstance(field_node.value, NullValueNode)
+                    or coerced_obj.get(out_name, Undefined) is None
+                ):
+                    return Undefined
 
         return type_.out_type(coerced_obj)
 
