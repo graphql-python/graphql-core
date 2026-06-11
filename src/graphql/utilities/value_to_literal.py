@@ -68,8 +68,9 @@ def value_to_literal(value: Any, type_: GraphQLInputType) -> ConstValueNode | No
             if not item_node:
                 return None  # Invalid: intentionally return no value.
             values.append(item_node)
-        # gc3 builds plain value nodes and treats them as constant ones, exactly
-        # as the parser does for const values (see ``parse_const_value_literal``).
+        # GraphQL-core builds plain value nodes and treats them as constant ones,
+        # exactly as the parser does for const values
+        # (see ``parse_const_value_literal``).
         return cast("ConstValueNode", ListValueNode(values=tuple(values)))
 
     if is_input_object_type(type_):

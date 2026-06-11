@@ -1210,7 +1210,7 @@ class Executor(IncrementalPublisherContext):
 
         When the abort signal is triggered, any pending ``__anext__`` call returns
         immediately by raising the abort reason. This mirrors the JavaScript
-        ``cancellableIterable``; GraphQL-Core needs no ``AbortSignalListener``
+        ``cancellableIterable``; GraphQL-core needs no ``AbortSignalListener``
         class since :meth:`with_abort_signal` already provides the cancellation
         mechanism.
         """

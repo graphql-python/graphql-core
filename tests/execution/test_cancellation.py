@@ -182,7 +182,7 @@ def describe_execute_cancellation():
             await Future()  # will never resolve  # pragma: no cover
 
         # Contrary to JavaScript, where the abort signal is passed as an additional
-        # argument to the resolvers, in GraphQL-Core it is available via the resolve
+        # argument to the resolvers, in GraphQL-core it is available via the resolve
         # info, just like the context value.
         def resolve_id(info):
             nonlocal seen_signal
@@ -282,8 +282,9 @@ def describe_execute_cancellation():
         assert exc_info.value.__cause__ is custom_error
 
     async def stops_the_execution_when_aborted_with_a_custom_string_reason():
-        # gc3-specific: unlike graphql-js (which can reject with any value), a
-        # non-exception abort reason is surfaced as an "unexpected error value".
+        # GraphQL-core-specific: unlike graphql-js (which can reject with any
+        # value), a non-exception abort reason is surfaced as an
+        # "unexpected error value".
         abort_controller = AbortController()
         document = parse("{ todo { id } }")
         abort_controller.abort("Custom abort error message")

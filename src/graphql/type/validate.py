@@ -644,7 +644,7 @@ def validate_default_input(
 def uncoerce_default_value(value: Any, type_: GraphQLInputType) -> Any:
     """Convert an assumed-coerced "internal" value to an "external" value.
 
-    Historically GraphQL-Core allowed default values to be provided as
+    Historically GraphQL-core allowed default values to be provided as
     assumed-coerced "internal" values, however default values should be provided
     as "external" pre-coerced values. ``uncoerce_default_value()`` will convert
     such "internal" values to "external" values to display as part of validation.
