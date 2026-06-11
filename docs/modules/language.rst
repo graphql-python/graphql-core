@@ -102,6 +102,7 @@ You can also check the type of nodes with the following predicates:
 .. autofunction:: is_type_system_extension_node
 .. autofunction:: is_type_extension_node
 .. autofunction:: is_schema_coordinate_node
+.. autofunction:: is_subscription_operation_definition_node
 
 Lexer
 -----

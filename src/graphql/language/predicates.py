@@ -14,6 +14,8 @@ from .ast import (
     MemberCoordinateNode,
     Node,
     ObjectValueNode,
+    OperationDefinitionNode,
+    OperationType,
     SchemaCoordinateNode,
     SchemaExtensionNode,
     SelectionNode,
@@ -32,6 +34,7 @@ __all__ = [
     "is_executable_definition_node",
     "is_schema_coordinate_node",
     "is_selection_node",
+    "is_subscription_operation_definition_node",
     "is_type_definition_node",
     "is_type_extension_node",
     "is_type_node",
@@ -49,6 +52,16 @@ def is_definition_node(node: Node) -> TypeGuard[DefinitionNode]:
 def is_executable_definition_node(node: Node) -> TypeGuard[ExecutableDefinitionNode]:
     """Check whether the given node represents an executable definition."""
     return isinstance(node, ExecutableDefinitionNode)
+
+
+def is_subscription_operation_definition_node(node: OperationDefinitionNode) -> bool:
+    """Check whether the given node represents a subscription operation.
+
+    Useful anywhere that must distinguish subscription operations from
+    queries and mutations, such as the subscription execution pipeline
+    which routes events through a different code path.
+    """
+    return node.operation == OperationType.SUBSCRIPTION
 
 
 def is_selection_node(node: Node) -> TypeGuard[SelectionNode]:

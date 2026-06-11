@@ -42,6 +42,7 @@ from ..language import (
     FragmentDefinitionNode,
     OperationDefinitionNode,
     OperationType,
+    is_subscription_operation_definition_node,
 )
 from ..pyutils import (
     AbortSignal,
@@ -2979,6 +2980,10 @@ def subscribe(
     # Return early errors if executor failed.
     if isinstance(executor, list):
         return ExecutionResult(None, errors=executor)
+
+    if not is_subscription_operation_definition_node(executor.operation):
+        msg = "Expected subscription operation."
+        raise GraphQLError(msg)
 
     result_or_stream = create_source_event_stream(executor)
 

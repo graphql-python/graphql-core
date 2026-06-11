@@ -120,6 +120,7 @@ from .predicates import (
     is_type_system_extension_node,
     is_type_extension_node,
     is_schema_coordinate_node,
+    is_subscription_operation_definition_node,
 )
 from .directive_locations import DirectiveLocation
 
@@ -213,6 +214,7 @@ __all__ = [
     "is_executable_definition_node",
     "is_schema_coordinate_node",
     "is_selection_node",
+    "is_subscription_operation_definition_node",
     "is_type_definition_node",
     "is_type_extension_node",
     "is_type_node",

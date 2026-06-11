@@ -100,6 +100,7 @@ from .language import (
     is_type_system_extension_node,
     is_type_extension_node,
     is_schema_coordinate_node,
+    is_subscription_operation_definition_node,
     # Types
     SourceLocation,
     Location,
@@ -889,6 +890,7 @@ __all__ = [
     "is_selection_node",
     "is_specified_directive",
     "is_specified_scalar_type",
+    "is_subscription_operation_definition_node",
     "is_type",
     "is_type_definition_node",
     "is_type_extension_node",

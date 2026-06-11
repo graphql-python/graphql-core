@@ -217,6 +217,14 @@ def describe_subscription_initialization_phase():
             " or use subscribe() for the full subscription pipeline."
         )
 
+    def throws_when_subscribe_is_called_with_a_non_subscription_operation():
+        schema = GraphQLSchema(query=DummyQueryType)
+
+        with pytest.raises(GraphQLError) as exc_info:
+            subscribe(schema, parse("{ dummy }"))
+
+        assert str(exc_info.value) == "Expected subscription operation."
+
     async def accepts_positional_arguments():
         document = parse(
             """
