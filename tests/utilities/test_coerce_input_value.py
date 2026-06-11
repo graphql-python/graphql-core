@@ -3,12 +3,15 @@ from __future__ import annotations
 from math import isnan, nan
 from typing import Any
 
+import pytest
+
 from graphql.execution.values import (
     VariableValues,
     get_variable_values,
 )
 from graphql.language import (
     FloatValueNode,
+    IntValueNode,
     StringValueNode,
     TokenKind,
     parse_value,
@@ -231,6 +234,23 @@ def describe_coerce_input_value():
             result = coerce_input_value({}, _get_test_input_object(nan))
             assert "foo" in result
             assert isnan(result["foo"])
+
+        def invalid_when_coercing_an_invalid_field_default_throws():
+            # Invalid default values should be caught during validation.
+            type_with_invalid_default = GraphQLInputObjectType(
+                "TypeWithInvalidDefault",
+                {
+                    "foo": GraphQLInputField(
+                        GraphQLString, default=GraphQLDefaultInput(value=123)
+                    )
+                },
+            )
+
+            with pytest.raises(TypeError) as exc_info:
+                coerce_input_value({}, type_with_invalid_default)
+            assert str(exc_info.value) == (
+                "Expected value of type 'String' to be valid, found: 123."
+            )
 
     def describe_for_graphql_list():
         TestList = GraphQLList(GraphQLInt)
@@ -478,6 +498,24 @@ def describe_coerce_input_literal():
         )
 
         _test("{}", type_, {"int": 42, "float": 3.14})
+
+    def invalid_when_coercing_an_invalid_literal_default_throws():
+        # Invalid default values should be caught during validation.
+        type_with_invalid_default = GraphQLInputObjectType(
+            "TypeWithInvalidLiteralDefault",
+            {
+                "foo": GraphQLInputField(
+                    GraphQLString,
+                    default=GraphQLDefaultInput(literal=IntValueNode(value="123")),
+                )
+            },
+        )
+
+        with pytest.raises(TypeError) as exc_info:
+            coerce_input_literal(parse_value("{}"), type_with_invalid_default)
+        assert str(exc_info.value) == (
+            "Expected value of type 'String' to be valid, found: 123."
+        )
 
     test_input_obj = GraphQLInputObjectType(
         "TestInput",

@@ -28,6 +28,7 @@ from ..type import (
     is_non_null_type,
     is_required_argument,
 )
+from ..type.validate import validate_default_input
 from ..utilities.coerce_input_value import (
     coerce_default_value,
     coerce_input_literal,
@@ -146,8 +147,27 @@ def coerce_variable_values(
         if value is Undefined:
             sources[var_name] = VariableValueSource(var_signature)
             if var_def_node.default_value:
-                coerced[var_name] = coerce_input_literal(
-                    var_def_node.default_value, var_type
+
+                def on_default_value_error(
+                    error: GraphQLError,
+                    path: list[str | int],
+                    var_name: str = var_name,
+                    var_def_node: VariableDefinitionNode = var_def_node,
+                ) -> None:
+                    on_error(
+                        GraphQLError(
+                            f"Variable '${var_name}' has invalid default value"
+                            f"{print_path_list(path)}: {error.message}",
+                            var_def_node,
+                        )
+                    )
+
+                maybe_use_default_value(
+                    coerced,
+                    var_name,
+                    var_signature,
+                    on_default_value_error,
+                    hide_suggestions,
                 )
                 continue
             if not is_non_null_type(var_type):
@@ -181,6 +201,48 @@ def coerce_variable_values(
             )
 
     return VariableValues(sources, coerced)
+
+
+def maybe_use_default_value(
+    coerced_values: dict[str, Any],
+    name: str,
+    input_value: GraphQLArgument | GraphQLVariableSignature,
+    on_error: Callable[[GraphQLError, list[str | int]], None],
+    hide_suggestions: bool = False,
+) -> None:
+    """Use the default value of the given input value definition, if it exists."""
+    try:
+        # coerce_default_value() assumes validation has already rejected invalid
+        # defaults. If validation was skipped, invalid defaults or nested input
+        # field defaults can raise here; recover with validation-style errors below.
+        coerced_default_value = coerce_default_value(input_value)
+        if coerced_default_value is not Undefined:
+            coerced_values[name] = coerced_default_value
+    except TypeError as error:
+        default_input = input_value.default
+        # Defensive: coerce_default_value() should only raise
+        # while coercing a default.
+        if default_input is None:  # pragma: no cover
+            raise
+
+        # Prefer validation's user-facing errors for invalid defaults.
+        reported_validation_error = False
+
+        def on_default_input_error(
+            default_error: GraphQLError, path: list[str | int]
+        ) -> None:
+            nonlocal reported_validation_error
+            reported_validation_error = True
+            on_error(default_error, path)
+
+        validate_default_input(
+            default_input, input_value.type, on_default_input_error, hide_suggestions
+        )
+
+        if not reported_validation_error:
+            # The default itself validated, so coercion failed while applying
+            # a nested input field default. Surface the original coercion error.
+            on_error(GraphQLError(str(error), original_error=error), [])
 
 
 def get_fragment_variable_values(
@@ -264,6 +326,13 @@ def coerce_argument(
     arg_type = arg_def.type
     out_name = getattr(arg_def, "out_name", None) or arg_name
 
+    def on_arg_default_value_error(error: GraphQLError, path: list[str | int]) -> None:
+        msg = (
+            f"{print_argument_or_fragment_variable(arg_def, arg_name, node)}"
+            f" has invalid default value{print_path_list(path)}: {error.message}"
+        )
+        raise GraphQLError(msg, node)
+
     if argument_node is None:
         if is_required_argument(arg_def):
             # Note: ProvidedRequiredArgumentsRule validation should catch this
@@ -274,9 +343,13 @@ def coerce_argument(
                 f" of required type '{arg_type}' was not provided."
             )
             raise GraphQLError(msg, node)
-        coerced_default_value = coerce_default_value(arg_def)
-        if coerced_default_value is not Undefined:
-            coerced_values[out_name] = coerced_default_value
+        maybe_use_default_value(
+            coerced_values,
+            out_name,
+            arg_def,
+            on_arg_default_value_error,
+            hide_suggestions,
+        )
         return
 
     value_node = argument_node.value
@@ -295,9 +368,13 @@ def coerce_argument(
             scoped_variable_values is None
             or variable_name not in scoped_variable_values.coerced
         ) and not is_required_argument(arg_def):
-            coerced_default_value = coerce_default_value(arg_def)
-            if coerced_default_value is not Undefined:
-                coerced_values[out_name] = coerced_default_value
+            maybe_use_default_value(
+                coerced_values,
+                out_name,
+                arg_def,
+                on_arg_default_value_error,
+                hide_suggestions,
+            )
             return
 
     coerced_value = coerce_input_literal(

@@ -26,6 +26,7 @@ from ..utilities.validate_input_value import (
 )
 from .definition import (
     GraphQLArgument,
+    GraphQLDefaultInput,
     GraphQLEnumType,
     GraphQLInputField,
     GraphQLInputObjectType,
@@ -53,7 +54,7 @@ from .introspection import is_introspection_type
 from .schema import GraphQLSchema, assert_schema
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Callable, Collection
 
 __all__ = ["assert_valid_schema", "validate_schema"]
 
@@ -210,59 +211,52 @@ class SchemaValidationContext:
         if not default_input:
             return
 
-        if default_input.literal:
+        errors: list[tuple[GraphQLError, list[str | int]]] = []
+        validate_default_input(
+            default_input,
+            input_value.type,
+            lambda error, path: errors.append((error, path)),
+        )
 
-            def on_error(error: GraphQLError, path: list[str | int]) -> None:
-                self.report_error(
-                    f"{arg_str} has invalid default value{print_path_list(path)}:"
-                    f" {error.message}",
-                    error.nodes,
-                )
+        if not errors:
+            return
 
-            validate_input_literal(default_input.literal, input_value.type, on_error)
-        else:
-            errors: list[tuple[GraphQLError, list[str | int]]] = []
-            validate_input_value(
-                default_input.value,
-                input_value.type,
-                lambda error, path: errors.append((error, path)),
-            )
-
+        if not default_input.literal:
             # If there were validation errors, check to see if it can be
             # "uncoerced" and then correctly validated. If so, report a clear
             # error with a path to resolution.
-            if errors:
-                try:
-                    uncoerced_value = uncoerce_default_value(
-                        default_input.value, input_value.type
-                    )
-
-                    uncoerced_errors: list[tuple[GraphQLError, list[str | int]]] = []
-                    validate_input_value(
-                        uncoerced_value,
-                        input_value.type,
-                        lambda error, path: uncoerced_errors.append((error, path)),
-                    )
-
-                    if not uncoerced_errors:
-                        self.report_error(
-                            f"{arg_str} has invalid default value:"
-                            f" {inspect(default_input.value)}."
-                            f" Did you mean: {inspect(uncoerced_value)}?",
-                            input_value.ast_node and input_value.ast_node.default_value,
-                        )
-                        return
-                except Exception:  # noqa: BLE001, S110
-                    # ignore
-                    pass
-
-            # Otherwise report the original set of errors.
-            for error, path in errors:
-                self.report_error(
-                    f"{arg_str} has invalid default value{print_path_list(path)}:"
-                    f" {error.message}",
-                    input_value.ast_node and input_value.ast_node.default_value,
+            try:
+                uncoerced_value = uncoerce_default_value(
+                    default_input.value, input_value.type
                 )
+
+                uncoerced_errors: list[tuple[GraphQLError, list[str | int]]] = []
+                validate_input_value(
+                    uncoerced_value,
+                    input_value.type,
+                    lambda error, path: uncoerced_errors.append((error, path)),
+                )
+
+                if not uncoerced_errors:
+                    self.report_error(
+                        f"{arg_str} has invalid default value:"
+                        f" {inspect(default_input.value)}."
+                        f" Did you mean: {inspect(uncoerced_value)}?",
+                        input_value.ast_node and input_value.ast_node.default_value,
+                    )
+                    return
+            except Exception:  # noqa: BLE001, S110
+                # ignore
+                pass
+
+        # Otherwise report the original set of errors.
+        for error, path in errors:
+            self.report_error(
+                f"{arg_str} has invalid default value{print_path_list(path)}:"
+                f" {error.message}",
+                error.nodes
+                or (input_value.ast_node and input_value.ast_node.default_value),
+            )
 
     def validate_name(self, node: Any, name: str | None = None) -> None:
         # Ensure names are valid, however introspection types opt out.
@@ -620,6 +614,31 @@ class SchemaValidationContext:
                 f"OneOf input field {type_}.{field_name} cannot have a default value.",
                 field.ast_node,
             )
+
+
+def validate_default_input(
+    default_input: GraphQLDefaultInput,
+    input_type: GraphQLInputType,
+    on_error: Callable[[GraphQLError, list[str | int]], None],
+    hide_suggestions: bool = False,
+) -> None:
+    """Validate a default input value against the given input type.
+
+    All errors are collected via a callback function.
+
+    .. internal::
+    """
+    if default_input.literal:
+        validate_input_literal(
+            default_input.literal,
+            input_type,
+            on_error,
+            None,
+            None,
+            hide_suggestions,
+        )
+        return
+    validate_input_value(default_input.value, input_type, on_error, hide_suggestions)
 
 
 def uncoerce_default_value(value: Any, type_: GraphQLInputType) -> Any:

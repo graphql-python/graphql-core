@@ -204,6 +204,35 @@ TestType = GraphQLObjectType(
     },
 )
 
+TestTypeWithInvalidDefaultArgumentValue = GraphQLObjectType(
+    "TestTypeWithInvalidDefaultArgumentValue",
+    {
+        "fieldWithInvalidDefaultArgumentValue": field_with_input_arg(
+            GraphQLArgument(GraphQLString, default=GraphQLDefaultInput(value=123))
+        ),
+    },
+)
+
+TestTypeWithInvalidNestedDefaultArgumentValue = GraphQLObjectType(
+    "TestTypeWithInvalidNestedDefaultArgumentValue",
+    {
+        "fieldWithInvalidNestedDefaultArgumentValue": field_with_input_arg(
+            GraphQLArgument(
+                GraphQLInputObjectType(
+                    "InputWithInvalidNestedFieldDefault",
+                    {
+                        "foo": GraphQLInputField(
+                            GraphQLString,
+                            default=GraphQLDefaultInput(value=123),
+                        )
+                    },
+                ),
+                default=GraphQLDefaultInput(value={}),
+            )
+        ),
+    },
+)
+
 schema = GraphQLSchema(TestType)
 
 
@@ -427,6 +456,68 @@ def describe_execute_handles_inputs():
                 assert result == (
                     {"fieldWithObjectInput": "{'a': 'foo', 'b': ['bar'], 'c': 'baz'}"},
                     None,
+                )
+
+            def reports_invalid_default_values_with_variable_definition_locations():
+                result = execute_query(
+                    "query ($input: String = 123)"
+                    " { fieldWithNullableStringInput(input: $input) }"
+                )
+
+                assert result == (
+                    None,
+                    [
+                        {
+                            "message": "Variable '$input' has invalid default value:"
+                            " String cannot represent a non string value: 123",
+                            "locations": [(1, 8)],
+                        }
+                    ],
+                )
+
+            def includes_suggestions_for_invalid_default_values():
+                result = execute_sync(
+                    schema,
+                    parse(
+                        'query ($input: TestInputObject = { c: "ok", aa: "x" })'
+                        " { fieldWithObjectInput(input: $input) }"
+                    ),
+                )
+
+                assert result == (
+                    None,
+                    [
+                        {
+                            "message": "Variable '$input' has invalid default value:"
+                            " Expected value of type 'TestInputObject' not to include"
+                            " unknown field 'aa'. Did you mean 'a'?"
+                            ' Found: { c: "ok", aa: "x" }.',
+                            "locations": [(1, 8)],
+                        }
+                    ],
+                )
+
+            def hides_suggestions_for_invalid_default_values_when_specified():
+                result = execute_sync(
+                    schema,
+                    parse(
+                        'query ($input: TestInputObject = { c: "ok", aa: "x" })'
+                        " { fieldWithObjectInput(input: $input) }"
+                    ),
+                    hide_suggestions=True,
+                )
+
+                assert result == (
+                    None,
+                    [
+                        {
+                            "message": "Variable '$input' has invalid default value:"
+                            " Expected value of type 'TestInputObject' not to include"
+                            " unknown field 'aa',"
+                            ' found: { c: "ok", aa: "x" }.',
+                            "locations": [(1, 8)],
+                        }
+                    ],
                 )
 
             def does_not_use_default_value_when_provided():
@@ -1232,6 +1323,24 @@ def describe_execute_handles_inputs():
                 None,
             )
 
+        def when_the_definition_has_an_invalid_default_and_is_not_provided():
+            result = execute_query_with_fragment_arguments(
+                "query { ...a } fragment a($value: String = 123) on TestType"
+                " { fieldWithNullableStringInput(input: $value) }"
+            )
+
+            assert result == (
+                None,
+                [
+                    {
+                        "message": "Variable '$value' defined by fragment 'a'"
+                        " has invalid default value:"
+                        " String cannot represent a non string value: 123",
+                        "locations": [(1, 9)],
+                    }
+                ],
+            )
+
         def when_a_default_is_not_provided_and_spreads_another_fragment():
             result = execute_query_with_fragment_arguments(
                 """
@@ -1548,6 +1657,50 @@ def describe_execute_handles_inputs():
             assert result == (
                 {"fieldWithNonNullableStringInputAndDefaultArgValue": "'Hello World'"},
                 None,
+            )
+
+        def localizes_invalid_default_value_errors_during_execution():
+            schema_with_invalid_default_argument_value = GraphQLSchema(
+                TestTypeWithInvalidDefaultArgumentValue, assume_valid=True
+            )
+
+            result = execute_sync(
+                schema_with_invalid_default_argument_value,
+                parse("{ fieldWithInvalidDefaultArgumentValue }"),
+            )
+
+            assert result == (
+                {"fieldWithInvalidDefaultArgumentValue": None},
+                [
+                    {
+                        "message": "Argument 'input' has invalid default value:"
+                        " String cannot represent a non string value: 123",
+                        "locations": [(1, 3)],
+                        "path": ["fieldWithInvalidDefaultArgumentValue"],
+                    }
+                ],
+            )
+
+        def localizes_nested_invalid_field_default_value_errors_during_execution():
+            schema_with_invalid_nested_default_argument_value = GraphQLSchema(
+                TestTypeWithInvalidNestedDefaultArgumentValue, assume_valid=True
+            )
+
+            result = execute_sync(
+                schema_with_invalid_nested_default_argument_value,
+                parse("{ fieldWithInvalidNestedDefaultArgumentValue }"),
+            )
+
+            assert result == (
+                {"fieldWithInvalidNestedDefaultArgumentValue": None},
+                [
+                    {
+                        "message": "Argument 'input' has invalid default value:"
+                        " Expected value of type 'String' to be valid, found: 123.",
+                        "locations": [(1, 3)],
+                        "path": ["fieldWithInvalidNestedDefaultArgumentValue"],
+                    }
+                ],
             )
 
     def describe_get_variable_values_limit_maximum_number_of_coercion_errors():

@@ -63,16 +63,13 @@ def describe_execute_handles_one_of_input_objects():
             result = execute_query(query, root_value)
 
             assert result == (
-                {"test": None},
+                None,
                 [
                     {
-                        # This type of error would be caught at validation-time
-                        # hence the vague error message here.
-                        "message": "Argument 'input' has invalid value:"
-                        " Expected variable '$input' provided to type"
-                        " 'TestInputObject!' to provide a runtime value.",
-                        "locations": [(3, 31)],
-                        "path": ["test"],
+                        "message": "Variable '$input' has invalid default value:"
+                        " OneOf Input Object 'TestInputObject'"
+                        " must specify exactly one key.",
+                        "locations": [(2, 24)],
                     }
                 ],
             )

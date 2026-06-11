@@ -10,6 +10,7 @@ from ..language import (
     ObjectValueNode,
     ValueNode,
     VariableNode,
+    print_ast,
 )
 from ..pyutils import (
     Undefined,
@@ -253,6 +254,10 @@ def coerce_default_value(
     Returns ``Undefined`` when neither an external ``default`` nor a deprecated
     internal ``default_value`` is provided.
 
+    If the default value is invalid, this will raise an error. Invalid default
+    values should be caught during validation, however, so this function assumes
+    that the default value is valid.
+
     .. internal::
     """
     # The external default value is coerced; the result is memoized in a hidden
@@ -268,8 +273,16 @@ def coerce_default_value(
                 if default_input.literal is not None
                 else coerce_input_value(default_input.value, input_value.type)
             )
-            if coerced_value is Undefined:  # pragma: no cover
-                msg = f"Invalid default value: {inspect(default_input)}"
+            if coerced_value is Undefined:
+                found = (
+                    print_ast(default_input.literal)
+                    if default_input.literal is not None
+                    else inspect(default_input.value)
+                )
+                msg = (
+                    f"Expected value of type '{input_value.type}'"
+                    f" to be valid, found: {found}."
+                )
                 raise TypeError(msg)
             default_input._memoized_coerced_value = coerced_value  # noqa: SLF001
         return coerced_value
