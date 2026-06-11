@@ -301,6 +301,9 @@ def describe_validate_input_value():
                 ],
             )
 
+        def ignores_unknown_fields_with_undefined_values():
+            _test({"foo": 123, "unknownField": Undefined}, TestInputObject, [])
+
         def returns_error_when_supplied_with_an_array():
             _test(
                 [{"foo": 123}, {"bar": 456}],
@@ -408,6 +411,9 @@ def describe_validate_input_value():
                     }
                 ],
             )
+
+        def does_not_count_undefined_keys_as_provided():
+            _test({"foo": 123, "bar": Undefined}, TestInputObject, [])
 
         def returns_error_if_the_one_field_is_null():
             _test(

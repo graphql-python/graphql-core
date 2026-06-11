@@ -107,6 +107,7 @@ def describe_value_to_literal():
     def converts_input_objects():
         _test({"foo": 3, "bar": "3"}, input_obj, "{ foo: 3, bar: 3 }")
         _test({"foo": 3}, input_obj, "{ foo: 3 }")
+        _test({"foo": 3, "unknown": Undefined}, input_obj, "{ foo: 3 }")
 
         # Non-object is invalid
         _test("123", input_obj, None)

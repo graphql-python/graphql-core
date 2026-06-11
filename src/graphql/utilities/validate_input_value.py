@@ -134,9 +134,12 @@ def validate_input_value_impl(
                     Path(path, field_name, type_.name),
                 )
 
-        fields = list(input_value)
+        fields: list[str] = []
         # Ensure every provided field is defined.
-        for field_name in fields:
+        for field_name, field_value in input_value.items():
+            if field_value is Undefined:
+                continue
+            fields.append(field_name)
             if field_name not in field_defs:
                 suggestion = (
                     ""

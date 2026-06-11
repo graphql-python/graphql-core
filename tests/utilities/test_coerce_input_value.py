@@ -135,6 +135,13 @@ def describe_coerce_input_value():
         def invalid_for_an_unknown_field():
             _test({"foo": 123, "unknownField": 123}, TestInputObject, Undefined)
 
+        def ignores_unknown_fields_with_undefined_values():
+            _test(
+                {"foo": 123, "unknownField": Undefined},
+                TestInputObject,
+                {"foo": 123},
+            )
+
         def invalid_when_supplied_with_an_array():
             _test([{"foo": 123}, {"bar": 456}], TestInputObject, Undefined)
 

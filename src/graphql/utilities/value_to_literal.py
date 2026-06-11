@@ -76,7 +76,10 @@ def value_to_literal(value: Any, type_: GraphQLInputType) -> ConstValueNode | No
         if not isinstance(value, Mapping):
             return None  # Invalid: intentionally return no value.
         field_defs = type_.fields
-        if any(name not in field_defs for name in value):
+        if any(
+            field_value is not Undefined and name not in field_defs
+            for name, field_value in value.items()
+        ):
             return None  # Invalid: intentionally return no value.
         fields: list[ObjectFieldNode] = []
         for field_name, field in field_defs.items():

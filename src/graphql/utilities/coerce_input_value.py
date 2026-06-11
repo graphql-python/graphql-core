@@ -71,7 +71,10 @@ def coerce_input_value(input_value: Any, type_: GraphQLInputType) -> Any:
 
         coerced_dict: dict[str, Any] = {}
         fields = type_.fields
-        if any(field_name not in fields for field_name in input_value):
+        if any(
+            field_value is not Undefined and field_name not in fields
+            for field_name, field_value in input_value.items()
+        ):
             return Undefined  # Invalid: intentionally return no value.
         for field_name, field in fields.items():
             field_value = input_value.get(field_name, Undefined)
