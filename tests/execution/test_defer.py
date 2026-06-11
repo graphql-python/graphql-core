@@ -7,6 +7,7 @@ import pytest
 
 from graphql.error import GraphQLError
 from graphql.execution import (
+    AbortedGraphQLExecutionError,
     CompletedResult,
     DeferredFragmentRecord,
     ExecutionResult,
@@ -2985,10 +2986,11 @@ def describe_execute_defer_directive():
     async def cancels_pending_deferred_tasks_with_async_child_stream_cleanup():
         """Cancels pending deferred tasks with async child stream cleanup
 
-        Other than the JavaScript version, which rejects immediately and runs the
-        async cleanup in the background, GraphQL-Core awaits the async cleanup
-        before rejecting with the abort reason, so that no cleanup coroutine is
-        left behind unawaited.
+        The operation rejects immediately with an aborted execution error that
+        exposes the partial result; consuming the subsequent results of that
+        partial result runs the async cleanup and rejects with the abort reason
+        only after the cleanup has settled, so that no cleanup coroutine is left
+        behind unawaited.
         """
         user_type = GraphQLObjectType("User", {"id": GraphQLField(GraphQLID)})
         todo_type = GraphQLObjectType(
@@ -3082,12 +3084,22 @@ def describe_execute_defer_directive():
         await author_started.wait()
 
         abort_controller.abort()
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ) as exc_info:
+            await result_task
+
+        # the cleanup only runs when the exposed partial result is consumed
+        assert items_source.aclose_calls == 0
+        result = await exc_info.value.aborted_result
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        anext_task = ensure_future(anext(result.subsequent_results))
         await items_source.aclose_started.wait()
         assert items_source.aclose_calls == 1
         # the rejection must settle only after the child cleanup has settled
-        assert not result_task.done()
+        assert not anext_task.done()
 
         items_source.release_aclose.set()
         with pytest.raises(AbortError, match="This operation was aborted"):
-            await result_task
+            await anext_task
         assert items_source.aclose_finished

@@ -82,6 +82,7 @@ from ..type import (
     is_object_type,
 )
 from ..type.directives import GraphQLDisableErrorPropagationDirective
+from .aborted_graphql_execution_error import AbortedGraphQLExecutionError
 from .async_iterables import map_async_iterable
 from .build_execution_plan import (
     DeferUsageSet,
@@ -456,8 +457,10 @@ class Executor(IncrementalPublisherContext):
         at which point we still log the error and null the parent field, which
         in this case is the entire response.
 
-        If the operation is aborted, the whole operation is rejected with the abort
-        reason rather than resolving to a partial response with located errors.
+        If the operation is aborted, the whole operation is rejected with an
+        aborted execution error rather than resolving to a partial response with
+        located errors; the partial result that the unwinding execution can still
+        produce is exposed on that error.
         """
         abort_signal = self.abort_signal
         if abort_signal is not None and abort_signal.aborted:
@@ -506,7 +509,7 @@ class Executor(IncrementalPublisherContext):
                     ExecutionResult | ExperimentalIncrementalExecutionResults
                 ):
                     try:
-                        resolved = await self.with_abort_signal(graphql_wrapped_result)
+                        resolved = await graphql_wrapped_result
                     except GraphQLError as error:
                         self.run_async_work_finished_hook()
                         return ExecutionResult(None, with_error(self.errors, error))
@@ -520,15 +523,19 @@ class Executor(IncrementalPublisherContext):
                         resolved.result, resolved.increments
                     )
 
-                return await_result()
+                if abort_signal is None:
+                    return await_result()
+                return self.with_aborted_execution_error(await_result())
 
             resolved = cast("GraphQLWrappedResult", graphql_wrapped_result)
 
         except GraphQLError as error:
             self.run_async_work_finished_hook()
-            return ExecutionResult(None, with_error(self.errors, error))
+            return self.finish(ExecutionResult(None, with_error(self.errors, error)))
 
-        return self.build_data_response(resolved.result, resolved.increments)
+        return self.finish(
+            self.build_data_response(resolved.result, resolved.increments)
+        )
 
     def execute_execution_plan(
         self,
@@ -1032,6 +1039,49 @@ class Executor(IncrementalPublisherContext):
             return reason
         msg = f"Unexpected error value: {inspect(reason)}"
         return TypeError(msg)
+
+    async def with_aborted_execution_error(self, awaitable: Awaitable[T]) -> T:
+        """Await a result, but raise an aborted execution error when aborted.
+
+        Unlike :meth:`with_abort_signal`, the awaited work is not cancelled as a
+        whole when the abort signal is triggered: only its in-flight resolvers are
+        cancelled individually, so that it still settles into a partial result,
+        which is exposed via the raised aborted execution error.
+        """
+        abort_signal = self.abort_signal
+        task = ensure_future(awaitable)
+        if not abort_signal.aborted:  # type: ignore[union-attr]
+            abort = ensure_future(abort_signal.wait())  # type: ignore[union-attr]
+            try:
+                await wait({task, abort}, return_when=FIRST_COMPLETED)
+            finally:
+                if not abort.done():
+                    abort.cancel()
+            if not abort_signal.aborted:  # type: ignore[union-attr]
+                return task.result()
+        # The abort signal fired (possibly in the same tick the task settled);
+        # let the partial result settle in the background and expose it on the
+        # aborted execution error that the operation is rejected with.
+        self.settle_in_background([task])
+        raise self.create_aborted_execution_error(task)
+
+    def finish(self, result: T) -> T:
+        """Check that execution has not been aborted before returning its result.
+
+        If the operation has been aborted during otherwise synchronous execution,
+        raise an aborted execution error exposing the already completed result.
+        """
+        abort_signal = self.abort_signal
+        if abort_signal is not None and abort_signal.aborted:
+            raise self.create_aborted_execution_error(result)
+        return result
+
+    def create_aborted_execution_error(
+        self, result: AwaitableOrValue[Any]
+    ) -> AbortedGraphQLExecutionError:
+        """Create an aborted execution error exposing the given result."""
+        reason = self.abort_signal.reason  # type: ignore[union-attr]
+        return AbortedGraphQLExecutionError(reason, result)
 
     def box_incremental_result(
         self, result: AwaitableOrValue[T]
@@ -1697,7 +1747,7 @@ class Executor(IncrementalPublisherContext):
             async def await_complete_object_value() -> Any:
                 value = self.complete_object_value(
                     self.ensure_valid_runtime_type(
-                        await runtime_type,  # type: ignore
+                        await self.with_abort_signal(runtime_type),  # type: ignore
                         return_type,
                         field_details_list,
                         info,
@@ -1806,7 +1856,7 @@ class Executor(IncrementalPublisherContext):
                 async def execute_subfields_async() -> GraphQLWrappedResult[
                     dict[str, Any]
                 ]:
-                    if not await is_type_of:
+                    if not await self.with_abort_signal(is_type_of):
                         raise invalid_return_type_error(
                             return_type, result, field_details_list
                         )

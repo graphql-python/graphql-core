@@ -25,6 +25,8 @@ Execution
 
 .. autoclass:: AsyncWorkFinishedInfo
 
+.. autoexception:: AbortedGraphQLExecutionError
+
 .. autoclass:: ExecutionResult
 
 .. autoclass:: FormattedExecutionResult

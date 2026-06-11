@@ -16,9 +16,15 @@ from graphql import (
     GraphQLString,
     build_schema,
 )
-from graphql.execution import execute, subscribe
+from graphql.execution import (
+    AbortedGraphQLExecutionError,
+    ExperimentalIncrementalExecutionResults,
+    execute,
+    experimental_execute_incrementally,
+    subscribe,
+)
 from graphql.language import parse
-from graphql.pyutils import AbortController, AbortError
+from graphql.pyutils import AbortController, AbortError, is_awaitable
 
 pytestmark = [
     pytest.mark.anyio,
@@ -43,6 +49,8 @@ schema = build_schema(
     type Query {
       todo: Todo
       nonNullableTodo: Todo!
+      blocker: String
+      aborter: String
     }
 
     type Mutation {
@@ -96,6 +104,24 @@ def describe_abort_controller():
 
 
 def describe_execute_cancellation():
+    async def completes_the_execution_normally_when_never_aborted():
+        abort_controller = AbortController()
+        document = parse("{ todo { id } }")
+
+        async def todo(_info):
+            return {"id": "1"}
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": todo},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        result = await awaitable_result
+        assert result == ({"todo": {"id": "1"}}, None)
+
     async def stops_the_execution_when_aborted_during_object_field_completion():
         abort_controller = AbortController()
         document = parse(
@@ -130,8 +156,11 @@ def describe_execute_cancellation():
         abort_controller.abort()
 
         # Unlike graphql-js, which resolves to a partial response with a located
-        # error, an aborted operation is rejected with the abort reason.
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        # error, an aborted operation is rejected with an aborted execution error
+        # that exposes the partial response.
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await awaitable_result
 
     async def provides_access_to_the_abort_signal_within_resolvers():
@@ -175,7 +204,9 @@ def describe_execute_cancellation():
         await started.wait()
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
         assert seen_signal is abort_controller.signal
@@ -214,9 +245,11 @@ def describe_execute_cancellation():
         custom_error = RuntimeError("Custom abort error")
         abort_controller.abort(custom_error)
 
-        with pytest.raises(RuntimeError, match="Custom abort error") as exc_info:
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="Custom abort error"
+        ) as exc_info:
             await awaitable_result
-        assert exc_info.value is custom_error
+        assert exc_info.value.__cause__ is custom_error
 
     async def stops_the_execution_when_aborted_before_cancellation_is_wired():
         abort_controller = AbortController()
@@ -242,9 +275,11 @@ def describe_execute_cancellation():
         )
         assert isinstance(awaitable_result, Awaitable)
 
-        with pytest.raises(RuntimeError, match="Custom abort error") as exc_info:
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="Custom abort error"
+        ) as exc_info:
             await awaitable_result
-        assert exc_info.value is custom_error
+        assert exc_info.value.__cause__ is custom_error
 
     async def stops_the_execution_when_aborted_with_a_custom_string_reason():
         # gc3-specific: unlike graphql-js (which can reject with any value), a
@@ -262,6 +297,181 @@ def describe_execute_cancellation():
                 abort_signal=abort_controller.signal,
                 root_value={"todo": must_not_be_called},
             )
+
+    async def rejects_with_aborted_execution_error_while_initial_result_is_pending():
+        abort_controller = AbortController()
+        abort_reason = RuntimeError("Custom abort error")
+        field_value: Future[str] = Future()
+        field_started = Event()
+        document = parse(
+            """
+      query {
+        blocker
+      }
+    """
+        )
+
+        def blocker(_info):
+            field_started.set()
+            return field_value
+
+        awaitable_result = execute(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"blocker": blocker},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        task = ensure_future(awaitable_result)
+        await field_started.wait()
+        abort_controller.abort(abort_reason)
+
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="Custom abort error"
+        ) as exc_info:
+            await task
+        caught_error = exc_info.value
+        assert caught_error.__cause__ is abort_reason
+
+        aborted_result = caught_error.aborted_result
+        assert is_awaitable(aborted_result)
+
+        # Unlike graphql-js, where the partial result only settles once the pending
+        # resolver does, the pending resolver is cancelled on abort, so the partial
+        # result settles right away, with the abort reason as located field error
+        # instead of a generic "Aborted!" error.
+        result = await aborted_result
+        assert result == (
+            {"blocker": None},
+            [
+                {
+                    "message": "Custom abort error",
+                    "locations": [(3, 9)],
+                    "path": ["blocker"],
+                }
+            ],
+        )
+
+    async def raises_with_a_completed_result_in_the_atypical_internal_abort_case():
+        abort_controller = AbortController()
+        abort_reason = RuntimeError("Custom abort error")
+        document = parse(
+            """
+      query {
+        aborter
+      }
+    """
+        )
+
+        def aborter(_info):
+            abort_controller.abort(abort_reason)
+            return "done"
+
+        # The abort happens during otherwise synchronous execution, so the aborted
+        # execution error is raised synchronously and exposes the already completed
+        # result as a plain value.
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="Custom abort error"
+        ) as exc_info:
+            execute(
+                schema,
+                document,
+                abort_signal=abort_controller.signal,
+                root_value={"aborter": aborter},
+            )
+        caught_error = exc_info.value
+        assert caught_error.__cause__ is abort_reason
+        aborted_result = caught_error.aborted_result
+        assert not is_awaitable(aborted_result)
+        assert aborted_result == ({"aborter": "done"}, None)
+
+    async def raises_the_aborted_execution_error_while_incremental_result_is_pending():
+        abort_controller = AbortController()
+        abort_reason = RuntimeError("Custom abort error")
+        delayed_aborter: Future[str] = Future()
+        field_started = Event()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          ... @defer {
+            items
+          }
+        }
+        aborter
+      }
+    """
+        )
+
+        def aborter(_info):
+            field_started.set()
+            return delayed_aborter
+
+        execution_result = experimental_execute_incrementally(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={
+                "aborter": aborter,
+                "todo": {"id": "1", "items": ["a"]},
+            },
+        )
+        assert isinstance(execution_result, Awaitable)
+
+        task = ensure_future(execution_result)
+        await field_started.wait()
+        abort_controller.abort(abort_reason)
+
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="Custom abort error"
+        ) as exc_info:
+            await task
+        caught_error = exc_info.value
+        assert caught_error.__cause__ is abort_reason
+
+        aborted_result = caught_error.aborted_result
+        assert is_awaitable(aborted_result)
+        result = await aborted_result
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        assert result.initial_result.data == {"todo": {"id": "1"}, "aborter": None}
+
+        # closing the exposed subsequent results stream cleans up incremental work
+        with pytest.raises(RuntimeError, match="Custom abort error"):
+            await anext(result.subsequent_results)
+
+    async def does_not_wrap_aborts_after_the_initial_result():
+        abort_controller = AbortController()
+        deferred_items: Future[list[str]] = Future()
+        document = parse(
+            """
+      query {
+        todo {
+          id
+          ... @defer {
+            items
+          }
+        }
+      }
+    """
+        )
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"todo": {"id": "1", "items": lambda _info: deferred_items}},
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        iterator = result.subsequent_results
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted") as exc_info:
+            await anext(iterator)
+        assert not isinstance(exc_info.value, AbortedGraphQLExecutionError)
 
     async def stops_the_execution_when_aborted_during_nested_object_completion():
         abort_controller = AbortController()
@@ -297,7 +507,9 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await awaitable_result
 
     async def stops_the_execution_when_aborted_despite_a_hanging_resolver():
@@ -335,7 +547,9 @@ def describe_execute_cancellation():
         await started.wait()
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
     async def stops_the_execution_when_aborted_despite_a_hanging_item():
@@ -367,7 +581,9 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await awaitable_result
 
     async def stops_the_execution_when_aborted_during_promised_list_item_completion():
@@ -403,7 +619,9 @@ def describe_execute_cancellation():
         abort_controller.abort()
         item_future.set_result("value")
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
     async def stops_the_execution_when_aborted_despite_a_hanging_async_item():
@@ -436,7 +654,9 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await awaitable_result
 
     async def stops_resolving_abstract_types_after_aborting():
@@ -483,7 +703,9 @@ def describe_execute_cancellation():
         abort_controller.abort()
         resolve_type_future.set_result("User")
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
     async def stops_resolving_is_type_of_after_aborting():
@@ -520,7 +742,9 @@ def describe_execute_cancellation():
         abort_controller.abort()
         is_type_of_future.set_result(True)
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
     async def stops_the_execution_when_aborted_despite_a_hanging_iterator_no_close():
@@ -566,7 +790,9 @@ def describe_execute_cancellation():
         await started.wait()
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
     async def stops_the_execution_when_aborted_with_proper_null_bubbling():
@@ -602,7 +828,9 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await awaitable_result
 
     async def suppresses_sibling_errors_after_a_non_null_error_bubbles():
@@ -747,7 +975,9 @@ def describe_execute_cancellation():
 
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
 
     async def stops_the_execution_when_aborted_pre_execute():
@@ -948,8 +1178,12 @@ def describe_execute_cancellation():
         abort_controller.abort()
         next_returned.set_result("value")
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ) as exc_info:
             await task
+        # wait for the partial result so that the cleanup has settled
+        await exc_info.value.aborted_result
         assert return_called is True
 
     async def ignores_async_iterator_return_rejections_after_aborting_list_completion():
@@ -994,6 +1228,10 @@ def describe_execute_cancellation():
         abort_controller.abort()
         next_returned.set_result("value")
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ) as exc_info:
             await task
+        # wait for the partial result so that the cleanup has settled
+        await exc_info.value.aborted_result
         assert return_called is True

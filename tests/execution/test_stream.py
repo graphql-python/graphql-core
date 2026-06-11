@@ -8,6 +8,7 @@ import pytest
 
 from graphql.error import GraphQLError
 from graphql.execution import (
+    AbortedGraphQLExecutionError,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalStreamResult,
@@ -3210,16 +3211,19 @@ def describe_execute_stream_directive_cancellation():
 
         abort_controller.abort()
 
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await result_task
 
     async def cancels_async_stream_source_cleanup_when_aborted_before_initial():
         """Cancels async stream source cleanup when aborted before initial execution
 
-        Other than the JavaScript version, which rejects immediately and runs the
-        async cleanup in the background, GraphQL-Core awaits the async cleanup
-        before rejecting with the abort reason, so that no cleanup coroutine is
-        left behind unawaited.
+        The operation rejects immediately with an aborted execution error that
+        exposes the partial result; consuming the subsequent results of that
+        partial result runs the async cleanup and rejects with the abort reason
+        only after the cleanup has settled, so that no cleanup coroutine is left
+        behind unawaited.
         """
         abort_controller = AbortController()
         document = parse(
@@ -3279,14 +3283,24 @@ def describe_execute_stream_directive_cancellation():
         await blocker_started.wait()
 
         abort_controller.abort()
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ) as exc_info:
+            await result_task
+
+        # the cleanup only runs when the exposed partial result is consumed
+        assert source.aclose_calls == 0
+        result = await exc_info.value.aborted_result
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        anext_task = ensure_future(anext(result.subsequent_results))
         await source.aclose_started.wait()
         assert source.aclose_calls == 1
         # the rejection must settle only after the source cleanup has settled
-        assert not result_task.done()
+        assert not anext_task.done()
 
         source.release_aclose.set()
         with pytest.raises(AbortError, match="This operation was aborted"):
-            await result_task
+            await anext_task
         assert source.aclose_finished
 
     async def cancels_pending_stream_item_executors_when_consumer_cancels():

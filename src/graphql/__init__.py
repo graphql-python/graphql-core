@@ -481,6 +481,7 @@ from .validation import (
 
 # Execute GraphQL documents.
 from .execution import (
+    AbortedGraphQLExecutionError,
     execute,
     execute_query_or_mutation_or_subscription_event,
     execute_subscription_event,
@@ -552,6 +553,7 @@ __all__ = [
     "AbortController",
     "AbortError",
     "AbortSignal",
+    "AbortedGraphQLExecutionError",
     "ArgumentCoordinateNode",
     "ArgumentNode",
     "AsyncWorkFinishedInfo",

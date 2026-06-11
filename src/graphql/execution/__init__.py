@@ -4,6 +4,7 @@ The :mod:`graphql.execution` package is responsible for the execution phase of
 fulfilling a GraphQL request.
 """
 
+from .aborted_graphql_execution_error import AbortedGraphQLExecutionError
 from .async_iterables import map_async_iterable
 from .types import (
     CompletedResult,
@@ -48,6 +49,7 @@ from .execute import (
 )
 
 __all__ = [
+    "AbortedGraphQLExecutionError",
     "AsyncWorkFinishedInfo",
     "CompletedResult",
     "DeferredFragmentRecord",

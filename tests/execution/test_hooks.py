@@ -8,6 +8,7 @@ from collections.abc import Awaitable
 import pytest
 
 from graphql.execution import (
+    AbortedGraphQLExecutionError,
     AsyncWorkFinishedInfo,
     ExecutionHooks,
     ExecutionResult,
@@ -415,7 +416,9 @@ def describe_execute_hooks():
         task = ensure_future(awaitable_result)
         await started.wait()  # let the execution start before aborting
         abort_controller.abort()
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
             await task
         assert calls == []
 
@@ -469,16 +472,20 @@ def describe_execute_hooks():
         abort_controller.abort()
         next_returned.set_result("value")
 
-        await return_started.wait()
-
-        with pytest.raises(AbortError, match="This operation was aborted"):
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ) as exc_info:
             await task
 
-        # Unlike JavaScript, where the result rejects immediately and the hook
-        # waits for the still running cleanup, the pending cleanup is cancelled
-        # and settled before the result rejects, so the hook has already fired.
-        assert return_finished.cancelled()
-        assert async_work_finished.is_set()
+        await return_started.wait()
+
+        # Like in JavaScript, the result rejects immediately while the cleanup is
+        # still running; the hook only fires after the cleanup and with it the
+        # partial result have settled.
+        assert not async_work_finished.is_set()
+        return_finished.set_result(None)
+        await exc_info.value.aborted_result
+        await async_work_finished.wait()
 
     async def fires_async_work_finished_after_all_incremental_payloads_are_delivered():
         deferred_items: Future[list[str]] = Future()
