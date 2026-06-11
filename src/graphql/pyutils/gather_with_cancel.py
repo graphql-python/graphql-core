@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import Task, create_task, gather
+from asyncio import Future, ensure_future, gather
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -22,18 +22,12 @@ async def gather_with_cancel(*awaitables: Awaitable[Any]) -> list[Any]:
     different from `asyncio.gather` with `return_exceptions` set, which does not
     cancel the other tasks when one of them raises an exception.
     """
+    futures: list[Future[Any]] = [ensure_future(aw) for aw in awaitables]
     try:
-        tasks: list[Task[Any]] = [
-            aw if isinstance(aw, Task) else create_task(aw)  # type: ignore[arg-type]
-            for aw in awaitables
-        ]
-    except TypeError:
-        return await gather(*awaitables)
-    try:
-        return await gather(*tasks)
+        return await gather(*futures)
     except Exception:
-        for task in tasks:
-            if not task.done():
-                task.cancel()
-        await gather(*tasks, return_exceptions=True)
+        for future in futures:
+            if not future.done():
+                future.cancel()
+        await gather(*futures, return_exceptions=True)
         raise

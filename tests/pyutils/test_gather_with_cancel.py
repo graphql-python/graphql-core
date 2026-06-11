@@ -128,8 +128,4 @@ def describe_gather_with_cancel():
         # check that gather_with_cancel stops producing results
         controller.event.set()
         await sleep(0)
-        if type_of_awaitable == "custom":
-            # Cancellation of custom awaitables is not supported
-            assert controller.returned == values[:-1]
-        else:
-            assert not controller.returned
+        assert not controller.returned
