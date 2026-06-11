@@ -441,6 +441,7 @@ class Executor(IncrementalPublisherContext):
 
     def execute_operation(
         self,
+        serially: bool | None = None,
     ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
         """Execute an operation.
 
@@ -500,7 +501,13 @@ class Executor(IncrementalPublisherContext):
                 )
                 if new_defer_usages
                 else self.execute_root_grouped_field_set(
-                    operation_type, root_type, root_value, grouped_field_set, None
+                    root_type,
+                    root_value,
+                    grouped_field_set,
+                    operation_type == OperationType.MUTATION
+                    if serially is None
+                    else serially,
+                    None,
                 )
             )
 
@@ -579,18 +586,14 @@ class Executor(IncrementalPublisherContext):
 
     def execute_root_grouped_field_set(
         self,
-        operation: OperationType,
         root_type: GraphQLObjectType,
         root_value: Any,
         grouped_field_set: GroupedFieldSet,
+        serially: bool,
         defer_map: RefMap[DeferUsage, DeferredFragmentRecord] | None,
     ) -> AwaitableOrValue[GraphQLWrappedResult[dict[str, Any]]]:
         """Execute the root grouped field set."""
-        return (
-            self.execute_fields_serially
-            if operation == OperationType.MUTATION
-            else self.execute_fields
-        )(
+        return (self.execute_fields_serially if serially else self.execute_fields)(
             root_type,
             root_value,
             None,
@@ -3028,7 +3031,7 @@ def execute_subscription_event(
     The passed executor should be a per-event executor as created by
     :meth:`Executor.build_per_event_executor`.
     """
-    return execute_root_selection_set(executor)
+    return cast("AwaitableOrValue[ExecutionResult]", executor.execute_operation(False))
 
 
 def create_source_event_stream(

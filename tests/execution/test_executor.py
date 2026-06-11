@@ -7,7 +7,12 @@ from typing import Any, cast
 import pytest
 
 from graphql.error import GraphQLError
-from graphql.execution import Executor, execute, execute_sync
+from graphql.execution import (
+    Executor,
+    execute,
+    execute_root_selection_set,
+    execute_sync,
+)
 from graphql.execution.collect_fields import FieldDetails
 from graphql.execution.get_variable_signature import GraphQLVariableSignature
 from graphql.execution.values import VariableValues, VariableValueSource
@@ -54,6 +59,19 @@ def describe_execute_handles_basic_execution_tasks():
         result = execute_sync(schema, parse("{ a }"), "rootValue")
 
         assert result == ({"a": "rootValue"}, None)
+
+    def executes_the_root_selection_set_of_a_built_executor():
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Type",
+                {"a": GraphQLField(GraphQLString, resolve=lambda obj, *_args: obj)},
+            )
+        )
+
+        executor = Executor.build(schema, parse("{ a }"), "rootValue")
+        assert isinstance(executor, Executor)
+
+        assert execute_root_selection_set(executor) == ({"a": "rootValue"}, None)
 
     async def executes_arbitrary_code():
         class Data:
