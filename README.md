@@ -18,8 +18,8 @@ with GraphQL.js.
 The current stable version 3.2.11 of GraphQL-core is up-to-date with GraphQL.js
 version 16.14.1 and supports Python versions 3.7 to 3.14.
 
-You can also try out the latest alpha version 3.3.0a14 of GraphQL-core,
-which is up-to-date with GraphQL.js version 17.0.0a14.
+You can also try out the latest beta version 3.3.0b0 of GraphQL-core,
+which is up-to-date with GraphQL.js version 17.0.0b0.
 This new minor version of GraphQL-core also supports Python versions 3.10 to 3.14.
 
 Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
