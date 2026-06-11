@@ -1,3 +1,4 @@
+from asyncio import sleep
 from collections.abc import AsyncGenerator, AsyncIterable, Callable
 from typing import Any, TypeGuard
 
@@ -135,8 +136,8 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
             parse("{ listField }"),
             Data(list_field),
         )
-        if is_awaitable(result):
-            result = await result
+        # bubbling sync errors do not become async
+        assert not is_awaitable(result)
         return result
 
     async def drains_the_iterator_when_next_throws():
@@ -249,7 +250,11 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
         )
         assert next_calls == 4
         assert returned is False
-        # the later awaitable was drained and settled instead of being orphaned
+        # the later awaitable was drained and settled in the background
+        # instead of being orphaned
+        assert awaited == []
+        await sleep(0)
+        await sleep(0)
         assert awaited == ["later bad"]
 
     async def handles_sync_errors_with_later_pending_awaitables():
@@ -292,7 +297,10 @@ def describe_execute_handles_abrupt_completion_in_synchronous_iterables():
         )
         assert next_calls == 4
         assert returned is False
-        # both later awaitables were drained and settled instead of being orphaned
+        # both later awaitables were drained and settled in the background
+        # instead of being orphaned
+        await sleep(0)
+        await sleep(0)
         assert sorted(awaited) == ["first bad", "third bad"]
 
 
@@ -530,7 +538,10 @@ def describe_execute_accepts_async_iterables_as_list_value():
                 }
             ],
         )
-        # the earlier pending awaitable was settled instead of being orphaned
+        # the earlier pending awaitable was settled in the background
+        # instead of being orphaned
+        await sleep(0)
+        await sleep(0)
         assert awaited == ["bad"]
 
     async def handles_nulls_yielded_by_async_generator():

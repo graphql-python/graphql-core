@@ -8,6 +8,8 @@ from asyncio import (
     TimeoutError,  # only needed for Python < 3.11  # noqa: A004
     ensure_future,
     gather,
+    get_running_loop,
+    iscoroutine,
     sleep,
     wait,
 )
@@ -219,6 +221,7 @@ class Executor(IncrementalPublisherContext):
     errors: list[GraphQLError] | None
     cancellable_streams: set[CancellableStreamRecord] | None
     pending_incremental_futures: set[Future[Any]]
+    background_futures: set[Future[Any]]
     middleware_manager: MiddlewareManager | None
     error_propagation: bool
 
@@ -274,6 +277,7 @@ class Executor(IncrementalPublisherContext):
         self.errors = None
         self.cancellable_streams = None
         self.pending_incremental_futures = set()
+        self.background_futures = set()
         self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
         self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
         self._execution_plans: RefMap[GroupedFieldSet, ExecutionPlan] = RefMap()
@@ -627,32 +631,41 @@ class Executor(IncrementalPublisherContext):
         is_awaitable = self.is_awaitable
         awaitable_fields: list[str] = []
         append_awaitable = awaitable_fields.append
-        for response_name, field_details_list in grouped_field_set.items():
-            field_path = Path(path, response_name, parent_type.name)
-            result = self.execute_field(
-                parent_type,
-                source_value,
-                field_details_list,
-                field_path,
-                incremental_context,
-                defer_map,
-            )
-            if result is not Undefined:
-                if is_awaitable(result):
+        try:
+            for response_name, field_details_list in grouped_field_set.items():
+                field_path = Path(path, response_name, parent_type.name)
+                result = self.execute_field(
+                    parent_type,
+                    source_value,
+                    field_details_list,
+                    field_path,
+                    incremental_context,
+                    defer_map,
+                )
+                if result is not Undefined:
+                    if is_awaitable(result):
 
-                    async def resolve(
-                        result: Awaitable[GraphQLWrappedResult[dict[str, Any]]],
-                    ) -> dict[str, Any]:
-                        resolved = await result
-                        add_increments(resolved.increments)
-                        return resolved.result
+                        async def resolve(
+                            result: Awaitable[GraphQLWrappedResult[dict[str, Any]]],
+                        ) -> dict[str, Any]:
+                            resolved = await result
+                            add_increments(resolved.increments)
+                            return resolved.result
 
-                    results[response_name] = resolve(result)
-                    append_awaitable(response_name)
-                else:
-                    result = cast("GraphQLWrappedResult[dict[str, Any]]", result)
-                    results[response_name] = result.result
-                    add_increments(result.increments)
+                        results[response_name] = resolve(result)
+                        append_awaitable(response_name)
+                    else:
+                        result = cast("GraphQLWrappedResult[dict[str, Any]]", result)
+                        results[response_name] = result.result
+                        add_increments(result.increments)
+        except Exception:
+            if awaitable_fields:
+                # Ensure that awaitables created by other fields are settled,
+                # as they may also fail.
+                self.settle_in_background(
+                    [results[field] for field in awaitable_fields]
+                )
+            raise
 
         # If there are no coroutines, we can just return the object.
         if not awaitable_fields:
@@ -1027,6 +1040,27 @@ class Executor(IncrementalPublisherContext):
             if early_returns:
                 await gather(*early_returns, return_exceptions=True)
 
+    def settle_in_background(self, awaitables: list[Awaitable[Any]]) -> None:
+        """Settle the given pending awaitables in the background.
+
+        A bubbling synchronous error must not wait for pending sibling awaitables,
+        but they must still be settled so that their errors can be observed before
+        they would be orphaned (the Python analog of silencing JS unhandled
+        rejections). Without a running event loop the awaitables can never run;
+        pending coroutines are then closed instead to dispose of them.
+        """
+        try:
+            get_running_loop()
+        except RuntimeError:  # no running event loop
+            for awaitable in awaitables:
+                if iscoroutine(awaitable):  # pragma: no branch
+                    awaitable.close()
+            return
+        future = gather(*awaitables, return_exceptions=True)
+        background_futures = self.background_futures
+        background_futures.add(future)
+        future.add_done_callback(background_futures.discard)
+
     def cancellable_iterable(self, iterable: AsyncIterable[T]) -> AsyncIterable[T]:
         """Wrap an async iterable so pending iteration is cancelled on abort.
 
@@ -1243,11 +1277,10 @@ class Executor(IncrementalPublisherContext):
                 with suppress_exceptions:
                     await early_return()
             if awaitable_indices:
-                # Settle any awaitable items already collected so that their
-                # errors can be observed before they would be orphaned.
-                await gather(
-                    *(completed_results[index] for index in awaitable_indices),
-                    return_exceptions=True,
+                # Settle any awaitable items already collected in the background,
+                # so that the current error is not delayed.
+                self.settle_in_background(
+                    [completed_results[index] for index in awaitable_indices]
                 )
             raise
 
@@ -1398,21 +1431,14 @@ class Executor(IncrementalPublisherContext):
                     append_awaitable(index)
 
                 index += 1
-        except Exception as error:
+        except Exception:
             # Do not close the iterator. Instead, drain it so that any awaitable
-            # items it still holds can be settled before they would be orphaned.
+            # items it still holds can be settled in the background before they
+            # would be orphaned.
             maybe_awaitables = [completed_results[index] for index in awaitable_indices]
             maybe_awaitables.extend(collect_iterator_awaitables(iterator, is_awaitable))
             if maybe_awaitables:
-
-                async def settle_and_raise(
-                    error: Exception = error,
-                    awaitables: list[Awaitable[Any]] = maybe_awaitables,
-                ) -> NoReturn:
-                    await gather(*awaitables, return_exceptions=True)
-                    raise error  # noqa: TRY201
-
-                return settle_and_raise()
+                self.settle_in_background(maybe_awaitables)
             raise
 
         if not awaitable_indices:

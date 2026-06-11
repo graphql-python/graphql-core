@@ -587,6 +587,59 @@ def describe_execute_handles_basic_execution_tasks():
             ],
         )
 
+    @pytest.mark.filterwarnings("error:.*was never awaited:RuntimeWarning")
+    async def handles_sync_errors_combined_with_async_ones_in_async_context():
+        is_async_resolver_finished = False
+
+        async def async_resolver(_obj, _info):
+            nonlocal is_async_resolver_finished
+            is_async_resolver_finished = True
+
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query",
+                {
+                    "syncNullError": GraphQLField(
+                        GraphQLNonNull(GraphQLString), resolve=lambda _obj, _info: None
+                    ),
+                    "asyncNullError": GraphQLField(
+                        GraphQLNonNull(GraphQLString), resolve=async_resolver
+                    ),
+                },
+            )
+        )
+
+        document = parse(
+            """
+            {
+              asyncNullError
+              syncNullError
+            }
+            """
+        )
+
+        result = execute(schema, document)
+
+        assert is_async_resolver_finished is False
+
+        assert result == (
+            None,
+            [
+                {
+                    "message": "Cannot return null"
+                    " for non-nullable field Query.syncNullError.",
+                    "locations": [(4, 15)],
+                    "path": ["syncNullError"],
+                }
+            ],
+        )
+
+        # within an event loop, the pending async resolver
+        # is settled in the background instead of being orphaned
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        assert is_async_resolver_finished is True
+
     async def handles_async_bubbling_errors_combined_with_non_bubbling():
         async def resolve_null(*_args):
             await asyncio.sleep(0)

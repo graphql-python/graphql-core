@@ -218,6 +218,34 @@ def describe_execute_cancellation():
             await awaitable_result
         assert exc_info.value is custom_error
 
+    async def stops_the_execution_when_aborted_before_cancellation_is_wired():
+        abort_controller = AbortController()
+        document = parse(
+            """
+      query {
+        blocker
+      }
+    """
+        )
+
+        custom_error = RuntimeError("Custom abort error")
+
+        def blocker(_info):
+            abort_controller.abort(custom_error)
+            return Future()  # will never be resolved
+
+        awaitable_result = execute(
+            build_schema("type Query { blocker: String }"),
+            document,
+            abort_signal=abort_controller.signal,
+            root_value={"blocker": blocker},
+        )
+        assert isinstance(awaitable_result, Awaitable)
+
+        with pytest.raises(RuntimeError, match="Custom abort error") as exc_info:
+            await awaitable_result
+        assert exc_info.value is custom_error
+
     async def stops_the_execution_when_aborted_with_a_custom_string_reason():
         # gc3-specific: unlike graphql-js (which can reject with any value), a
         # non-exception abort reason is surfaced as an "unexpected error value".
