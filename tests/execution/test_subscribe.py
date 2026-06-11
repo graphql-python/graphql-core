@@ -8,8 +8,10 @@ from typing import (
 
 import pytest
 
+from graphql.error import GraphQLError
 from graphql.execution import (
     ExecutionResult,
+    Executor,
     create_source_event_stream,
     execute_subscription_event,
     subscribe,
@@ -176,14 +178,45 @@ def subscribe_with_bad_args(
     document: DocumentNode,
     variable_values: dict[str, Any] | None = None,
 ):
+    executor = Executor.build(schema, document, raw_variable_values=variable_values)
+    source_event_stream_result = (
+        ExecutionResult(None, errors=executor)
+        if isinstance(executor, list)
+        else create_source_event_stream(executor)
+    )
+
     return assert_equal_awaitables_or_values(
         subscribe(schema, document, variable_values=variable_values),
-        create_source_event_stream(schema, document, variable_values=variable_values),
+        source_event_stream_result,
     )
 
 
 # Check all error cases when initializing the subscription.
 def describe_subscription_initialization_phase():
+    def throws_for_legacy_execution_args_passed_to_create_source_event_stream():
+        schema = GraphQLSchema(
+            query=DummyQueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {"foo": GraphQLField(GraphQLString)},
+            ),
+        )
+
+        with pytest.raises(GraphQLError) as exc_info:
+            create_source_event_stream(
+                {  # type: ignore[arg-type]
+                    "schema": schema,
+                    "document": parse("subscription { foo }"),
+                }
+            )
+
+        assert str(exc_info.value) == (
+            "Passing execution arguments to create_source_event_stream()"
+            " was removed in graphql-core version 3.3;"
+            " call Executor.build() first and pass the result instead,"
+            " or use subscribe() for the full subscription pipeline."
+        )
+
     async def accepts_positional_arguments():
         document = parse(
             """

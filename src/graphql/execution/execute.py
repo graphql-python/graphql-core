@@ -2980,7 +2980,7 @@ def subscribe(
     if isinstance(executor, list):
         return ExecutionResult(None, errors=executor)
 
-    result_or_stream = create_source_event_stream_impl(executor)
+    result_or_stream = create_source_event_stream(executor)
 
     if executor.is_awaitable(result_or_stream):
 
@@ -3027,31 +3027,19 @@ def execute_subscription_event(
 
 
 def create_source_event_stream(
-    schema: GraphQLSchema,
-    document: DocumentNode,
-    root_value: Any = None,
-    context_value: Any = None,
-    variable_values: dict[str, Any] | None = None,
-    operation_name: str | None = None,
-    field_resolver: GraphQLFieldResolver | None = None,
-    type_resolver: GraphQLTypeResolver | None = None,
-    subscribe_field_resolver: GraphQLFieldResolver | None = None,
-    max_coercion_errors: int = 50,
-    enable_early_execution: bool = False,
-    executor_class: type[Executor] | None = None,
-    hide_suggestions: bool = False,
-    **custom_context_args: Any,
+    executor: Executor,
 ) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
     """Create source event stream
 
     Implements the "CreateSourceEventStream" algorithm described in the GraphQL
-    specification, resolving the subscription source event stream.
+    specification, resolving the subscription source event stream for a
+    previously built executor.
 
     Returns a coroutine that yields an AsyncIterable.
 
-    If the client-provided arguments to this function do not result in a compliant
-    subscription, a GraphQL Response (ExecutionResult) with descriptive errors and no
-    data will be returned.
+    If the built executor is invalid, or if the resolved event stream is not an
+    async iterable, a GraphQL Response (ExecutionResult) with descriptive errors
+    and no data will be returned.
 
     If the source stream could not be created due to faulty subscription resolver logic
     or underlying systems, the coroutine object will yield a single ExecutionResult
@@ -3065,35 +3053,15 @@ def create_source_event_stream(
     separating these two steps. For more on this, see the "Supporting Subscriptions
     at Scale" information in the GraphQL spec.
     """
-    # If a valid executor cannot be created due to incorrect arguments,
-    # a "Response" with only errors is returned.
-    executor = (executor_class or Executor).build(
-        schema,
-        document,
-        root_value,
-        context_value,
-        variable_values,
-        operation_name,
-        field_resolver,
-        type_resolver,
-        subscribe_field_resolver,
-        max_coercion_errors,
-        enable_early_execution,
-        hide_suggestions=hide_suggestions,
-        **custom_context_args,
-    )
+    if not isinstance(executor, Executor):
+        msg = (
+            "Passing execution arguments to create_source_event_stream()"
+            " was removed in graphql-core version 3.3;"
+            " call Executor.build() first and pass the result instead,"
+            " or use subscribe() for the full subscription pipeline."
+        )
+        raise GraphQLError(msg)
 
-    # Return early errors if executor failed.
-    if isinstance(executor, list):
-        return ExecutionResult(None, errors=executor)
-
-    return create_source_event_stream_impl(executor)
-
-
-def create_source_event_stream_impl(
-    executor: Executor,
-) -> AwaitableOrValue[AsyncIterable[Any] | ExecutionResult]:
-    """Create source event stream (internal implementation)."""
     try:
         event_stream = execute_subscription(executor)
     except GraphQLError as error:
