@@ -10,6 +10,7 @@ from ..language import (
     ListValueNode,
     Node,
     NullValueNode,
+    ObjectFieldNode,
     ObjectValueNode,
     ValueNode,
     VariableNode,
@@ -139,7 +140,6 @@ def validate_input_value_impl(
         for field_name, field_value in input_value.items():
             if field_value is Undefined:
                 continue
-            fields.append(field_name)
             if field_name not in field_defs:
                 suggestion = (
                     ""
@@ -154,6 +154,8 @@ def validate_input_value_impl(
                     + f": {inspect(input_value)}.",
                     path,
                 )
+                continue
+            fields.append(field_name)
 
         if type_.is_one_of:
             if len(fields) != 1:
@@ -163,14 +165,15 @@ def validate_input_value_impl(
                     path,
                 )
 
-            field_name = fields[0]
-            value = input_value[field_name]
-            if value is None:
-                report_invalid_value(
-                    on_error,
-                    get_one_of_input_object_error_message(type_),
-                    Path(path, field_name, type_.name),
-                )
+            if fields:
+                field_name = fields[0]
+                value = input_value[field_name]
+                if value is None:
+                    report_invalid_value(
+                        on_error,
+                        get_one_of_input_object_error_message(type_),
+                        Path(path, field_name, type_.name),
+                    )
     else:
         assert_leaf_type(type_)
 
@@ -393,6 +396,7 @@ def validate_input_literal_impl(
                 )
 
         fields = value_node.fields
+        known_fields: list[ObjectFieldNode] = []
         # Ensure every provided field is defined.
         for field_node in fields:
             field_name = field_node.name.value
@@ -411,9 +415,11 @@ def validate_input_literal_impl(
                     field_node,
                     path,
                 )
+            else:
+                known_fields.append(field_node)
 
         if type_.is_one_of:
-            is_not_exactly_one_field = len(fields) != 1
+            is_not_exactly_one_field = len(known_fields) != 1
             if is_not_exactly_one_field:
                 report_invalid_literal(
                     context.on_error,
@@ -423,9 +429,9 @@ def validate_input_literal_impl(
                 )
                 return
 
-            field_value_node = fields[0].value
+            field_value_node = known_fields[0].value
             if isinstance(field_value_node, NullValueNode):
-                field_name = fields[0].name.value
+                field_name = known_fields[0].name.value
                 report_invalid_literal(
                     context.on_error,
                     get_one_of_input_object_error_message(type_),

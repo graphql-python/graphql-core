@@ -569,6 +569,7 @@ def describe_coerce_input_literal():
         _test("{ a: null }", test_one_of_input_obj, Undefined)
         _test("{ a: 1 }", test_one_of_input_obj, Undefined)
         _test('{ a: "abc", b: "def" }', test_one_of_input_obj, Undefined)
+        _test('{ a: "abc", c: "def" }', test_one_of_input_obj, Undefined)
         _test("{}", test_one_of_input_obj, Undefined)
         _test('{ c: "abc" }', test_one_of_input_obj, Undefined)
 

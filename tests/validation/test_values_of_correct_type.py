@@ -1277,6 +1277,29 @@ def describe_validate_values_of_correct_type():
                 ],
             )
 
+        def unknown_field_does_not_add_a_one_of_error():
+            assert_errors(
+                """
+                {
+                  complicatedArgs {
+                    oneOfArgField(oneOfArg: {
+                      stringField: "abc",
+                      invalidField: 123
+                    })
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Expected value of type 'OneOfInput'"
+                        " not to include unknown field 'invalidField'."
+                        " Did you mean 'intField'?"
+                        ' Found: { stringField: "abc", invalidField: 123 }.',
+                        "locations": [(6, 23)],
+                    },
+                ],
+            )
+
     def describe_directive_arguments():
         def with_directives_of_valid_types():
             assert_valid(

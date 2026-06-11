@@ -478,13 +478,6 @@ def describe_validate_input_value():
                         " found: {'foo': 123, 'unknownField': 123}.",
                         "path": [],
                     },
-                    {
-                        "error": "Within OneOf Input Object type"
-                        " 'TestInputObject', exactly one field must be"
-                        " specified, and the value for that field"
-                        " must be non-null.",
-                        "path": [],
-                    },
                 ],
             )
 
@@ -498,7 +491,14 @@ def describe_validate_input_value():
                         " not to include unknown field 'bart'."
                         " Did you mean 'bar'? Found: {'bart': 123}.",
                         "path": [],
-                    }
+                    },
+                    {
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
+                        "path": [],
+                    },
                 ],
             )
 
@@ -512,7 +512,14 @@ def describe_validate_input_value():
                         " not to include unknown field 'bart',"
                         " found: {'bart': 123}.",
                         "path": [],
-                    }
+                    },
+                    {
+                        "error": "Within OneOf Input Object type"
+                        " 'TestInputObject', exactly one field must be"
+                        " specified, and the value for that field"
+                        " must be non-null.",
+                        "path": [],
+                    },
                 ],
                 True,
             )
@@ -1128,13 +1135,6 @@ def describe_validate_input_literal():
                         " found: { foo: 123, unknownField: 123 }.",
                         "path": [],
                     },
-                    {
-                        "error": "Within OneOf Input Object type"
-                        " 'TestInputObject', exactly one field must be"
-                        " specified, and the value for that field"
-                        " must be non-null.",
-                        "path": [],
-                    },
                 ],
             )
 
@@ -1147,13 +1147,6 @@ def describe_validate_input_literal():
                         "error": "Expected value of type 'TestInputObject'"
                         " not to include unknown field 'bart'."
                         " Did you mean 'bar'? Found: { foo: 123, bart: 123 }.",
-                        "path": [],
-                    },
-                    {
-                        "error": "Within OneOf Input Object type"
-                        " 'TestInputObject', exactly one field must be"
-                        " specified, and the value for that field"
-                        " must be non-null.",
                         "path": [],
                     },
                 ],
