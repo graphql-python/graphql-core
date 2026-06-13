@@ -271,6 +271,7 @@ def print_directive(directive: GraphQLDirective) -> str:
         print_description(directive)
         + f"directive {directive}"
         + print_args(directive.args)
+        + print_deprecated(directive.deprecation_reason)
         + (" repeatable" if directive.is_repeatable else "")
         + " on "
         + " | ".join(location.name for location in directive.locations)

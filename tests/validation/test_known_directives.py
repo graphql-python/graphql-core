@@ -36,6 +36,7 @@ schema_with_sdl_directives = build_schema(
     directive @onEnumValue on ENUM_VALUE
     directive @onInputObject on INPUT_OBJECT
     directive @onInputFieldDefinition on INPUT_FIELD_DEFINITION
+    directive @onDirective on DIRECTIVE_DEFINITION
     """
 )
 
@@ -366,6 +367,8 @@ def describe_known_directives():
                 directive @myDirective2(arg:String @myDirective) on FIELD
 
                 extend schema @onSchema
+
+                directive @myDirective3 on OBJECT
                 """,
                 schema=schema_with_sdl_directives,
             )
@@ -398,6 +401,8 @@ def describe_known_directives():
                 }
 
                 extend schema @onObject
+
+                extend type MyObj @onDirective
                 """,  # noqa: E501
                 [
                     {
@@ -464,6 +469,11 @@ def describe_known_directives():
                     {
                         "message": "Directive '@onObject' may not be used on schema.",
                         "locations": [(26, 31)],
+                    },
+                    {
+                        "message": "Directive '@onDirective'"
+                        " may not be used on object.",
+                        "locations": [(28, 35)],
                     },
                 ],
                 schema_with_sdl_directives,

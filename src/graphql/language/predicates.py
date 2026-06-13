@@ -9,6 +9,7 @@ from .ast import (
     DefinitionNode,
     DirectiveArgumentCoordinateNode,
     DirectiveCoordinateNode,
+    DirectiveExtensionNode,
     ExecutableDefinitionNode,
     ListValueNode,
     MemberCoordinateNode,
@@ -102,9 +103,11 @@ def is_type_definition_node(node: Node) -> TypeGuard[TypeDefinitionNode]:
 
 def is_type_system_extension_node(
     node: Node,
-) -> TypeGuard[SchemaExtensionNode | TypeExtensionNode]:
+) -> TypeGuard[SchemaExtensionNode | DirectiveExtensionNode | TypeExtensionNode]:
     """Check whether the given node represents a type system extension."""
-    return isinstance(node, (SchemaExtensionNode, TypeExtensionNode))
+    return isinstance(
+        node, (SchemaExtensionNode, DirectiveExtensionNode, TypeExtensionNode)
+    )
 
 
 def is_type_extension_node(node: Node) -> TypeGuard[TypeExtensionNode]:

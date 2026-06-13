@@ -21,6 +21,7 @@ def introspection_from_schema(
     directive_is_repeatable: bool = True,
     schema_description: bool = True,
     input_value_deprecation: bool = True,
+    experimental_directive_deprecation: bool = True,
     one_of: bool = True,
 ) -> IntrospectionQuery:
     """Build an IntrospectionQuery from a GraphQLSchema
@@ -38,6 +39,7 @@ def introspection_from_schema(
             directive_is_repeatable,
             schema_description,
             input_value_deprecation,
+            experimental_directive_deprecation,
             one_of,
         )
     )

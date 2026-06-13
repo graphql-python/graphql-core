@@ -4,7 +4,14 @@ from copy import deepcopy
 
 import pytest
 
-from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+from graphql.language import DirectiveLocation
+from graphql.type import (
+    GraphQLDirective,
+    GraphQLField,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+)
 from graphql.utilities import (
     IntrospectionQuery,
     build_client_schema,
@@ -67,6 +74,31 @@ def describe_introspection_from_schema():
             }
             """
         )
+
+    def includes_deprecated_directives():
+        schema_with_deprecated_directive = GraphQLSchema(
+            query=GraphQLObjectType(
+                name="Query",
+                fields={"string": GraphQLField(GraphQLString)},
+            ),
+            directives=[
+                GraphQLDirective(
+                    name="deprecatedDirective",
+                    locations=[DirectiveLocation.QUERY],
+                    deprecation_reason="Use another directive",
+                ),
+            ],
+        )
+        introspection = introspection_from_schema(schema_with_deprecated_directive)
+        deprecated_directive = next(
+            directive
+            for directive in introspection["__schema"]["directives"]
+            if directive["name"] == "deprecatedDirective"
+        )
+
+        assert deprecated_directive["name"] == "deprecatedDirective"
+        assert deprecated_directive["isDeprecated"] is True
+        assert deprecated_directive["deprecationReason"] == "Use another directive"
 
     def describe_deepcopy_and_pickle():  # pragma: no cover
         # introspect the schema

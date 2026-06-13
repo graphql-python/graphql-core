@@ -31,6 +31,12 @@ class ExcpectIntrospectionQuery:
         pattern = self.to_reg_exp(name)
         assert not pattern.search(self.query)
 
+    def to_contain(self, text: str) -> None:
+        assert text in self.query
+
+    def to_not_contain(self, text: str) -> None:
+        assert text not in self.query
+
     @staticmethod
     def to_reg_exp(name: str) -> Pattern:
         return re.compile(rf"\b{name}\b")
@@ -79,6 +85,28 @@ def describe_get_introspection_query():
         ExcpectIntrospectionQuery(input_value_deprecation=False).to_match(
             "deprecationReason", 2
         )
+
+    def includes_is_deprecated_field_on_directives():
+        ExcpectIntrospectionQuery().to_match("isDeprecated", 2)
+        ExcpectIntrospectionQuery(experimental_directive_deprecation=True).to_match(
+            "isDeprecated", 3
+        )
+        ExcpectIntrospectionQuery(experimental_directive_deprecation=False).to_match(
+            "isDeprecated", 2
+        )
+
+    def includes_deprecation_reason_field_on_directives():
+        query = ExcpectIntrospectionQuery()
+        query.to_not_contain("directives(includeDeprecated: true) {")
+        query.to_match("deprecationReason", 2)
+
+        query = ExcpectIntrospectionQuery(experimental_directive_deprecation=True)
+        query.to_contain("directives(includeDeprecated: true) {")
+        query.to_match("deprecationReason", 3)
+
+        query = ExcpectIntrospectionQuery(experimental_directive_deprecation=False)
+        query.to_not_contain("directives(includeDeprecated: true) {")
+        query.to_match("deprecationReason", 2)
 
     def includes_is_one_of_on_input_objects():
         ExcpectIntrospectionQuery().to_not_match("isOneOf")

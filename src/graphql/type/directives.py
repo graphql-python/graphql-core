@@ -44,9 +44,11 @@ class GraphQLDirectiveKwargs(TypedDict, total=False):
     locations: tuple[DirectiveLocation, ...]
     args: dict[str, GraphQLArgument]
     is_repeatable: bool
+    deprecation_reason: str | None
     description: str | None
     extensions: dict[str, Any]
     ast_node: ast.DirectiveDefinitionNode | None
+    extension_ast_nodes: tuple[ast.DirectiveExtensionNode, ...]
 
 
 class GraphQLDirective:  # noqa: PLW1641
@@ -60,9 +62,11 @@ class GraphQLDirective:  # noqa: PLW1641
     locations: tuple[DirectiveLocation, ...]
     is_repeatable: bool
     args: dict[str, GraphQLArgument]
+    deprecation_reason: str | None
     description: str | None
     extensions: dict[str, Any]
     ast_node: ast.DirectiveDefinitionNode | None
+    extension_ast_nodes: tuple[ast.DirectiveExtensionNode, ...]
 
     def __init__(
         self,
@@ -70,9 +74,11 @@ class GraphQLDirective:  # noqa: PLW1641
         locations: Collection[DirectiveLocation],
         args: dict[str, GraphQLArgument] | None = None,
         is_repeatable: bool = False,
+        deprecation_reason: str | None = None,
         description: str | None = None,
         extensions: dict[str, Any] | None = None,
         ast_node: ast.DirectiveDefinitionNode | None = None,
+        extension_ast_nodes: Collection[ast.DirectiveExtensionNode] | None = None,
     ) -> None:
         assert_name(name)
         try:
@@ -101,9 +107,13 @@ class GraphQLDirective:  # noqa: PLW1641
         self.locations = locations
         self.args = args
         self.is_repeatable = is_repeatable
+        self.deprecation_reason = deprecation_reason
         self.description = description
         self.extensions = extensions or {}
         self.ast_node = ast_node
+        self.extension_ast_nodes = (
+            tuple(extension_ast_nodes) if extension_ast_nodes else ()
+        )
 
     def __str__(self) -> str:
         return f"@{self.name}"
@@ -118,6 +128,7 @@ class GraphQLDirective:  # noqa: PLW1641
             and self.locations == other.locations
             and self.args == other.args
             and self.is_repeatable == other.is_repeatable
+            and self.deprecation_reason == other.deprecation_reason
             and self.description == other.description
             and self.extensions == other.extensions
         )
@@ -129,9 +140,11 @@ class GraphQLDirective:  # noqa: PLW1641
             locations=self.locations,
             args=self.args,
             is_repeatable=self.is_repeatable,
+            deprecation_reason=self.deprecation_reason,
             description=self.description,
             extensions=self.extensions,
             ast_node=self.ast_node,
+            extension_ast_nodes=self.extension_ast_nodes,
         )
 
     def __copy__(self) -> GraphQLDirective:  # pragma: no cover
@@ -233,6 +246,7 @@ GraphQLDeprecatedDirective = GraphQLDirective(
         DirectiveLocation.ARGUMENT_DEFINITION,
         DirectiveLocation.INPUT_FIELD_DEFINITION,
         DirectiveLocation.ENUM_VALUE,
+        DirectiveLocation.DIRECTIVE_DEFINITION,
     ],
     args={
         "reason": GraphQLArgument(

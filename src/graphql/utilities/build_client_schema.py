@@ -400,6 +400,7 @@ def build_client_schema(
             name=directive_introspection["name"],
             description=directive_introspection.get("description"),
             is_repeatable=directive_introspection.get("isRepeatable", False),
+            deprecation_reason=directive_introspection.get("deprecationReason"),
             locations=list(
                 cast(
                     "Collection[DirectiveLocation]",

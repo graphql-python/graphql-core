@@ -3,9 +3,11 @@ from typing import TYPE_CHECKING, cast
 import pytest
 
 from graphql import graphql_sync
+from graphql.language import DirectiveLocation
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
+    GraphQLDirective,
     GraphQLEnumType,
     GraphQLEnumValue,
     GraphQLField,
@@ -484,6 +486,29 @@ def describe_type_system_build_schema_from_introspection():
         )
 
         assert cycle_introspection(sdl) == sdl
+
+    def builds_a_schema_with_deprecated_directives():
+        schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                name="Query",
+                fields={"string": GraphQLField(GraphQLString)},
+            ),
+            directives=[
+                GraphQLDirective(
+                    name="someDirective",
+                    locations=[DirectiveLocation.QUERY],
+                    deprecation_reason="Use another directive",
+                ),
+            ],
+        )
+        introspection = introspection_from_schema(schema)
+
+        client_schema = build_client_schema(introspection)
+
+        directive = client_schema.get_directive("someDirective")
+        assert directive is not None
+        assert directive.name == "someDirective"
+        assert directive.deprecation_reason == "Use another directive"
 
     def builds_a_schema_without_directives():
         sdl = dedent(

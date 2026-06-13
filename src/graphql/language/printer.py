@@ -343,11 +343,12 @@ class PrintAstVisitor(Visitor):
             if has_multiline_items(args)
             else wrap("(", join(args, ", "), ")")
         )
+        directives = wrap(" ", join(node.directives, " "))
         repeatable = " repeatable" if node.repeatable else ""
         locations = join(node.locations, " | ")
         return (
             wrap("", node.description, "\n")
-            + f"directive @{node.name}{args}{repeatable} on {locations}"
+            + f"directive @{node.name}{args}{directives}{repeatable} on {locations}"
         )
 
     @staticmethod
@@ -356,6 +357,10 @@ class PrintAstVisitor(Visitor):
             ("extend schema", join(node.directives, " "), block(node.operation_types)),
             " ",
         )
+
+    @staticmethod
+    def leave_directive_extension(node: PrintedNode, *_args: Any) -> str:
+        return join((f"extend directive @{node.name}", join(node.directives, " ")), " ")
 
     @staticmethod
     def leave_scalar_type_extension(node: PrintedNode, *_args: Any) -> str:

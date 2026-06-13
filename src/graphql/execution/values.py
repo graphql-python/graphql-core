@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias
 
 from ..error import GraphQLError
 from ..language import (
+    DirectiveDefinitionNode,
+    DirectiveExtensionNode,
     DirectiveNode,
     EnumValueDefinitionNode,
     ExecutableDefinitionNode,
@@ -425,7 +427,9 @@ def print_argument_or_fragment_variable(
 
 
 NodeWithDirective: TypeAlias = (
-    EnumValueDefinitionNode
+    DirectiveDefinitionNode
+    | DirectiveExtensionNode
+    | EnumValueDefinitionNode
     | ExecutableDefinitionNode
     | FieldDefinitionNode
     | InputValueDefinitionNode

@@ -194,6 +194,22 @@ def describe_printer_query_document():
             """
         )
 
+    def experimental_prints_directives_on_directives():
+        query_ast_with_variable_directive = parse(
+            """
+            directive @foo @bar on FIELD_DEFINITION
+            extend directive @foo @baz
+            """,
+            experimental_directives_on_directive_definitions=True,
+        )
+        assert print_ast(query_ast_with_variable_directive) == dedent(
+            """
+            directive @foo @bar on FIELD_DEFINITION
+
+            extend directive @foo @baz
+            """
+        )
+
     def correctly_prints_fragment_defined_arguments():
         source = """
             fragment Foo($a: ComplexType, $b: Boolean = false) on TestType {

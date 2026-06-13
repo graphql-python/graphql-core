@@ -94,6 +94,7 @@ def build_schema(
     assume_valid_sdl: bool = False,
     no_location: bool = False,
     experimental_fragment_arguments: bool = False,
+    experimental_directives_on_directive_definitions: bool = False,
 ) -> GraphQLSchema:
     """Build a GraphQLSchema directly from a source document."""
     return build_ast_schema(
@@ -101,6 +102,9 @@ def build_schema(
             source,
             no_location=no_location,
             experimental_fragment_arguments=experimental_fragment_arguments,
+            experimental_directives_on_directive_definitions=(
+                experimental_directives_on_directive_definitions
+            ),
         ),
         assume_valid=assume_valid,
         assume_valid_sdl=assume_valid_sdl,

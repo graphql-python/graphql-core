@@ -32,6 +32,7 @@ __all__ = [
     "DirectiveArgumentCoordinateNode",
     "DirectiveCoordinateNode",
     "DirectiveDefinitionNode",
+    "DirectiveExtensionNode",
     "DirectiveNode",
     "DocumentNode",
     "EnumTypeDefinitionNode",
@@ -331,8 +332,15 @@ QUERY_DOCUMENT_KEYS: dict[str, tuple[str, ...]] = {
     "enum_type_definition": ("description", "name", "directives", "values"),
     "enum_value_definition": ("description", "name", "directives"),
     "input_object_type_definition": ("description", "name", "directives", "fields"),
-    "directive_definition": ("description", "name", "arguments", "locations"),
+    "directive_definition": (
+        "description",
+        "name",
+        "arguments",
+        "directives",
+        "locations",
+    ),
     "schema_extension": ("directives", "operation_types"),
+    "directive_extension": ("name", "directives"),
     "scalar_type_extension": ("name", "directives"),
     "object_type_extension": ("name", "interfaces", "directives", "fields"),
     "interface_type_extension": ("name", "interfaces", "directives", "fields"),
@@ -765,6 +773,7 @@ class DirectiveDefinitionNode(TypeSystemDefinitionNode):
     locations: tuple[NameNode, ...]
     description: StringValueNode | None = None
     arguments: tuple[InputValueDefinitionNode, ...] | None = None
+    directives: tuple[ConstDirectiveNode, ...] | None = None
     repeatable: bool = False
 
 
@@ -777,7 +786,15 @@ class SchemaExtensionNode(Node):
     operation_types: tuple[OperationTypeDefinitionNode, ...] | None = None
 
 
-TypeSystemExtensionNode: TypeAlias = SchemaExtensionNode | TypeExtensionNode
+@node_class
+class DirectiveExtensionNode(Node):
+    name: NameNode
+    directives: tuple[ConstDirectiveNode, ...] | None = None
+
+
+TypeSystemExtensionNode: TypeAlias = (
+    SchemaExtensionNode | TypeExtensionNode | DirectiveExtensionNode
+)
 
 
 # Type Extension nodes

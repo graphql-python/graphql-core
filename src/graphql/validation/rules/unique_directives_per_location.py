@@ -8,6 +8,7 @@ from typing import Any, cast
 from ...error import GraphQLError
 from ...language import (
     DirectiveDefinitionNode,
+    DirectiveExtensionNode,
     DirectiveNode,
     Node,
     SchemaDefinitionNode,
@@ -53,6 +54,9 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
         self.type_directives_map: dict[str, dict[str, DirectiveNode]] = defaultdict(
             dict
         )
+        self.directive_directives_map: dict[str, dict[str, DirectiveNode]] = (
+            defaultdict(dict)
+        )
 
     # Many different AST nodes may contain directives. Rather than listing them all,
     # just listen for entering any node, and check to see if it defines any directives.
@@ -67,6 +71,9 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
         elif is_type_definition_node(node) or is_type_extension_node(node):
             type_name = node.name.value
             seen_directives = self.type_directives_map[type_name]
+        elif isinstance(node, (DirectiveDefinitionNode, DirectiveExtensionNode)):
+            directive_name = node.name.value
+            seen_directives = self.directive_directives_map[directive_name]
         else:
             seen_directives = {}
 

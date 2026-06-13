@@ -62,6 +62,18 @@ def describe_type_system_directive():
         assert directive.is_repeatable is True
         assert directive.locations == tuple(locations)
 
+    def defines_a_deprecated_directive():
+        locations = [DirectiveLocation.QUERY]
+        directive = GraphQLDirective(
+            "Foo", locations=locations, deprecation_reason="Some reason"
+        )
+
+        assert directive.name == "Foo"
+        assert directive.args == {}
+        assert directive.is_repeatable is False
+        assert directive.locations == tuple(locations)
+        assert directive.deprecation_reason == "Some reason"
+
     def directive_accepts_input_types_as_arguments():
         directive = GraphQLDirective(
             name="Foo",

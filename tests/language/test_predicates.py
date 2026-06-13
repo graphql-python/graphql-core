@@ -90,6 +90,7 @@ def _create_node(node_class: type) -> Node:
         ast.EnumValueDefinitionNode: {"name": name},
         ast.InputObjectTypeDefinitionNode: {"name": name},
         ast.DirectiveDefinitionNode: {"name": name, "locations": ()},
+        ast.DirectiveExtensionNode: {"name": name},
         ast.TypeExtensionNode: {"name": name},
         ast.ScalarTypeExtensionNode: {"name": name},
         ast.ObjectTypeExtensionNode: {"name": name},
@@ -243,6 +244,7 @@ def describe_ast_node_predicates():
 
     def check_type_system_extension_node():
         assert filter_nodes(is_type_system_extension_node) == [
+            "directive_extension",
             "enum_type_extension",
             "input_object_type_extension",
             "interface_type_extension",

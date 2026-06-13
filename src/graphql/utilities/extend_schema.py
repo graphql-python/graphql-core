@@ -12,6 +12,7 @@ from typing import (
 
 from ..language import (
     DirectiveDefinitionNode,
+    DirectiveExtensionNode,
     DirectiveLocation,
     DocumentNode,
     EnumTypeDefinitionNode,
@@ -158,7 +159,7 @@ class ExtendSchemaImpl:
     """
 
     @classmethod
-    def extend_schema_args(
+    def extend_schema_args(  # noqa: C901
         cls,
         schema_kwargs: GraphQLSchemaKwargs,
         document_ast: DocumentNode,
@@ -177,6 +178,10 @@ class ExtendSchemaImpl:
         # the same name. For example, a type named "skip".
         directive_defs: list[DirectiveDefinitionNode] = []
 
+        directive_extensions: defaultdict[str, list[DirectiveExtensionNode]] = (
+            defaultdict(list)
+        )
+
         schema_def: SchemaDefinitionNode | None = None
         # Schema extensions are collected which may add additional operation types.
         schema_extensions: list[SchemaExtensionNode] = []
@@ -189,6 +194,8 @@ class ExtendSchemaImpl:
                 schema_extensions.append(def_)
             elif isinstance(def_, DirectiveDefinitionNode):
                 directive_defs.append(def_)
+            elif isinstance(def_, DirectiveExtensionNode):
+                directive_extensions[def_.name.value].append(def_)
             elif isinstance(def_, TypeDefinitionNode):
                 type_defs.append(def_)
             elif isinstance(def_, TypeExtensionNode):
@@ -236,14 +243,52 @@ class ExtendSchemaImpl:
 
             def build_directive(node: DirectiveDefinitionNode) -> GraphQLDirective:
                 locations = [DirectiveLocation[node.value] for node in node.locations]
+                extension_ast_nodes = directive_extensions.get(node.name.value) or []
+                deprecation_reason = get_deprecation_reason(node)
+                if deprecation_reason is None:
+                    deprecation_reason = next(
+                        (
+                            reason
+                            for reason in map(
+                                get_deprecation_reason, extension_ast_nodes
+                            )
+                            if reason is not None
+                        ),
+                        None,
+                    )
                 return GraphQLDirective(
                     name=node.name.value,
                     description=node.description.value if node.description else None,
                     locations=locations,
                     is_repeatable=node.repeatable,
                     args=build_argument_map(node.arguments),
+                    deprecation_reason=deprecation_reason,
                     ast_node=node,
+                    extension_ast_nodes=extension_ast_nodes,
                 )
+
+            def extend_directive(directive: GraphQLDirective) -> GraphQLDirective:
+                extension_ast_nodes = directive_extensions.get(directive.name)
+                if not extension_ast_nodes:
+                    return directive
+                deprecation_reason = directive.deprecation_reason
+                if deprecation_reason is None:
+                    deprecation_reason = next(
+                        (
+                            reason
+                            for reason in map(
+                                get_deprecation_reason, extension_ast_nodes
+                            )
+                            if reason is not None
+                        ),
+                        None,
+                    )
+                kwargs = directive.to_kwargs()
+                kwargs["deprecation_reason"] = deprecation_reason
+                kwargs["extension_ast_nodes"] = directive.extension_ast_nodes + tuple(
+                    extension_ast_nodes
+                )
+                return GraphQLDirective(**kwargs)
 
             def build_field_map(
                 nodes: Collection[
@@ -499,7 +544,10 @@ class ExtendSchemaImpl:
                     mutation=operation_types["mutation"],
                     subscription=operation_types["subscription"],
                     types=get_named_types(),
-                    directives=tuple(config["directives"])
+                    directives=tuple(
+                        extend_directive(directive)
+                        for directive in config["directives"]
+                    )
                     + tuple(build_directive(directive) for directive in directive_defs),
                     ast_node=schema_def or config["ast_node"],
                     extension_ast_nodes=config["extension_ast_nodes"]
@@ -606,7 +654,11 @@ std_type_map: Mapping[str, GraphQLNamedType | GraphQLObjectType] = {
 
 
 def get_deprecation_reason(
-    node: EnumValueDefinitionNode | FieldDefinitionNode | InputValueDefinitionNode,
+    node: EnumValueDefinitionNode
+    | FieldDefinitionNode
+    | InputValueDefinitionNode
+    | DirectiveDefinitionNode
+    | DirectiveExtensionNode,
 ) -> str | None:
     """Given a field or enum value node, get deprecation reason as string."""
     from ..execution import get_directive_values
