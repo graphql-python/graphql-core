@@ -40,12 +40,14 @@ from .execute import (
     execute_sync,
     default_field_resolver,
     default_type_resolver,
+    map_source_to_response_event,
     subscribe,
     AsyncWorkFinishedInfo,
     ExecutionHooks,
     Executor,
     GraphQLWrappedResult,
     Middleware,
+    RootSelectionSetExecutor,
 )
 
 __all__ = [
@@ -72,6 +74,7 @@ __all__ = [
     "Middleware",
     "MiddlewareManager",
     "PendingResult",
+    "RootSelectionSetExecutor",
     "StreamItemRecord",
     "StreamItemResult",
     "StreamItemsResult",
@@ -89,5 +92,6 @@ __all__ = [
     "get_directive_values",
     "get_variable_values",
     "map_async_iterable",
+    "map_source_to_response_event",
     "subscribe",
 ]

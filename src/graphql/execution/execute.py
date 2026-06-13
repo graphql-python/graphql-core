@@ -140,6 +140,7 @@ __all__ = [
     "Executor",
     "GraphQLWrappedResult",
     "Middleware",
+    "RootSelectionSetExecutor",
     "create_source_event_stream",
     "default_field_resolver",
     "default_type_resolver",
@@ -148,6 +149,7 @@ __all__ = [
     "execute_subscription_event",
     "execute_sync",
     "experimental_execute_incrementally",
+    "map_source_to_response_event",
     "subscribe",
 ]
 
@@ -237,7 +239,6 @@ class Executor(IncrementalPublisherContext):
     field_resolver: GraphQLFieldResolver
     type_resolver: GraphQLTypeResolver
     subscribe_field_resolver: GraphQLFieldResolver
-    per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
     enable_early_execution: bool
     hide_suggestions: bool
     abort_signal: AbortSignal | None
@@ -274,8 +275,6 @@ class Executor(IncrementalPublisherContext):
         middleware_manager: MiddlewareManager | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
-        per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
-        | None = None,
         hide_suggestions: bool = False,
         abort_signal: AbortSignal | None = None,
         hooks: ExecutionHooks | None = None,
@@ -290,7 +289,6 @@ class Executor(IncrementalPublisherContext):
         self.field_resolver = field_resolver
         self.type_resolver = type_resolver
         self.subscribe_field_resolver = subscribe_field_resolver
-        self.per_event_executor = per_event_executor or execute_subscription_event
         self.enable_early_execution = enable_early_execution
         self.hide_suggestions = hide_suggestions
         self.abort_signal = abort_signal
@@ -331,8 +329,6 @@ class Executor(IncrementalPublisherContext):
         middleware: Middleware | None = None,
         is_awaitable: Callable[[Any], TypeGuard[Awaitable]] | None = None,
         is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] | None = None,
-        per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
-        | None = None,
         hide_suggestions: bool = False,
         abort_signal: AbortSignal | None = None,
         hooks: ExecutionHooks | None = None,
@@ -425,7 +421,6 @@ class Executor(IncrementalPublisherContext):
             middleware_manager,
             is_awaitable,
             is_async_iterable,
-            per_event_executor=per_event_executor,
             hide_suggestions=hide_suggestions,
             abort_signal=abort_signal,
             hooks=hooks,
@@ -1978,39 +1973,6 @@ class Executor(IncrementalPublisherContext):
         execution_plans[original_grouped_field_set] = exeecution_plan
         return exeecution_plan
 
-    def map_source_to_response(
-        self, result_or_stream: ExecutionResult | AsyncIterable[Any]
-    ) -> AsyncGenerator[ExecutionResult, None] | ExecutionResult:
-        """Map source result to response.
-
-        For each payload yielded from a subscription,
-        map it over the normal GraphQL :func:`~graphql.execution.execute` function,
-        with ``payload`` as the ``root_value``.
-        This implements the "MapSourceToResponseEvent" algorithm
-        described in the GraphQL specification.
-        Each event is executed with the executor's ``per_event_executor``, which
-        defaults to :func:`~graphql.execution.execute_subscription_event` (providing
-        the "ExecuteSubscriptionEvent" algorithm) but can be overridden to set up and
-        tear down a custom executor around the execution of each event.
-        """
-        if not self.is_async_iterable(result_or_stream):
-            return cast("ExecutionResult", result_or_stream)  # pragma: no cover
-
-        build_executor = self.build_per_event_executor
-        per_event_executor = self.per_event_executor
-
-        async def callback(payload: Any) -> ExecutionResult:
-            result = per_event_executor(build_executor(payload))
-            # typecast to ExecutionResult, not possible to return
-            # ExperimentalIncrementalExecutionResults when operation is 'subscription'.
-            return (
-                await cast("Awaitable[ExecutionResult]", result)
-                if self.is_awaitable(result)
-                else cast("ExecutionResult", result)
-            )
-
-        return map_async_iterable(self.cancellable_iterable(result_or_stream), callback)
-
     def collect_execution_groups(
         self,
         parent_type: GraphQLObjectType,
@@ -2924,8 +2886,6 @@ def subscribe(
     enable_early_execution: bool = False,
     executor_class: type[Executor] | None = None,
     middleware: MiddlewareManager | None = None,
-    per_event_executor: Callable[[Executor], AwaitableOrValue[ExecutionResult]]
-    | None = None,
     hide_suggestions: bool = False,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
@@ -2952,10 +2912,12 @@ def subscribe(
     If an operation that defers or streams data is executed with this function,
     a field error will be raised at the location of the `@defer` or `@stream` directive.
 
-    A custom ``per_event_executor`` may be provided to execute each subscription event
-    with a custom executor. It receives the per-event executor and should
-    return an ExecutionResult, usually by calling
-    :func:`~graphql.execution.execute_subscription_event` (the default executor).
+    To customize how each subscription event is executed, compose the subscription
+    pipeline directly instead of calling this function: build an executor with
+    :meth:`Executor.build`, resolve the source event stream with
+    :func:`~graphql.execution.create_source_event_stream`, and map it to the response
+    stream with :func:`~graphql.execution.map_source_to_response_event`, passing a
+    custom ``root_selection_set_executor``.
     """
     if executor_class is None:
         executor_class = Executor
@@ -2975,7 +2937,6 @@ def subscribe(
         max_coercion_errors,
         enable_early_execution,
         middleware=middleware,
-        per_event_executor=per_event_executor,
         hide_suggestions=hide_suggestions,
         **custom_context_args,
     )
@@ -2994,16 +2955,19 @@ def subscribe(
 
         async def await_result() -> Any:
             awaited_result_or_stream = await result_or_stream
-            if isinstance(awaited_result_or_stream, ExecutionResult):
-                return awaited_result_or_stream
-            return executor.map_source_to_response(awaited_result_or_stream)
+            return (
+                map_source_to_response_event(executor, awaited_result_or_stream)
+                if executor.is_async_iterable(awaited_result_or_stream)
+                else awaited_result_or_stream
+            )
 
         return await_result()
 
-    if isinstance(result_or_stream, ExecutionResult):
-        return result_or_stream
-
-    return executor.map_source_to_response(result_or_stream)  # type: ignore
+    return (
+        map_source_to_response_event(executor, result_or_stream)  # type: ignore
+        if executor.is_async_iterable(result_or_stream)
+        else result_or_stream
+    )
 
 
 def execute_root_selection_set(
@@ -3023,15 +2987,57 @@ def execute_subscription_event(
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a single subscription event.
 
-    This is the default ``per_event_executor`` used by :func:`subscribe`. It provides
-    the "ExecuteSubscriptionEvent" algorithm described in the GraphQL specification,
-    which is nearly identical to the "ExecuteQuery" algorithm. A custom executor may
-    wrap this function to set up and tear down a per-event executor.
+    This is the default ``root_selection_set_executor`` used by
+    :func:`map_source_to_response_event`. It provides the "ExecuteSubscriptionEvent"
+    algorithm described in the GraphQL specification, which is nearly identical to the
+    "ExecuteQuery" algorithm. A custom executor may wrap this function to set up and
+    tear down a per-event executor.
 
     The passed executor should be a per-event executor as created by
     :meth:`Executor.build_per_event_executor`.
     """
     return cast("AwaitableOrValue[ExecutionResult]", executor.execute_operation(False))
+
+
+RootSelectionSetExecutor: TypeAlias = Callable[
+    ["Executor"], AwaitableOrValue[ExecutionResult]
+]
+
+
+def map_source_to_response_event(
+    executor: Executor,
+    source_event_stream: AsyncIterable[Any],
+    root_selection_set_executor: RootSelectionSetExecutor = execute_subscription_event,
+) -> AsyncGenerator[ExecutionResult, None]:
+    """Map a subscription source event stream to a response event stream.
+
+    Implements the "MapSourceToResponseEvent" algorithm described in the GraphQL
+    specification, mapping each event from a subscription source event stream to an
+    ExecutionResult in the response stream.
+
+    For each payload yielded from the source event stream, it is mapped over the normal
+    GraphQL :func:`~graphql.execution.execute` function, with ``payload`` as the
+    ``root_value``. Each event is executed with the given
+    ``root_selection_set_executor``, which defaults to
+    :func:`~graphql.execution.execute_subscription_event` (providing the
+    "ExecuteSubscriptionEvent" algorithm) but can be overridden to set up and tear
+    down a custom executor around the execution of each event.
+    """
+    build_executor = executor.build_per_event_executor
+
+    async def callback(payload: Any) -> ExecutionResult:
+        result = root_selection_set_executor(build_executor(payload))
+        # typecast to ExecutionResult, not possible to return
+        # ExperimentalIncrementalExecutionResults when operation is 'subscription'.
+        return (
+            await cast("Awaitable[ExecutionResult]", result)
+            if executor.is_awaitable(result)
+            else cast("ExecutionResult", result)
+        )
+
+    return map_async_iterable(
+        executor.cancellable_iterable(source_event_stream), callback
+    )
 
 
 def create_source_event_stream(

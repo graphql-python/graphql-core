@@ -14,6 +14,7 @@ from graphql.execution import (
     Executor,
     create_source_event_stream,
     execute_subscription_event,
+    map_source_to_response_event,
     subscribe,
 )
 from graphql.language import DocumentNode, parse
@@ -315,7 +316,7 @@ def describe_subscription_initialization_phase():
 
         await subscription.aclose()  # type: ignore
 
-    async def uses_a_custom_default_per_event_executor():
+    async def maps_a_source_stream_with_a_custom_root_selection_set_executor():
         schema = GraphQLSchema(
             query=DummyQueryType,
             subscription=GraphQLObjectType(
@@ -328,16 +329,23 @@ def describe_subscription_initialization_phase():
 
         count = 0
 
-        def per_event_executor(context):
+        def root_selection_set_executor(context):
             nonlocal count
             count += 1
             return execute_subscription_event(context)
 
-        subscription = subscribe(
+        executor = Executor.build(
             schema,
             parse("subscription { foo }"),
             {"foo": foo_generator},
-            per_event_executor=per_event_executor,
+        )
+        assert isinstance(executor, Executor)
+
+        result_or_stream = create_source_event_stream(executor)
+        assert isinstance(result_or_stream, AsyncIterable)
+
+        subscription = map_source_to_response_event(
+            executor, result_or_stream, root_selection_set_executor
         )
         assert isinstance(subscription, AsyncIterator)
 

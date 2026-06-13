@@ -513,7 +513,9 @@ from .execution import (
     # Subscription
     subscribe,
     create_source_event_stream,
+    map_source_to_response_event,
     map_async_iterable,
+    RootSelectionSetExecutor,
     # Middleware
     Middleware,
     MiddlewareManager,
@@ -742,6 +744,7 @@ __all__ = [
     "ResolvedNamedType",
     "ResolvedSchemaElement",
     "ResponsePath",
+    "RootSelectionSetExecutor",
     "SDLValidationRule",
     "SafeChange",
     "SafeChangeType",
@@ -906,6 +909,7 @@ __all__ = [
     "lexicographic_sort_schema",
     "located_error",
     "map_async_iterable",
+    "map_source_to_response_event",
     "parse",
     "parse_const_value",
     "parse_schema_coordinate",

@@ -65,6 +65,10 @@ Execution
 
 .. autofunction:: create_source_event_stream
 
+.. autofunction:: map_source_to_response_event
+
+.. autoclass:: RootSelectionSetExecutor
+
 .. autoclass:: Middleware
 
 .. autoclass:: MiddlewareManager
