@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from re import Pattern
 
+import pytest
+
 from graphql.language import parse
 from graphql.utilities import build_schema, get_introspection_query
 from graphql.validation import validate
@@ -121,3 +123,11 @@ def describe_get_introspection_query():
         ExcpectIntrospectionQuery(input_value_deprecation=False).to_match(
             "includeDeprecated: true", 2
         )
+
+    def throws_error_if_type_depth_is_too_high():
+        with pytest.raises(
+            ValueError,
+            match="Please set type_depth to a reasonable value"
+            r" between 0 and 100; the default is 9\.",
+        ):
+            get_introspection_query(type_depth=101)
