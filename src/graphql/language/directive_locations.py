@@ -15,9 +15,9 @@ class DirectiveLocation(Enum):
     FIELD = "field"
     FRAGMENT_DEFINITION = "fragment definition"
     FRAGMENT_SPREAD = "fragment spread"
+    INLINE_FRAGMENT = "inline fragment"
     VARIABLE_DEFINITION = "variable definition"
     FRAGMENT_VARIABLE_DEFINITION = "fragment variable definition"
-    INLINE_FRAGMENT = "inline fragment"
 
     # Type System Definitions
     SCHEMA = "schema"
