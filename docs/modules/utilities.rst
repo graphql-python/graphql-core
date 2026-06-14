@@ -127,6 +127,7 @@ Compare two GraphQLSchemas and detect changes:
 .. autoclass:: BreakingChangeType
 .. autoclass:: DangerousChange
 .. autoclass:: DangerousChangeType
+.. autoclass:: SchemaChange
 
 Resolve a schema coordinate to the schema element it refers to:
 

@@ -76,3 +76,5 @@ Execution
 .. autofunction:: get_directive_values
 
 .. autofunction:: get_variable_values
+
+.. autoclass:: VariableValues

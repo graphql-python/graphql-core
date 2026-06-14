@@ -45,6 +45,7 @@ __all__ = [
     "DangerousChangeType",
     "SafeChange",
     "SafeChangeType",
+    "SchemaChange",
     "find_breaking_changes",
     "find_dangerous_changes",
     "find_schema_changes",

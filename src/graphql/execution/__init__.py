@@ -30,7 +30,12 @@ from .types import (
     StreamItemsResult,
 )
 from .middleware import MiddlewareManager
-from .values import get_argument_values, get_directive_values, get_variable_values
+from .values import (
+    get_argument_values,
+    get_directive_values,
+    get_variable_values,
+    VariableValues,
+)
 from .execute import (
     create_source_event_stream,
     execute,
@@ -80,6 +85,7 @@ __all__ = [
     "StreamItemsResult",
     "StreamRecord",
     "SubsequentIncrementalExecutionResult",
+    "VariableValues",
     "create_source_event_stream",
     "default_field_resolver",
     "default_type_resolver",
