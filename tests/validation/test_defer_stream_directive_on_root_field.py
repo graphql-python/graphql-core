@@ -12,19 +12,26 @@ schema = build_schema(
       sender: String
     }
 
-    type SubscriptionRoot {
+    interface Root {
+      rootField: Message
+    }
+
+    type SubscriptionRoot implements Root {
       subscriptionField: Message
       subscriptionListField: [Message]
+      rootField: Message
     }
 
-    type MutationRoot {
+    type MutationRoot implements Root {
       mutationField: Message
       mutationListField: [Message]
+      rootField: Message
     }
 
-    type QueryRoot {
+    type QueryRoot implements Root {
       message: Message
       messages: [Message]
+      rootField: Message
     }
 
     schema {
@@ -75,6 +82,13 @@ def describe_defer_stream_on_root_field():
             """
             mutation {
               ...rootFragment @defer
+              ...otherFragment
+            }
+            fragment otherFragment on MutationRoot {
+              ...rootFragment
+              mutationListField {
+                body
+              }
             }
             fragment rootFragment on MutationRoot {
               mutationField {
@@ -87,6 +101,29 @@ def describe_defer_stream_on_root_field():
                     "message": "Defer directive cannot be used on root"
                     " mutation type 'MutationRoot'.",
                     "locations": [(3, 31)],
+                },
+            ],
+        )
+
+    def defer_fragment_spread_on_root_mutation_field_interface():
+        assert_errors(
+            """
+            mutation {
+              ...rootFragment
+            }
+            fragment rootFragment on Root {
+              ... @defer {
+                rootField {
+                  body
+                }
+              }
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive cannot be used on root"
+                    " mutation type 'MutationRoot'.",
+                    "locations": [(6, 19)],
                 },
             ],
         )
@@ -122,6 +159,29 @@ def describe_defer_stream_on_root_field():
               }
             }
             """
+        )
+
+    def defer_fragment_spread_on_root_subscription_field_interface():
+        assert_errors(
+            """
+            subscription {
+              ...rootFragment
+            }
+            fragment rootFragment on Root {
+              ... @defer {
+                rootField {
+                  body
+                }
+              }
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive cannot be used on root"
+                    " subscription type 'SubscriptionRoot'.",
+                    "locations": [(6, 19)],
+                },
+            ],
         )
 
     def defer_fragment_spread_on_root_subscription_field():
