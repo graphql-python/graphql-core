@@ -100,7 +100,7 @@ graphql_modules = {
 # be nitpicky
 nitpicky = True
 # but not too nitpicky
-suppress_warnings = ["ref.class", "ref.obj", "ref.python"]
+suppress_warnings = ["ref.attr", "ref.class", "ref.obj", "ref.python"]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"

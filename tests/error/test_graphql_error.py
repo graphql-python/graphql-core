@@ -77,6 +77,7 @@ def describe_graphql_error():
             ["a", "b", "c"],
             Exception("test"),
             {"foo": "bar"},
+            cause=Exception("test"),
         )
         assert set(e.formatted) == {"message", "path", "locations", "extensions"}
 
@@ -127,6 +128,67 @@ def describe_graphql_error():
         assert e.message == "msg"
         assert e.original_error is original
         assert str(e.original_error) == "original"
+
+    def does_not_add_a_cause_without_a_cause():
+        e = GraphQLError("msg")
+        assert e.cause is None
+
+    def does_not_copy_over_the_traceback_of_cause():
+        try:
+            raise RuntimeError("cause")
+        except RuntimeError as runtime_error:
+            cause = runtime_error
+        e = GraphQLError("msg", cause=cause)
+        assert e.cause is cause
+        assert e.__cause__ is cause
+        assert cause.__traceback__ is not None
+        assert e.__traceback__ is not cause.__traceback__
+
+    def uses_an_error_cause_as_the_original_error_for_compatibility():
+        class CustomError(Exception):
+            def __init__(self, message: str) -> None:
+                super().__init__(message)
+                self.extensions = {"original": "extensions"}
+
+        cause = CustomError("cause")
+        e = GraphQLError("msg", cause=cause)
+        assert e.message == "msg"
+        assert e.cause is cause
+        assert e.original_error is cause
+        assert e.__cause__ is cause
+        assert e.extensions == {"original": "extensions"}
+
+    def preserves_a_non_error_cause_without_setting_original_error():
+        e = GraphQLError("msg", cause="cause")
+        assert e.cause == "cause"
+        assert e.original_error is None
+        assert e.__cause__ is None
+
+    def prefers_cause_and_original_error_separately():
+        try:
+            raise RuntimeError("original")
+        except RuntimeError as runtime_error:
+            original_error = runtime_error
+        cause = ValueError("cause")
+        e = GraphQLError("msg", original_error=original_error, cause=cause)
+        assert e.cause is cause
+        assert e.original_error is original_error
+        assert e.__cause__ is cause
+        assert e.__traceback__ is original_error.__traceback__
+
+    def creates_new_stack_if_cause_has_no_stack():
+        try:
+            raise RuntimeError
+        except RuntimeError as runtime_error:
+            current_traceback = runtime_error.__traceback__
+            cause = RuntimeError("cause")
+            e = GraphQLError("msg", cause=cause)
+        assert cause.__traceback__ is None
+        assert current_traceback is not None
+        assert e.__traceback__ is current_traceback
+        assert e.message == "msg"
+        assert e.cause is cause
+        assert e.original_error is cause
 
     def converts_nodes_to_positions_and_locations():
         e = GraphQLError("msg", [field_node])
@@ -186,6 +248,25 @@ def describe_graphql_error():
         )
         assert own_empty_error.message == "OwnEmptyError"
         assert own_empty_error.original_error is original_error
+        assert own_empty_error.extensions == {}
+
+    def defaults_to_cause_extension_only_if_arg_is_not_passed():
+        original_extensions = {"original": "extensions"}
+        cause = GraphQLError("original", extensions=original_extensions)
+        inherited_error = GraphQLError("InheritedError", cause=cause)
+        assert inherited_error.message == "InheritedError"
+        assert inherited_error.cause is cause
+        assert inherited_error.extensions is original_extensions
+
+        own_extensions = {"own": "extensions"}
+        own_error = GraphQLError("OwnError", cause=cause, extensions=own_extensions)
+        assert own_error.message == "OwnError"
+        assert own_error.cause is cause
+        assert own_error.extensions is own_extensions
+
+        own_empty_error = GraphQLError("OwnEmptyError", cause=cause, extensions={})
+        assert own_empty_error.message == "OwnEmptyError"
+        assert own_empty_error.cause is cause
         assert own_empty_error.extensions == {}
 
     def serializes_to_include_message():

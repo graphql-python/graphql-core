@@ -5,6 +5,8 @@ from __future__ import annotations
 from sys import exc_info
 from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict
 
+from ..pyutils import Undefined
+
 if TYPE_CHECKING:
     from collections.abc import Collection
 
@@ -108,12 +110,26 @@ class GraphQLError(Exception):
     """
 
     original_error: Exception | None
-    """The original error thrown from a field resolver during execution"""
+    """Original error that caused this GraphQLError, if one exists
+
+    .. deprecated:: 3.3
+        Use :attr:`cause` instead to better align with the standard exception
+        :attr:`~BaseException.__cause__`.
+    """
+
+    cause: Any
+    """The cause of this error, if one exists
+
+    The value passed as the ``cause`` when creating this error. Adopts the
+    convention of the standard exception cause and is also exposed as the
+    :attr:`~BaseException.__cause__` when it is an exception.
+    """
 
     extensions: GraphQLErrorExtensions | None
     """Extension fields to add to the formatted error"""
 
     __slots__ = (
+        "cause",
         "extensions",
         "locations",
         "message",
@@ -135,15 +151,27 @@ class GraphQLError(Exception):
         path: Collection[str | int] | None = None,
         original_error: Exception | None = None,
         extensions: GraphQLErrorExtensions | None = None,
+        cause: Any = Undefined,
     ) -> None:
         """Initialize a GraphQLError."""
         super().__init__(message)
         self.message = message
 
+        # The cause defaults to the (deprecated) original error when not given.
+        has_cause = cause is not Undefined
+        self.cause = cause if has_cause else original_error
+
         if path and not isinstance(path, list):
             path = list(path)
         self.path = path or None  # type: ignore
-        self.original_error = original_error
+
+        # An Error provided as the cause is also exposed as the original error
+        # for backward compatibility.
+        cause_value = cause if has_cause else None
+        underlying_error = original_error
+        if underlying_error is None and isinstance(cause_value, Exception):
+            underlying_error = cause_value
+        self.original_error = underlying_error
 
         # Compute list of blame nodes.
         if nodes and not isinstance(nodes, list):
@@ -170,16 +198,25 @@ class GraphQLError(Exception):
             locations = [loc.source.get_location(loc.start) for loc in node_locations]
         self.locations = locations or None
 
+        # Adopt the cause as the standard exception cause when it is one, so
+        # that the cause chain is reported without duplicating the traceback.
+        if isinstance(cause_value, BaseException):
+            self.__cause__ = cause_value
+
+        # Preserve the traceback of an explicit original error. The traceback of
+        # a cause is not copied over, since Python already reports cause chains.
         if original_error:
             self.__traceback__ = original_error.__traceback__
-            if original_error.__cause__:
-                self.__cause__ = original_error.__cause__
-            elif original_error.__context__:
-                self.__context__ = original_error.__context__
-            if extensions is None:
-                original_extensions = getattr(original_error, "extensions", None)
-                if isinstance(original_extensions, dict):
-                    extensions = original_extensions
+            if not self.__cause__:
+                if original_error.__cause__:
+                    self.__cause__ = original_error.__cause__
+                elif original_error.__context__:
+                    self.__context__ = original_error.__context__
+
+        if extensions is None and underlying_error is not None:
+            original_extensions = getattr(underlying_error, "extensions", None)
+            if isinstance(original_extensions, dict):
+                extensions = original_extensions
         self.extensions = extensions or {}
         if not self.__traceback__:
             self.__traceback__ = exc_info()[2]
@@ -217,7 +254,7 @@ class GraphQLError(Exception):
             and all(
                 getattr(self, slot) == getattr(other, slot)
                 for slot in self.__slots__
-                if slot != "original_error"
+                if slot not in ("cause", "original_error")
             )
         ) or (
             isinstance(other, dict)
@@ -225,7 +262,7 @@ class GraphQLError(Exception):
             and all(
                 slot in self.__slots__ and getattr(self, slot) == other.get(slot)
                 for slot in other
-                if slot != "original_error"
+                if slot not in ("cause", "original_error")
             )
         )
 
