@@ -341,3 +341,57 @@ def describe_defer_stream_on_root_field():
                 },
             ],
         )
+
+    def other_directive_on_root_mutation_field():
+        assert_valid(
+            """
+            mutation {
+              mutationField @foo {
+                body
+              }
+            }
+            """
+        )
+
+    def defer_fragment_spread_on_undefined_fragment():
+        assert_valid(
+            """
+            mutation {
+              ...undefinedFragment @defer
+            }
+            """
+        )
+
+    def inline_fragment_without_defer_on_root_mutation_field():
+        assert_valid(
+            """
+            mutation {
+              ... {
+                mutationField {
+                  body
+                }
+              }
+            }
+            """
+        )
+
+    def defer_on_mutation_without_mutation_root_type():
+        query_only_schema = build_schema(
+            """
+            type Query {
+              message: String
+            }
+            """
+        )
+        assert_validation_errors(
+            DeferStreamDirectiveOnRootField,
+            """
+            mutation {
+              ... @defer {
+                message
+              }
+            }
+            """,
+            [],
+            schema=query_only_schema,
+        )

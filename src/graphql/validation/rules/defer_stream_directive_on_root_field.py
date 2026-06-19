@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -103,8 +103,9 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                         visited_fragments,
                     )
                 visited_fragments.add(fragment_name)
-            elif isinstance(selection, InlineFragmentNode):
-                defer = get_directive(selection, GraphQLDeferDirective.name)
+            else:  # the only remaining selection kind is an inline fragment
+                inline_fragment = cast("InlineFragmentNode", selection)
+                defer = get_directive(inline_fragment, GraphQLDeferDirective.name)
                 if defer:
                     self.report_error(
                         GraphQLError(
@@ -117,6 +118,6 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                     operation_type,
                     root_type,
                     fragments,
-                    selection.selection_set,
+                    inline_fragment.selection_set,
                     visited_fragments,
                 )
