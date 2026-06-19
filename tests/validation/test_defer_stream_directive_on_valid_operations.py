@@ -225,6 +225,260 @@ def describe_defer_stream_directive_on_valid_operations():
             ],
         )
 
+    def defer_fragment_spread_with_skip_directive():
+        assert_valid(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...myFragment @skip @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_fragment_spread_with_skip_if_true_directive():
+        assert_valid(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...myFragment @skip(if: true) @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_fragment_spread_with_skip_if_false_directive():
+        assert_errors(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...myFragment @skip(if: false) @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive not supported"
+                    " on subscription operations."
+                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    "locations": [(4, 48)],
+                },
+            ],
+        )
+
+    def defer_in_fragment_spread_nested_under_skip_if_true_directive():
+        assert_valid(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...outerFragment @skip(if: true)
+              }
+            }
+            fragment outerFragment on Message {
+              ...myFragment @defer
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_in_fragment_spread_nested_under_skip_if_false_directive():
+        assert_errors(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...outerFragment @skip(if: false)
+              }
+            }
+            fragment outerFragment on Message {
+              ...myFragment @defer
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive not supported"
+                    " on subscription operations."
+                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    "locations": [(8, 29), (4, 17)],
+                },
+            ],
+        )
+
+    def defer_in_fragment_spread_nested_under_skip_if_variable_directive():
+        assert_valid(
+            """
+            subscription MySubscription($variable: Boolean) {
+              subscriptionField {
+                ...outerFragment @skip(if: $variable)
+              }
+            }
+            fragment outerFragment on Message {
+              ...myFragment @defer
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_fragment_spread_with_skip_if_variable_directive():
+        assert_valid(
+            """
+            subscription MySubscription($variable: Boolean) {
+              subscriptionField {
+                ...myFragment @skip(if: $variable) @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_fragment_spread_with_include_directive():
+        assert_errors(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...myFragment @include @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive not supported"
+                    " on subscription operations."
+                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    "locations": [(4, 40)],
+                },
+            ],
+        )
+
+    def defer_fragment_spread_with_include_if_true_directive():
+        assert_errors(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...myFragment @include(if: true) @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive not supported"
+                    " on subscription operations."
+                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    "locations": [(4, 50)],
+                },
+            ],
+        )
+
+    def defer_fragment_spread_with_include_if_false_directive():
+        assert_valid(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...myFragment @include(if: false) @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_in_fragment_spread_nested_under_include_if_true_directive():
+        assert_errors(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...outerFragment @include(if: true)
+              }
+            }
+            fragment outerFragment on Message {
+              ...myFragment @defer
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """,
+            [
+                {
+                    "message": "Defer directive not supported"
+                    " on subscription operations."
+                    " Disable `@defer` by setting the `if` argument to `false`.",
+                    "locations": [(8, 29), (4, 17)],
+                },
+            ],
+        )
+
+    def defer_in_fragment_spread_nested_under_include_if_false_directive():
+        assert_valid(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                ...outerFragment @include(if: false)
+              }
+            }
+            fragment outerFragment on Message {
+              ...myFragment @defer
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_in_fragment_spread_nested_under_include_if_variable_directive():
+        assert_valid(
+            """
+            subscription MySubscription($variable: Boolean) {
+              subscriptionField {
+                ...outerFragment @include(if: $variable)
+              }
+            }
+            fragment outerFragment on Message {
+              ...myFragment @defer
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
+    def defer_fragment_spread_with_include_if_variable_directive():
+        assert_valid(
+            """
+            subscription MySubscription ($variable: Boolean) {
+              subscriptionField {
+                ...myFragment @include(if: $variable) @defer
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
+
     def stream_on_query_field():
         assert_valid(
             """
@@ -297,7 +551,7 @@ def describe_defer_stream_directive_on_valid_operations():
                     "message": "Stream directive not supported"
                     " on subscription operations."
                     " Disable `@stream` by setting the `if` argument to `false`.",
-                    "locations": [(8, 24)],
+                    "locations": [(8, 24), (4, 17)],
                 },
             ],
         )
@@ -345,7 +599,35 @@ def describe_defer_stream_directive_on_valid_operations():
                     "message": "Stream directive not supported"
                     " on subscription operations."
                     " Disable `@stream` by setting the `if` argument to `false`.",
-                    "locations": [(15, 24)],
+                    "locations": [(15, 24), (10, 19)],
+                },
+            ],
+        )
+
+    def stream_on_subscription_in_document_with_fragment_used_multiple_times():
+        assert_errors(
+            """
+            subscription MySubscription {
+              subscriptionField {
+                message {
+                  ...myOtherFragment
+                  ...myFragment  # not visited twice
+                }
+              }
+            }
+            fragment myOtherFragment on Message {
+              ...myFragment
+            }
+            fragment myFragment on Message {
+              messages @stream
+            }
+            """,
+            [
+                {
+                    "message": "Stream directive not supported"
+                    " on subscription operations."
+                    " Disable `@stream` by setting the `if` argument to `false`.",
+                    "locations": [(14, 24), (11, 15), (5, 19)],
                 },
             ],
         )
