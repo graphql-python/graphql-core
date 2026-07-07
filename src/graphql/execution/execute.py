@@ -349,6 +349,7 @@ class Executor(IncrementalPublisherContext):
         operation: OperationDefinitionNode | None = None
         fragment_definitions: dict[str, FragmentDefinitionNode] = {}
         fragments: dict[str, FragmentDetails] = {}
+        fragment_variable_signature_errors: list[GraphQLError] = []
         middleware_manager: MiddlewareManager | None = None
         if middleware is not None:
             if isinstance(middleware, (list, tuple)):
@@ -383,9 +384,10 @@ class Executor(IncrementalPublisherContext):
                     variable_signatures = {}
                     for var_def in definition.variable_definitions:
                         signature = get_variable_signature(schema, var_def)
-                        # signature errors are validated before execution
-                        if not isinstance(signature, GraphQLError):  # pragma: no branch
-                            variable_signatures[signature.name] = signature
+                        if isinstance(signature, GraphQLError):
+                            fragment_variable_signature_errors.append(signature)
+                            continue
+                        variable_signatures[signature.name] = signature
                 fragments[definition.name.value] = FragmentDetails(
                     definition, variable_signatures
                 )
@@ -394,6 +396,9 @@ class Executor(IncrementalPublisherContext):
             if operation_name is not None:
                 return [GraphQLError(f"Unknown operation named '{operation_name}'.")]
             return [GraphQLError("Must provide an operation.")]
+
+        if fragment_variable_signature_errors:
+            return fragment_variable_signature_errors
 
         variable_values = get_variable_values(
             schema,

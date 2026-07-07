@@ -1341,6 +1341,28 @@ def describe_execute_handles_inputs():
                 ],
             )
 
+        def does_not_allow_invalid_types_to_be_used_as_fragment_variables():
+            result = execute_query_with_fragment_arguments(
+                """
+                query {
+                  ...a
+                }
+                fragment a($value: TestType!) on TestType {
+                  fieldWithNullableStringInput(input: $value)
+                }
+                """
+            )
+            assert result == (
+                None,
+                [
+                    {
+                        "message": "Variable '$value' expected value of type"
+                        " 'TestType!' which cannot be used as an input type.",
+                        "locations": [(5, 36)],
+                    }
+                ],
+            )
+
         def when_a_default_is_not_provided_and_spreads_another_fragment():
             result = execute_query_with_fragment_arguments(
                 """
