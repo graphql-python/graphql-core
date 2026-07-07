@@ -17,6 +17,7 @@ from ...language import (
     ListValueNode,
     ObjectFieldNode,
     ObjectValueNode,
+    SelectionNode,
     SelectionSetNode,
     ValueNode,
     VariableNode,
@@ -39,7 +40,7 @@ from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Hashable, Sequence
 
 __all__ = ["OverlappingFieldsCanBeMergedRule"]
 
@@ -562,14 +563,15 @@ def collect_conflicts_within(
 
 
 def deduplicate_fields(fields: list[NodeAndDef]) -> list[NodeAndDef]:
-    """Deduplicate structurally identical fields.
+    """Deduplicate structurally equivalent fields.
 
-    Fields that are structurally identical (same parent type, field name, arguments,
-    directives and selection set) can never conflict with each other, so only one of
-    them needs to take part in the pairwise conflict comparison.
+    Fields that are structurally equivalent (same parent type, field name, arguments,
+    directives and selection set, irrespective of the ordering of arguments,
+    directives or sibling selections) can never conflict with each other, so only one
+    of them needs to take part in the pairwise conflict comparison.
     """
     unique: list[NodeAndDef] = []
-    seen: set[str] = set()
+    seen: set[tuple[Hashable, ...]] = set()
     for field in fields:
         key = field_fingerprint(field)
         if key not in seen:
@@ -578,32 +580,79 @@ def deduplicate_fields(fields: list[NodeAndDef]) -> list[NodeAndDef]:
     return unique
 
 
-def field_fingerprint(field: NodeAndDef) -> str:
-    """Build a fingerprint identifying the structure of a given field.
+def field_fingerprint(field: NodeAndDef) -> tuple[Hashable, ...]:
+    """Build a canonical key identifying a field's structure.
 
-    Two fields that share a fingerprint are structurally identical and therefore
-    cannot conflict with each other, so only one needs to take part in the pairwise
-    conflict comparison. The fingerprint is derived from normalized AST content
-    rather than node identity, so that repeated occurrences of the same composite
-    field (each of which has a distinct ``SelectionSetNode`` instance) collapse. It
-    mirrors the equivalence relation used by ``find_conflict``: arguments are
-    compared order-independently with normalized values (see ``same_arguments``),
-    and directives are included in a stable order because differing stream
-    directives are treated as a conflict (see ``same_streams``).
+    Fields with equal keys are structurally equivalent and cannot conflict, so only
+    one takes part in the pairwise comparison. The key is derived from AST content
+    (not node identity) and normalizes argument, directive and sibling-selection
+    ordering recursively, matching the equivalence used by ``find_conflict``, so
+    reordering those parts cannot defeat deduplication.
     """
     parent_type, node, _ = field
-    parts: list[str] = [parent_type.name if parent_type else "", node.name.value]
-    parts.extend(
-        f"{argument.name.value}={stringify_value(argument.value)}"
-        for argument in sorted(node.arguments or (), key=lambda arg: arg.name.value)
+    return (parent_type.name if parent_type else "", _canonical_field(node))
+
+
+def _canonical_field(node: FieldNode) -> tuple[Hashable, ...]:
+    return (
+        "field",
+        (node.alias or node.name).value,
+        node.name.value,
+        _canonical_arguments(node.arguments),
+        _canonical_directives(node.directives),
+        _canonical_selection_set(node.selection_set),
     )
-    parts.extend(
-        print_ast(directive)
-        for directive in sorted(node.directives or (), key=print_ast)
+
+
+def _canonical_selection(selection: SelectionNode) -> tuple[Hashable, ...]:
+    if isinstance(selection, FieldNode):
+        return _canonical_field(selection)
+    if isinstance(selection, FragmentSpreadNode):
+        return (
+            "spread",
+            selection.name.value,
+            _canonical_arguments(selection.arguments),
+            _canonical_directives(selection.directives),
+        )
+    if isinstance(selection, InlineFragmentNode):
+        return (
+            "inline",
+            selection.type_condition.name.value if selection.type_condition else "",
+            _canonical_directives(selection.directives),
+            _canonical_selection_set(selection.selection_set),
+        )
+    msg = f"Unexpected selection node: {type(selection).__name__}"  # pragma: no cover
+    raise TypeError(msg)  # pragma: no cover
+
+
+def _canonical_selection_set(
+    selection_set: SelectionSetNode | None,
+) -> tuple[Hashable, ...]:
+    if selection_set is None:
+        return ()
+    # Sorted so that reordering sibling selections does not change the result.
+    return tuple(sorted(map(_canonical_selection, selection_set.selections)))
+
+
+def _canonical_arguments(
+    arguments: Sequence[ArgumentNode | FragmentArgumentNode] | None,
+) -> tuple[tuple[str, str], ...]:
+    # Sorted by name with normalized values, matching ``same_arguments``.
+    return tuple(
+        (arg.name.value, stringify_value(arg.value))
+        for arg in sorted(arguments or (), key=lambda arg: arg.name.value)
     )
-    if node.selection_set:
-        parts.append(print_ast(node.selection_set))
-    return "\x00".join(parts)
+
+
+def _canonical_directives(
+    directives: Sequence[DirectiveNode] | None,
+) -> tuple[tuple[str, tuple[tuple[str, str], ...]], ...]:
+    return tuple(
+        sorted(
+            (directive.name.value, _canonical_arguments(directive.arguments))
+            for directive in directives or ()
+        )
+    )
 
 
 def collect_conflicts_between(

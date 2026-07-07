@@ -1619,6 +1619,23 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
         )
 
+    @pytest.mark.timeout(5)
+    def repeated_fields_with_reordered_nested_arguments_do_not_cause_blowup():
+        # Reordering arguments inside a nested selection set keeps the fields
+        # equivalent, so deduplication must canonicalize recursively rather than rely
+        # on the printed selection set (which preserves source argument order).
+        repeated_fields = (
+            "mother { isAtLocation(x: 1, y: 2) } "
+            "mother { isAtLocation(y: 2, x: 1) } "
+        ) * 1500
+        assert_valid(
+            f"""
+            fragment reorderedNestedArgs on Dog {{
+              {repeated_fields}
+            }}
+            """
+        )
+
     def many_repeated_composite_fields_with_conflict_still_detected():
         repeated_fields = "mother { name } " * 100
         doc = parse(
