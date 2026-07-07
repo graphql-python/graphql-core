@@ -42,6 +42,7 @@ from ..utils import dedent
 
 TypeWithAstNode: TypeAlias = (
     GraphQLArgument
+    | GraphQLDirective
     | GraphQLEnumValue
     | GraphQLField
     | GraphQLInputField
@@ -436,6 +437,35 @@ def describe_extend_schema():
 
         assert validate_schema(extended_schema) == []
         expect_extension_ast_nodes(foo, extension_sdl)
+
+    def builds_scalars_with_specified_by_directive_from_extensions():
+        schema = GraphQLSchema()
+        extension_sdl = dedent(
+            """
+            schema {
+              query: Query
+            }
+
+            type Query {
+              foo: Foo
+            }
+
+            scalar Foo
+
+            extend scalar Foo @specifiedBy(url: "https://example.com/foo_spec")
+            """
+        )
+
+        extended_schema = extend_schema(schema, parse(extension_sdl))
+        foo = assert_scalar_type(extended_schema.get_type("Foo"))
+
+        assert foo.specified_by_url == "https://example.com/foo_spec"
+
+        assert validate_schema(extended_schema) == []
+        expect_ast_node(foo, "scalar Foo")
+        expect_extension_ast_nodes(
+            foo, 'extend scalar Foo @specifiedBy(url: "https://example.com/foo_spec")'
+        )
 
     def correctly_assigns_ast_nodes_to_new_and_extended_types():
         schema = build_schema(
@@ -1602,6 +1632,34 @@ directive @isDeprecated @deprecated(reason: "use another directive") on FIELD_DE
             some_directive = assert_directive(schema.get_directive("someDirective"))
             expect_extension_ast_nodes(
                 some_directive, "extend directive @someDirective @onDirective"
+            )
+
+        def builds_directives_with_deprecation_from_extensions():
+            schema = GraphQLSchema()
+            extension_sdl = dedent("""
+directive @isDeprecated on FIELD_DEFINITION
+
+extend directive @isDeprecated @deprecated(reason: "use another directive")
+""")
+            extended_schema = extend_schema(
+                schema,
+                parse(
+                    extension_sdl,
+                    experimental_directives_on_directive_definitions=True,
+                ),
+            )
+
+            is_deprecated_directive = assert_directive(
+                extended_schema.get_directive("isDeprecated")
+            )
+            assert is_deprecated_directive.deprecation_reason == "use another directive"
+            expect_ast_node(
+                is_deprecated_directive, "directive @isDeprecated on FIELD_DEFINITION"
+            )
+            expect_extension_ast_nodes(
+                is_deprecated_directive,
+                "extend directive @isDeprecated"
+                ' @deprecated(reason: "use another directive")',
             )
 
         def applies_multiple_directive_extensions_defined_in_the_same_document():

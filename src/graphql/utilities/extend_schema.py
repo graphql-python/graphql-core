@@ -473,10 +473,15 @@ class ExtendSchemaImpl:
                         )
                     case ScalarTypeDefinitionNode():
                         scalar_extensions = type_extensions.scalar[name]
+                        specified_by_url = get_specified_by_url(ast_node)
+                        for extension_node in scalar_extensions:
+                            specified_by_url = (
+                                get_specified_by_url(extension_node) or specified_by_url
+                            )
                         return GraphQLScalarType(
                             name=name,
                             description=description,
-                            specified_by_url=get_specified_by_url(ast_node),
+                            specified_by_url=specified_by_url,
                             ast_node=ast_node,
                             extension_ast_nodes=scalar_extensions,
                         )
