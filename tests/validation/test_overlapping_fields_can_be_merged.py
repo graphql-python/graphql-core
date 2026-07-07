@@ -1568,6 +1568,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
         )
 
+    @pytest.mark.timeout(5)
     def many_repeated_fields_do_not_cause_quadratic_blowup():
         repeated_fields = "name " * 3000
         assert_valid(
