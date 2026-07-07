@@ -539,8 +539,11 @@ def collect_conflicts_within(
         # (except to itself). If the list only has one item, nothing needs to be
         # compared.
         if len(fields) > 1:
-            for i, field in enumerate(fields):
-                for other_field in fields[i + 1 :]:
+            # Deduplicate structurally identical fields to avoid quadratic blowup
+            # when a query repeats the same field many times.
+            unique_fields = deduplicate_fields(fields)
+            for i, field in enumerate(unique_fields):
+                for other_field in unique_fields[i + 1 :]:
                     conflict = find_conflict(
                         context,
                         cached_fields_and_fragment_spreads,
@@ -556,6 +559,51 @@ def collect_conflicts_within(
                     )
                     if conflict:
                         conflicts.append(conflict)
+
+
+def deduplicate_fields(fields: list[NodeAndDef]) -> list[NodeAndDef]:
+    """Deduplicate structurally identical fields.
+
+    Fields that are structurally identical (same parent type, field name, arguments,
+    directives and selection set) can never conflict with each other, so only one of
+    them needs to take part in the pairwise conflict comparison.
+    """
+    unique: list[NodeAndDef] = []
+    seen: set[str] = set()
+    for field in fields:
+        key = field_fingerprint(field)
+        if key not in seen:
+            seen.add(key)
+            unique.append(field)
+    return unique
+
+
+def field_fingerprint(field: NodeAndDef) -> str:
+    """Build a fingerprint identifying the structure of a given field.
+
+    Two fields that share a fingerprint are structurally identical and therefore
+    cannot conflict with each other, so only one needs to take part in the pairwise
+    conflict comparison. The fingerprint is derived from normalized AST content
+    rather than node identity, so that repeated occurrences of the same composite
+    field (each of which has a distinct ``SelectionSetNode`` instance) collapse. It
+    mirrors the equivalence relation used by ``find_conflict``: arguments are
+    compared order-independently with normalized values (see ``same_arguments``),
+    and directives are included in a stable order because differing stream
+    directives are treated as a conflict (see ``same_streams``).
+    """
+    parent_type, node, _ = field
+    parts: list[str] = [parent_type.name if parent_type else "", node.name.value]
+    parts.extend(
+        f"{argument.name.value}={stringify_value(argument.value)}"
+        for argument in sorted(node.arguments or (), key=lambda arg: arg.name.value)
+    )
+    parts.extend(
+        print_ast(directive)
+        for directive in sorted(node.directives or (), key=print_ast)
+    )
+    if node.selection_set:
+        parts.append(print_ast(node.selection_set))
+    return "\x00".join(parts)
 
 
 def collect_conflicts_between(

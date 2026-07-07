@@ -1,9 +1,12 @@
 from functools import partial
 
+import pytest
+
+from graphql import parse, validate
 from graphql.utilities import build_schema
 from graphql.validation import OverlappingFieldsCanBeMergedRule
 
-from .harness import assert_validation_errors
+from .harness import assert_validation_errors, test_schema
 
 assert_errors = partial(assert_validation_errors, OverlappingFieldsCanBeMergedRule)
 
@@ -1564,6 +1567,71 @@ def describe_validate_overlapping_fields_can_be_merged():
             fragment fragC on Human { name, ...fragA }
             """
         )
+
+    def many_repeated_fields_do_not_cause_quadratic_blowup():
+        repeated_fields = "name " * 3000
+        assert_valid(
+            f"""
+            fragment manyRepeatedFields on Dog {{
+              {repeated_fields}
+            }}
+            """
+        )
+
+    def many_repeated_fields_with_conflict_still_detected():
+        repeated_fields = "name " * 100
+        doc = parse(
+            f"""
+            fragment conflictsAmongMany on Dog {{
+              {repeated_fields}
+              name: nickname
+            }}
+            """
+        )
+        errors = validate(test_schema, doc, [OverlappingFieldsCanBeMergedRule])
+        assert errors
+        assert "'name' and 'nickname' are different fields" in errors[0].message
+
+    @pytest.mark.timeout(5)
+    def many_repeated_composite_fields_do_not_cause_quadratic_blowup():
+        # Each occurrence of a composite field has its own SelectionSetNode, so
+        # deduplication must fingerprint the selection set by content, not identity,
+        # otherwise these still trigger quadratic behavior.
+        repeated_fields = "mother { name } " * 3000
+        assert_valid(
+            f"""
+            fragment manyRepeatedCompositeFields on Dog {{
+              {repeated_fields}
+            }}
+            """
+        )
+
+    @pytest.mark.timeout(5)
+    def many_repeated_fields_with_reordered_arguments_do_not_cause_quadratic_blowup():
+        # Fields whose arguments differ only in order are equivalent and must
+        # deduplicate, so the fingerprint has to be argument-order independent.
+        repeated_fields = "isAtLocation(x: 1, y: 2) isAtLocation(y: 2, x: 1) " * 1500
+        assert_valid(
+            f"""
+            fragment reorderedArgs on Dog {{
+              {repeated_fields}
+            }}
+            """
+        )
+
+    def many_repeated_composite_fields_with_conflict_still_detected():
+        repeated_fields = "mother { name } " * 100
+        doc = parse(
+            f"""
+            fragment conflictsAmongManyComposites on Dog {{
+              {repeated_fields}
+              mother {{ name: nickname }}
+            }}
+            """
+        )
+        errors = validate(test_schema, doc, [OverlappingFieldsCanBeMergedRule])
+        assert errors
+        assert "'name' and 'nickname' are different fields" in errors[0].message
 
     def finds_invalid_case_even_with_immediately_recursive_fragment():
         assert_errors(
