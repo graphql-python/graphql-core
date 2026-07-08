@@ -32,7 +32,27 @@ from . import ValidationContext, ValidationRule
 
 MYPY = False
 
-__all__ = ["OverlappingFieldsCanBeMergedRule"]
+__all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
+
+# The maximum number of pairwise field comparisons performed while validating a
+# single document with the OverlappingFieldsCanBeMerged rule. The rule compares
+# every pair of fields that share a response name and recurses into their
+# sub-selections, which is O(n^2) in the number of such fields (and worse when
+# inline fragments repeat the same response name at multiple nesting levels). A
+# crafted query can therefore drive validation into minutes of CPU on a single
+# request. Once this many comparisons have been made, validation is aborted with a
+# GraphQLError instead of running to completion. The default is high enough that any
+# realistic query stays far below it; it can be raised or lowered by assigning to
+# ``graphql.validation.rules.overlapping_fields_can_be_merged.MAX_FIELD_COMPARISONS``.
+MAX_FIELD_COMPARISONS = 250_000
+
+
+class ComparisonBudgetExceededError(Exception):
+    """Internal signal that the field-comparison budget has been exhausted.
+
+    Raised deep inside the recursive conflict search and caught by the rule to abort
+    validation. Never surfaces to callers of ``validate``.
+    """
 
 
 def reason_message(reason: "ConflictReasonMessage") -> str:
@@ -67,15 +87,33 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # times, so this improves the performance of this validator.
         self.cached_fields_and_fragment_names: Dict = {}
 
+        # Set once the comparison budget is exhausted. Further selection sets are then
+        # skipped, since validation has already been aborted with an error.
+        self._budget_exceeded = False
+
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
-        conflicts = find_conflicts_within_selection_set(
-            self.context,
-            self.cached_fields_and_fragment_names,
-            self.compared_fields_and_fragment_pairs,
-            self.compared_fragment_pairs,
-            self.context.get_parent_type(),
-            selection_set,
-        )
+        if self._budget_exceeded:
+            return
+        try:
+            conflicts = find_conflicts_within_selection_set(
+                self.context,
+                self.cached_fields_and_fragment_names,
+                self.compared_fields_and_fragment_pairs,
+                self.compared_fragment_pairs,
+                self.context.get_parent_type(),
+                selection_set,
+            )
+        except ComparisonBudgetExceededError:
+            self._budget_exceeded = True
+            self.report_error(
+                GraphQLError(
+                    "Query is too complex to validate for overlapping fields:"
+                    f" exceeded {MAX_FIELD_COMPARISONS} field comparisons."
+                    " Validation was aborted.",
+                    selection_set,
+                )
+            )
+            return
         for (reason_name, reason), fields1, fields2 in conflicts:
             reason_msg = reason_message(reason)
             self.report_error(
@@ -544,6 +582,12 @@ def find_conflict(
     Determines if there is a conflict between two particular fields, including comparing
     their sub-fields.
     """
+    # Charge this comparison against the document-wide budget and abort validation once
+    # it is exhausted, guarding against quadratic-blowup denial of service.
+    compared_fields_and_fragment_pairs.comparisons += 1
+    if compared_fields_and_fragment_pairs.comparisons > MAX_FIELD_COMPARISONS:
+        raise ComparisonBudgetExceededError
+
     parent_type1, node1, def1 = field1
     parent_type2, node2, def2 = field2
 
@@ -780,14 +824,19 @@ class OrderedPairSet:
 
     The first element is matched by object identity (its ``id``), since field maps
     are unhashable mappings that are kept alive for the duration of the validation.
+
+    Also carries a running count of the pairwise field comparisons performed with
+    this set, used to enforce the OverlappingFieldsCanBeMerged comparison budget.
     """
 
-    __slots__ = ("_data",)
+    __slots__ = ("_data", "comparisons")
 
     _data: Dict[int, Dict[str, bool]]
+    comparisons: int
 
     def __init__(self) -> None:
         self._data = {}
+        self.comparisons = 0
 
     def has(self, a: NodeAndDefCollection, b: str, weakly_present: bool) -> bool:
         map_ = self._data.get(id(a))

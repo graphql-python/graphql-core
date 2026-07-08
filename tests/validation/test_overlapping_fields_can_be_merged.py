@@ -1,13 +1,41 @@
+from contextlib import contextmanager
 from functools import partial
 
 from graphql.utilities import build_schema
 from graphql.validation import OverlappingFieldsCanBeMergedRule
+from graphql.validation.rules import (
+    overlapping_fields_can_be_merged as overlapping_module,
+)
 
 from .harness import assert_validation_errors
 
 assert_errors = partial(assert_validation_errors, OverlappingFieldsCanBeMergedRule)
 
 assert_valid = partial(assert_errors, errors=[])
+
+budget_schema = build_schema("""
+    type Query {
+      field: Node
+      other: Node
+    }
+
+    type Node {
+      f: Node
+      x: String
+    }
+    """)
+
+
+@contextmanager
+def budget_of(limit):
+    # Temporarily lower the module-level comparison budget so the budget tests can
+    # trigger the guard with small, fast queries.
+    saved = overlapping_module.MAX_FIELD_COMPARISONS
+    overlapping_module.MAX_FIELD_COMPARISONS = limit
+    try:
+        yield
+    finally:
+        overlapping_module.MAX_FIELD_COMPARISONS = saved
 
 
 def describe_validate_overlapping_fields_can_be_merged():
@@ -1193,3 +1221,66 @@ def describe_validate_overlapping_fields_can_be_merged():
               }
             }
             """)
+
+    def describe_comparison_budget():
+        def aborts_validation_when_the_comparison_budget_is_exceeded():
+            # Repeated inline fragments select the same response name, forcing O(n^2)
+            # pairwise comparisons. Once the budget is exhausted the rule aborts with
+            # a single error instead of running the comparison to completion. The
+            # trailing `other` selection set is visited after the abort and must be
+            # skipped, so exactly one error is reported for the whole document.
+            query = (
+                "{ field { " + " ".join(["... on Node { x }"] * 10) + " } other { x } }"
+            )
+            with budget_of(5):
+                assert_errors(
+                    query,
+                    [
+                        {
+                            "message": "Query is too complex to validate for"
+                            " overlapping fields: exceeded 5 field comparisons."
+                            " Validation was aborted."
+                        }
+                    ],
+                    schema=budget_schema,
+                )
+
+        def deduplication_alone_would_not_bound_this_query():
+            # Each `f` selection shares the response name `f` but wraps a distinct
+            # sub-selection (`a0: x`, `a1: x`, ...), so every field has a distinct
+            # structural fingerprint and none conflicts with another (differing
+            # aliases merge cleanly). A fix based purely on deduplicating structurally
+            # identical fields cannot remove any of these, so it would still perform
+            # O(n^2) comparisons; the comparison budget bounds the work regardless.
+            query = (
+                "{ field { "
+                + " ".join(f"... on Node {{ f {{ a{i}: x }} }}" for i in range(20))
+                + " } }"
+            )
+            # With a generous budget the query is valid, proving the fields do not
+            # conflict and that no deduplication pass could collapse them.
+            with budget_of(1_000_000):
+                assert_valid(query, schema=budget_schema)
+            # With a small budget the same query is aborted rather than validated in
+            # quadratic time.
+            with budget_of(10):
+                assert_errors(
+                    query,
+                    [
+                        {
+                            "message": "Query is too complex to validate for"
+                            " overlapping fields: exceeded 10 field comparisons."
+                            " Validation was aborted."
+                        }
+                    ],
+                    schema=budget_schema,
+                )
+
+        def does_not_abort_queries_that_stay_within_the_budget():
+            # A valid overlapping query well under the budget validates normally, with
+            # no spurious abort error.
+            with budget_of(50):
+                assert_valid(
+                    "{ field { ... on Node { x } ... on Node { x } } }",
+                    schema=budget_schema,
+                )
