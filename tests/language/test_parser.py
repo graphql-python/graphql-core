@@ -116,6 +116,35 @@ def describe_parser():
         ):
             assert parse('{ foo(bar: "baz") }', max_tokens=7)
 
+    def counts_comment_tokens_towards_the_maximum():
+        # Comment tokens are read and allocated by the lexer but skipped over; they
+        # must still count towards max_tokens, otherwise a comment-padded document
+        # bypasses the limit (memory-exhaustion DoS) while allocating one token per
+        # comment. token_count reflects the comments too.
+        assert parse("{ # comment\n foo }").token_count == 4
+        assert parse("# leading\n{ foo }\n# trailing").token_count == 5
+
+        # An interspersed comment pushes the document over the limit.
+        parse("{ # c\n foo }", max_tokens=4)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 3 tokens\. Parsing aborted\.",
+        ):
+            parse("{ # c\n foo }", max_tokens=3)
+
+        # Neither leading nor trailing comment padding can bypass the limit.
+        with raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 5 tokens\. Parsing aborted\.",
+        ):
+            parse("# c\n" * 1000 + "{ a }", max_tokens=5)
+        with raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 5 tokens\. Parsing aborted\.",
+        ):
+            parse("{ a }" + "\n# c" * 1000, max_tokens=5)
+
     def parses_variable_inline_values():
         parse("{ field(complex: { a: { b: [ $var ] } }) }")
 
