@@ -1737,6 +1737,24 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
         )
 
+    @pytest.mark.timeout(5)
+    def redundant_duplicate_sibling_selections_do_not_cause_blowup():
+        # Fields whose sub-selections differ only by redundant repeated siblings
+        # (e.g. `{ name }` vs `{ name name }`) are equivalent and never conflict, so
+        # the fingerprint must collapse duplicate siblings; otherwise each distinct
+        # duplicate count yields a distinct fingerprint, defeating deduplication and
+        # wrongly tripping the comparison budget on a valid query.
+        repeated = " ".join(
+            "m: mother { " + "name " * i + "}" for i in range(1, 701)
+        )
+        assert_valid(
+            f"""
+            fragment redundantSiblings on Dog {{
+              {repeated}
+            }}
+            """
+        )
+
     def modest_differing_arguments_still_report_the_real_conflict():
         # Below the budget the ordinary, specific conflict must still be reported
         # rather than the "too complex" fallback.

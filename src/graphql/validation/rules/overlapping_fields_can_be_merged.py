@@ -678,8 +678,11 @@ def _canonical_selection_set(
 ) -> tuple[Hashable, ...]:
     if selection_set is None:
         return ()
-    # Sorted so that reordering sibling selections does not change the result.
-    return tuple(sorted(map(_canonical_selection, selection_set.selections)))
+    # Sorted so that reordering sibling selections does not change the result, and
+    # de-duplicated because repeating an identical sibling selection is redundant and
+    # never introduces a conflict; collapsing duplicates here matches the equivalence
+    # used by ``find_conflict`` so such fields still deduplicate.
+    return tuple(sorted(set(map(_canonical_selection, selection_set.selections))))
 
 
 def _canonical_arguments(
