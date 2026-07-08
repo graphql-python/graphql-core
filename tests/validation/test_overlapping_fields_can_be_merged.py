@@ -1698,3 +1698,56 @@ def describe_validate_overlapping_fields_can_be_merged():
             }
             """
         )
+
+    @pytest.mark.timeout(5)
+    def many_fields_with_differing_arguments_are_rejected_as_too_complex():
+        # Fields differing only in their arguments genuinely conflict, so they
+        # cannot be deduplicated and would otherwise force a quadratic number of
+        # comparisons. The comparison budget bounds this by rejecting the query
+        # with a single error instead of validating every pair.
+        distinct_fields = " ".join(
+            f"p: isAtLocation(x: {i})" for i in range(2000)
+        )
+        doc = parse(
+            f"""
+            fragment manyDistinctArguments on Dog {{
+              {distinct_fields}
+            }}
+            """
+        )
+        errors = validate(test_schema, doc, [OverlappingFieldsCanBeMergedRule])
+        assert errors
+        assert "too complex to validate" in errors[0].message
+
+    @pytest.mark.timeout(5)
+    def valid_repeated_fields_across_fragments_are_not_too_complex():
+        # Deduplication must also apply when comparing fields "between" two spread
+        # fragments, otherwise a valid query repeating a field many times in each
+        # fragment forces a quadratic number of comparisons and is wrongly rejected
+        # by the comparison budget.
+        repeated_fields = "name " * 400
+        assert_valid(
+            f"""
+            {{
+              dog {{ ...fragA ...fragB }}
+            }}
+
+            fragment fragA on Dog {{ {repeated_fields} }}
+            fragment fragB on Dog {{ {repeated_fields} }}
+            """
+        )
+
+    def modest_differing_arguments_still_report_the_real_conflict():
+        # Below the budget the ordinary, specific conflict must still be reported
+        # rather than the "too complex" fallback.
+        doc = parse(
+            """
+            fragment fewDistinctArguments on Dog {
+              p: isAtLocation(x: 0)
+              p: isAtLocation(x: 1)
+            }
+            """
+        )
+        errors = validate(test_schema, doc, [OverlappingFieldsCanBeMergedRule])
+        assert errors
+        assert "they have differing arguments" in errors[0].message

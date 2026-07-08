@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, TypeAlias, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -63,6 +63,15 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     See https://spec.graphql.org/draft/#sec-Field-Selection-Merging
     """
 
+    # Maximum number of pairwise field comparisons allowed for a single document.
+    # Structurally identical fields are deduplicated before comparison, but a query
+    # can still force a quadratic number of comparisons by placing many fields with
+    # differing arguments under the same response name. Such queries are always
+    # invalid (differing arguments conflict), so a valid query never approaches this
+    # limit; it exists purely to keep validation of hostile queries bounded (roughly
+    # sub-second). Override on a subclass to trade strictness for headroom.
+    max_comparisons: ClassVar[int] = 100_000
+
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         # A memoization for when fields and a fragment or two fragments are compared
@@ -76,15 +85,36 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # times, so this improves the performance of this validator.
         self.cached_fields_and_fragment_spreads: dict = {}
 
+        # A shared budget bounding the total number of pairwise field comparisons,
+        # so a hostile query cannot force quadratic work. See ``max_comparisons``.
+        self.comparison_budget = ComparisonBudget(self.max_comparisons)
+        self._too_complex = False
+
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
-        conflicts = find_conflicts_within_selection_set(
-            self.context,
-            self.cached_fields_and_fragment_spreads,
-            self.compared_fields_and_fragment_pairs,
-            self.compared_fragment_pairs,
-            self.context.get_parent_type(),
-            selection_set,
-        )
+        if self._too_complex:
+            return
+        try:
+            conflicts = find_conflicts_within_selection_set(
+                self.context,
+                self.cached_fields_and_fragment_spreads,
+                self.compared_fields_and_fragment_pairs,
+                self.compared_fragment_pairs,
+                self.comparison_budget,
+                self.context.get_parent_type(),
+                selection_set,
+            )
+        except ComparisonBudgetExceededError:
+            # The query forced more field comparisons than allowed. Report a single
+            # error and stop checking so validation stays bounded.
+            self._too_complex = True
+            self.report_error(
+                GraphQLError(
+                    "Query is too complex to validate for overlapping fields."
+                    " Reduce the number of fields sharing a response name.",
+                    selection_set,
+                )
+            )
+            return
         for (reason_name, reason), fields1, fields2 in conflicts:
             reason_msg = reason_message(reason)
             self.report_error(
@@ -176,6 +206,7 @@ def find_conflicts_within_selection_set(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
 ) -> list[Conflict]:
@@ -200,6 +231,7 @@ def find_conflicts_within_selection_set(
         cached_fields_and_fragment_spreads,
         compared_fields_and_fragment_pairs,
         compared_fragment_pairs,
+        budget,
         field_map,
     )
 
@@ -213,6 +245,7 @@ def find_conflicts_within_selection_set(
                 cached_fields_and_fragment_spreads,
                 compared_fields_and_fragment_pairs,
                 compared_fragment_pairs,
+                budget,
                 False,
                 field_map,
                 fragment_spread,
@@ -228,6 +261,7 @@ def find_conflicts_within_selection_set(
                     cached_fields_and_fragment_spreads,
                     compared_fields_and_fragment_pairs,
                     compared_fragment_pairs,
+                    budget,
                     False,
                     fragment_spread,
                     other_fragment_spread,
@@ -242,6 +276,7 @@ def collect_conflicts_between_fields_and_fragment(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     are_mutually_exclusive: bool,
     field_map: NodeAndDefCollection,
     fragment_spread: FragmentSpread,
@@ -288,6 +323,7 @@ def collect_conflicts_between_fields_and_fragment(
         cached_fields_and_fragment_spreads,
         compared_fields_and_fragment_pairs,
         compared_fragment_pairs,
+        budget,
         are_mutually_exclusive,
         field_map,
         None,
@@ -304,6 +340,7 @@ def collect_conflicts_between_fields_and_fragment(
             cached_fields_and_fragment_spreads,
             compared_fields_and_fragment_pairs,
             compared_fragment_pairs,
+            budget,
             are_mutually_exclusive,
             field_map,
             referenced_fragment_spread,
@@ -316,6 +353,7 @@ def collect_conflicts_between_fragments(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     are_mutually_exclusive: bool,
     fragment_spread1: FragmentSpread,
     fragment_spread2: FragmentSpread,
@@ -387,6 +425,7 @@ def collect_conflicts_between_fragments(
         cached_fields_and_fragment_spreads,
         compared_fields_and_fragment_pairs,
         compared_fragment_pairs,
+        budget,
         are_mutually_exclusive,
         field_map1,
         fragment_spread1.var_map,
@@ -403,6 +442,7 @@ def collect_conflicts_between_fragments(
             cached_fields_and_fragment_spreads,
             compared_fields_and_fragment_pairs,
             compared_fragment_pairs,
+            budget,
             are_mutually_exclusive,
             fragment_spread1,
             referenced_fragment_spread2,
@@ -417,6 +457,7 @@ def collect_conflicts_between_fragments(
             cached_fields_and_fragment_spreads,
             compared_fields_and_fragment_pairs,
             compared_fragment_pairs,
+            budget,
             are_mutually_exclusive,
             referenced_fragment_spread1,
             fragment_spread2,
@@ -428,6 +469,7 @@ def find_conflicts_between_sub_selection_sets(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     are_mutually_exclusive: bool,
     parent_type1: GraphQLNamedType | None,
     selection_set1: SelectionSetNode,
@@ -466,6 +508,7 @@ def find_conflicts_between_sub_selection_sets(
         cached_fields_and_fragment_spreads,
         compared_fields_and_fragment_pairs,
         compared_fragment_pairs,
+        budget,
         are_mutually_exclusive,
         field_map1,
         var_map1,
@@ -483,6 +526,7 @@ def find_conflicts_between_sub_selection_sets(
                 cached_fields_and_fragment_spreads,
                 compared_fields_and_fragment_pairs,
                 compared_fragment_pairs,
+                budget,
                 are_mutually_exclusive,
                 field_map1,
                 fragment_spread2,
@@ -498,6 +542,7 @@ def find_conflicts_between_sub_selection_sets(
                 cached_fields_and_fragment_spreads,
                 compared_fields_and_fragment_pairs,
                 compared_fragment_pairs,
+                budget,
                 are_mutually_exclusive,
                 field_map2,
                 fragment_spread1,
@@ -514,6 +559,7 @@ def find_conflicts_between_sub_selection_sets(
                 cached_fields_and_fragment_spreads,
                 compared_fields_and_fragment_pairs,
                 compared_fragment_pairs,
+                budget,
                 are_mutually_exclusive,
                 fragment_spread1,
                 fragment_spread2,
@@ -528,6 +574,7 @@ def collect_conflicts_within(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     field_map: NodeAndDefCollection,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
@@ -550,6 +597,7 @@ def collect_conflicts_within(
                         cached_fields_and_fragment_spreads,
                         compared_fields_and_fragment_pairs,
                         compared_fragment_pairs,
+                        budget,
                         # within one collection is never mutually exclusive
                         False,
                         response_name,
@@ -661,6 +709,7 @@ def collect_conflicts_between(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     parent_fields_are_mutually_exclusive: bool,
     field_map1: NodeAndDefCollection,
     var_map1: VarMap,
@@ -682,13 +731,20 @@ def collect_conflicts_between(
     for response_name, fields1 in field_map1.items():
         fields2 = field_map2.get(response_name)
         if fields2:
-            for field1 in fields1:
-                for field2 in fields2:
+            # Deduplicate structurally identical fields on both sides, just as
+            # collect_conflicts_within does. Two identical fields yield the same
+            # comparison result against every field on the other side, so a valid
+            # query that repeats a field many times across spread fragments does
+            # not force a quadratic number of comparisons here either.
+            unique_fields2 = deduplicate_fields(fields2)
+            for field1 in deduplicate_fields(fields1):
+                for field2 in unique_fields2:
                     conflict = find_conflict(
                         context,
                         cached_fields_and_fragment_spreads,
                         compared_fields_and_fragment_pairs,
                         compared_fragment_pairs,
+                        budget,
                         parent_fields_are_mutually_exclusive,
                         response_name,
                         field1,
@@ -705,6 +761,7 @@ def find_conflict(
     cached_fields_and_fragment_spreads: dict,
     compared_fields_and_fragment_pairs: OrderedPairSet,
     compared_fragment_pairs: PairSet,
+    budget: ComparisonBudget,
     parent_fields_are_mutually_exclusive: bool,
     response_name: str,
     field1: NodeAndDef,
@@ -717,6 +774,10 @@ def find_conflict(
     Determines if there is a conflict between two particular fields, including comparing
     their sub-fields.
     """
+    # Charge this comparison against the shared budget. When it is exhausted this
+    # raises, aborting an otherwise quadratic amount of work on a hostile query.
+    budget.spend()
+
     parent_type1, node1, def1 = field1
     parent_type2, node2, def2 = field2
 
@@ -778,6 +839,7 @@ def find_conflict(
             cached_fields_and_fragment_spreads,
             compared_fields_and_fragment_pairs,
             compared_fragment_pairs,
+            budget,
             are_mutually_exclusive,
             get_named_type(type1),
             selection_set1,
@@ -1058,6 +1120,38 @@ def subfield_conflicts(
             list(chain([node2], *[conflict[2] for conflict in conflicts])),
         )
     return None  # no conflict
+
+
+class ComparisonBudgetExceededError(Exception):
+    """Raised when field comparisons exceed the allowed budget.
+
+    Signals that a query is too complex to validate for overlapping fields within
+    a bounded number of comparisons. Caught by the rule, which reports a single
+    error instead of continuing quadratic work.
+    """
+
+
+class ComparisonBudget:
+    """A shared, decreasing count of allowed pairwise field comparisons.
+
+    ``OverlappingFieldsCanBeMerged`` compares overlapping fields pairwise, which is
+    quadratic in the number of fields sharing a response name. Structurally identical
+    fields are deduplicated first, but fields differing only in their arguments cannot
+    be deduplicated and still force quadratic work. Each comparison spends one unit
+    from this budget; :exc:`ComparisonBudgetExceededError` is raised once it is
+    exhausted.
+    """
+
+    __slots__ = ("_remaining",)
+
+    def __init__(self, limit: int) -> None:
+        self._remaining = limit
+
+    def spend(self) -> None:
+        """Charge a single comparison, raising when the budget is exhausted."""
+        if self._remaining <= 0:
+            raise ComparisonBudgetExceededError
+        self._remaining -= 1
 
 
 class OrderedPairSet:
