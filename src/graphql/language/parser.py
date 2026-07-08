@@ -1398,18 +1398,33 @@ class Parser:
         return tuple(nodes)
 
     def advance_lexer(self) -> None:
-        """Advance the lexer."""
-        token = self._lexer.advance()
+        """Advance the lexer.
+
+        Counts every token that is consumed toward ``max_tokens``, including the
+        comment tokens that the lexer skips over between the previously focused token
+        and the new one. Comments are read and allocated as ``Token`` objects (and
+        chained into the token list) but are not returned by the lexer, so counting
+        only the returned tokens would let a comment-padded document bypass
+        ``max_tokens`` while still allocating one token per comment.
+        """
+        lexer = self._lexer
+        token = lexer.advance()
+        # Count the comment tokens that were skipped since the previously focused
+        # token. They are the nodes strictly between ``last_token`` and ``token`` in
+        # the token linked-list (the lexer only ever skips comments).
+        skipped = lexer.last_token.next
+        while skipped is not None and skipped is not token:
+            self._token_counter += 1
+            skipped = skipped.next
         if token.kind is not TokenKind.EOF:
             self._token_counter += 1
-            max_tokens = self._max_tokens
-            if max_tokens is not None and self._token_counter > max_tokens:
-                raise GraphQLSyntaxError(
-                    self._lexer.source,
-                    token.start,
-                    f"Document contains more than {max_tokens} tokens."
-                    " Parsing aborted.",
-                )
+        max_tokens = self._max_tokens
+        if max_tokens is not None and self._token_counter > max_tokens:
+            raise GraphQLSyntaxError(
+                lexer.source,
+                token.start,
+                f"Document contains more than {max_tokens} tokens. Parsing aborted.",
+            )
 
 
 def get_token_desc(token: Token) -> str:
