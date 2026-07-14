@@ -3234,7 +3234,57 @@ def describe_defer_directive_with_errors_and_nested_defer():
             assert is_awaitable(result)
             result = await result
             assert isinstance(result, ExperimentalIncrementalExecutionResults)
-            # Draining the stream must terminate without raising
+            initial = result.initial_result.formatted
+            # Draining the stream must not raise
             # "Invalid state while adding deferred fragment node".
-            async for _patch in result.subsequent_results:
-                pass
+            subsequent = [patch.formatted async for patch in result.subsequent_results]
+            payloads: list[Any] = [initial, *subsequent]
+
+            # The stream must terminate cleanly: `hasNext` is true on every
+            # payload except the last, which ends the stream.
+            assert initial["hasNext"] is True
+            assert subsequent[-1]["hasNext"] is False
+            assert all(patch["hasNext"] is True for patch in subsequent[:-1])
+
+            # The two sibling fragments are announced up front on the empty obj.
+            assert initial["data"] == {"obj": {}}
+
+            # Aggregate announcements, deliveries and completions across the
+            # whole stream; their grouping into payloads is not asserted as it
+            # depends on resolver scheduling and `enable_early_execution`.
+            pending = [p for payload in payloads for p in payload.get("pending", [])]
+            incremental = [
+                i for payload in payloads for i in payload.get("incremental", [])
+            ]
+            completed = [
+                c for payload in payloads for c in payload.get("completed", [])
+            ]
+            label_of_id = {p["id"]: p["label"] for p in pending}
+
+            # The nested `@defer` under the errored fragment (`d`) must never be
+            # announced or delivered; only `a`, `c` and the good nested `b` are.
+            assert {p["label"] for p in pending} == {"a", "b", "c"}
+
+            # The non-null sibling (`c`) fails with the resolver error on its
+            # own field, removing that whole fragment.
+            (c_id,) = [id_ for id_, label in label_of_id.items() if label == "c"]
+            c_completed = [c for c in completed if c["id"] == c_id]
+            assert len(c_completed) == 1
+            c_errors = c_completed[0].get("errors")
+            assert c_errors is not None
+            assert c_errors[0]["message"] == "bad"
+            assert c_errors[0]["path"] == ["obj", "boomNonNull"]
+
+            # The nullable sibling (`a`) survives: `boom` is delivered as null
+            # with a field error, and the fragment completes without an error.
+            (a_id,) = [id_ for id_, label in label_of_id.items() if label == "a"]
+            assert {"id": a_id} in completed
+            boom_entries = [i for i in incremental if i.get("data") == {"boom": None}]
+            assert boom_entries
+            assert all(e["errors"][0]["path"] == ["obj", "boom"] for e in boom_entries)
+
+            # The good nested defer `b` is delivered exactly once; because `d`
+            # is dropped, `fast` appears only once across the whole stream.
+            (b_id,) = [id_ for id_, label in label_of_id.items() if label == "b"]
+            fast_entries = [i for i in incremental if i.get("data") == {"fast": "fast"}]
+            assert fast_entries == [{"data": {"fast": "fast"}, "id": b_id}]
