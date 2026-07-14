@@ -23,7 +23,7 @@ def assert_equal_awaitables_or_values(*items: T) -> T:
         async def assert_matching_awaitables():
             return assert_matching_values(*(await asyncio.gather(*awaitable_items)))
 
-        return assert_matching_awaitables()
+        return cast("T", assert_matching_awaitables())
 
     if all(not is_awaitable(item) for item in items):
         return assert_matching_values(*items)

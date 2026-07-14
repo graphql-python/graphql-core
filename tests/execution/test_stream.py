@@ -1691,6 +1691,7 @@ def describe_execute_stream_directive():
             async def __anext__(self):
                 count = self.count
                 self.count += 1
+                name: Any
                 if count == 1:
                     name = throw()
                 else:
@@ -1757,6 +1758,7 @@ def describe_execute_stream_directive():
                     raise StopAsyncIteration  # pragma: no cover
                 count = self.count
                 self.count += 1
+                name: Any
                 if count == 1:
                     name = throw()
                 else:

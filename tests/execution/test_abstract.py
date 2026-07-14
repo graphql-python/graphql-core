@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import pytest
 
@@ -18,6 +18,9 @@ from graphql.type import (
     GraphQLUnionType,
 )
 from graphql.utilities import build_schema
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def sync_and_async(spec):
@@ -51,6 +54,7 @@ async def execute_query(
 
 def get_is_type_of(type_, sync=True):
     """Get a sync or async is_type_of function for the given type."""
+    is_type_of: Callable[[Any, Any], Any]
     if sync:
 
         def is_type_of(obj, _info):
@@ -67,6 +71,7 @@ def get_is_type_of(type_, sync=True):
 def get_type_error(sync=True):
     """Get a sync or async is_type_of or type resolver function that raises an error."""
     error = RuntimeError("We are testing this error")
+    type_error: Callable[..., Any]
     if sync:
 
         def type_error(*_args):
