@@ -28,18 +28,18 @@ Changelog = "https://github.com/graphql-python/graphql-core/releases"
 
 [dependency-groups]
 test = [
-    "anyio>=4.13,<5",
+    "anyio>=4.14,<5",
     "pytest>=9,<10",
     "pytest-benchmark>=5.2,<6",
     "pytest-cov>=7.1,<8",
     "pytest-describe>=3.2,<4",
     "pytest-timeout>=2.4,<3",
     "pytest-codspeed>=5",
-    "tox>=4.55,<5",
+    "tox>=4.56,<5",
 ]
 lint = [
     "ruff>=0.15,<0.16",
-    "mypy>=2.1,<3",
+    "mypy>=2.3,<3",
     "bump2version>=1,<2",
     "typing-extensions>=4.15; python_version<'3.11'",
 ]
