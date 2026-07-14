@@ -257,9 +257,16 @@ class IncrementalGraph:
             return
         parent = deferred_fragment_record.parent
         if parent is None:
-            if initial_result_children is None:  # pragma: no cover
-                msg = "Invalid state while adding deferred fragment node."
-                raise RuntimeError(msg)
+            if initial_result_children is None:
+                # The fragment has already been removed from the root nodes
+                # (e.g. its execution group failed on a resolver error) while a
+                # sibling execution group that references its subtree is still
+                # completing. There is nothing to attach the record to and its
+                # subtree is no longer being delivered, so drop it rather than
+                # treating this as an invalid state. Mirrors the
+                # `future.cancelled()` guard in `_enqueue` — a race with a
+                # stopping/removed consumer.
+                return
             initial_result_children[deferred_fragment_record] = None
             return
         parent.children[deferred_fragment_record] = None

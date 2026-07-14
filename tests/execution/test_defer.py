@@ -3163,3 +3163,78 @@ def describe_execute_defer_directive():
         with pytest.raises(AbortError, match="This operation was aborted"):
             await anext_task
         assert items_source.aclose_finished
+
+
+def describe_defer_directive_with_errors_and_nested_defer():
+    """Regression tests for graphql-python/graphql-core#271."""
+
+    async def does_not_reach_invalid_state_when_sibling_fragments_error():
+        """Sibling erroring ``@defer`` fragments with nested ``@defer`` must not crash.
+
+        Two sibling top-level ``@defer`` fragments that each resolve a distinct
+        erroring field and each contain a nested ``@defer`` used to crash the
+        incremental graph with "Invalid state while adding deferred fragment
+        node": a failing
+        execution group removes its parentless (root) deferred fragment, and a
+        sibling execution group completing afterwards then recursed up into the
+        removed record and hit the invariant. See issue #271.
+        """
+
+        async def resolve_fast(_source, _info) -> str:
+            await sleep(0)
+            return "fast"
+
+        def resolve_error(_source, _info) -> str:
+            raise RuntimeError("bad")
+
+        async def resolve_obj(_source, _info) -> dict:
+            await sleep(0)
+            return {}
+
+        obj_type: GraphQLObjectType = GraphQLObjectType(
+            "Obj",
+            lambda: {
+                "fast": GraphQLField(GraphQLString, resolve=resolve_fast),
+                "boom": GraphQLField(GraphQLString, resolve=resolve_error),
+                "boomNonNull": GraphQLField(
+                    GraphQLNonNull(GraphQLString), resolve=resolve_error
+                ),
+                "child": GraphQLField(obj_type, resolve=resolve_obj),
+            },
+        )
+        local_schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query", {"obj": GraphQLField(obj_type, resolve=resolve_obj)}
+            )
+        )
+        # The two siblings must error on DISTINCT fields (`boom` vs `boomNonNull`):
+        # erroring on the same field in both does not reproduce the crash. The
+        # nested `@defer` selections may be identical.
+        document = parse(
+            """
+            query {
+              obj {
+                ... @defer(label: "a") {
+                  boom
+                  child { ... @defer(label: "b") { fast } }
+                }
+                ... @defer(label: "c") {
+                  boomNonNull
+                  child { ... @defer(label: "d") { fast } }
+                }
+              }
+            }
+            """
+        )
+
+        for early_execution in (False, True):
+            result = experimental_execute_incrementally(
+                local_schema, document, {}, enable_early_execution=early_execution
+            )
+            assert is_awaitable(result)
+            result = await result
+            assert isinstance(result, ExperimentalIncrementalExecutionResults)
+            # Draining the stream must terminate without raising
+            # "Invalid state while adding deferred fragment node".
+            async for _patch in result.subsequent_results:
+                pass
