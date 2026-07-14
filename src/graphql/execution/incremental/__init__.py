@@ -6,5 +6,43 @@ For internal use only.
 """
 
 from .computation import Computation
+from .work_queue import (
+    Group,
+    GroupFailureEvent,
+    GroupSuccessEvent,
+    GroupValuesEvent,
+    Stream,
+    StreamFailureEvent,
+    StreamItem,
+    StreamQueue,
+    StreamSuccessEvent,
+    StreamValuesEvent,
+    TaskResult,
+    Work,
+    WorkQueue,
+    WorkQueueEvent,
+    WorkQueueTerminationEvent,
+    WorkResult,
+    WorkTask,
+)
 
-__all__ = ["Computation"]
+__all__ = [
+    "Computation",
+    "Group",
+    "GroupFailureEvent",
+    "GroupSuccessEvent",
+    "GroupValuesEvent",
+    "Stream",
+    "StreamFailureEvent",
+    "StreamItem",
+    "StreamQueue",
+    "StreamSuccessEvent",
+    "StreamValuesEvent",
+    "TaskResult",
+    "Work",
+    "WorkQueue",
+    "WorkQueueEvent",
+    "WorkQueueTerminationEvent",
+    "WorkResult",
+    "WorkTask",
+]
