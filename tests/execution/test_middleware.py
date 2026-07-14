@@ -4,7 +4,13 @@ from typing import cast
 
 import pytest
 
-from graphql.execution import Middleware, MiddlewareManager, execute, subscribe
+from graphql.execution import (
+    ExecutionResult,
+    Middleware,
+    MiddlewareManager,
+    execute,
+    subscribe,
+)
 from graphql.language.parser import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
@@ -262,9 +268,9 @@ def describe_middleware():
                 middleware=MiddlewareManager(reverse_middleware),
             )
             assert inspect.isasyncgen(agen)
-            data = (await agen.__anext__()).data
+            data = cast("ExecutionResult", await agen.__anext__()).data
             assert data == {"bar": "rab"}
-            data = (await agen.__anext__()).data
+            data = cast("ExecutionResult", await agen.__anext__()).data
             assert data == {"bar": "foo"}
 
     def describe_without_manager():
