@@ -2843,6 +2843,71 @@ def describe_execute_stream_directive():
         await iterator.aclose()
         assert source.aclose_calls == 0
 
+    async def limits_stream_batches_to_the_default_capacity():
+        """Limits stream batches to the default capacity (100)"""
+        document = parse(
+            """
+            query {
+              friendList @stream {
+                id
+              }
+            }
+            """
+        )
+
+        filled = Event()
+
+        async def friend_list(_info):
+            for i in range(101):
+                await sleep(0)
+                if i == 100:  # the producer parks when yielding the 101st item
+                    filled.set()
+                yield friends[i % 3]
+
+        execute_result = await experimental_execute_incrementally(  # type: ignore
+            schema,
+            document,
+            {"friendList": friend_list},
+            enable_early_execution=True,
+        )
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+        iterator = execute_result.subsequent_results
+
+        result1 = execute_result.initial_result
+        assert result1 == {
+            "data": {"friendList": []},
+            "pending": [{"id": "0", "path": ["friendList"]}],
+            "hasNext": True,
+        }
+
+        await filled.wait()  # allow the producer to fill the stream queue
+        for _ in range(10):
+            await sleep(0)
+
+        result2 = await anext(iterator)
+        assert result2 == {
+            "incremental": [
+                {
+                    "items": [{"id": str(i % 3 + 1)} for i in range(100)],
+                    "id": "0",
+                }
+            ],
+            "hasNext": True,
+        }
+
+        for _ in range(10):  # allow the producer to push the remaining item
+            await sleep(0)
+
+        result3 = await anext(iterator)
+        assert result3 == {
+            "incremental": [{"items": [{"id": "2"}], "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
 
 user_type = GraphQLObjectType("User", {"id": GraphQLField(GraphQLID)})
 
@@ -3411,6 +3476,74 @@ def describe_execute_stream_directive_cancellation():
         await sleep(0)
         await sleep(0)
         assert author_calls == 0
+
+    @pytest.mark.timeout(1)
+    async def stops_when_stream_queue_is_back_pressured_and_consumer_cancels():
+        """Stops when the stream queue is back-pressured and the consumer cancels
+
+        The JavaScript version cancels by calling return() on the never pulled
+        iterator; the asyncio analog of such a concurrent consumer cancellation
+        is cancelling the task that awaits a pending anext(), so the stream is
+        additionally held open with a pending first item to keep the pull
+        pending while the producer is parked on the back-pressured queue.
+        """
+        document = parse("{ scalarList @stream(initialCount: 0) }")
+
+        item_future: Future[str] = Future()
+        reached_capacity = Event()
+
+        class Source:
+            def __init__(self):
+                self.count = 0
+                self.close_calls = 0
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                self.count += 1
+                if self.count == 1:
+                    return item_future  # pending head item
+                if self.count == 101:
+                    reached_capacity.set()
+                if self.count > 101:
+                    raise StopIteration
+                return str(self.count)
+
+            def close(self):
+                self.close_calls += 1  # pragma: no cover
+
+        source = Source()
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"scalarList": lambda _info: source},
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        iterator = result.subsequent_results
+
+        await reached_capacity.wait()
+        for _ in range(2):  # let the producer park on the back-pressured queue
+            await sleep(0)
+        assert source.count == 101
+
+        next_task = ensure_future(anext(iterator))
+        for _ in range(2):
+            await sleep(0)
+        # the pull stays pending on the first item while the producer is parked
+        assert not next_task.done()
+
+        next_task.cancel()
+        with pytest.raises(CancelledError):
+            await next_task
+
+        # the pending head item was cancelled with the parked producer
+        assert item_future.cancelled()
+        # the cancelled sync iterator was drained, but not closed
+        assert source.count == 102
+        assert source.close_calls == 0
 
     async def stops_streaming_when_pending_stream_item_is_cancelled():
         """Stops streaming when a pending stream item resolves after cancellation

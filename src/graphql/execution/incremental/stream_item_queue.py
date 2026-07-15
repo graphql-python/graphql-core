@@ -12,7 +12,7 @@ from asyncio import (
     get_running_loop,
     isfuture,
 )
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 
 from ...pyutils.is_awaitable import is_awaitable
 
@@ -72,6 +72,8 @@ class StreamItemQueue:
         self._entries: Queue[Any] = Queue(capacity)
         self._started = Event()
         self._producer_task: Task[None] | None = None
+        self._producer_parked = False
+        self._producer_cancelled = False
         self._pending_futures: set[Future[WorkResult]] = set()
         self._aborted = False
         self._finished = False
@@ -106,9 +108,11 @@ class StreamItemQueue:
                 cleanup = on_abort(error)
                 if is_awaitable(cleanup):
                     await cleanup
+            self._producer_parked = True  # may park on the full queue
             await entries.put(_ErrorEntry(error))
         else:
             self._finished = True
+            self._producer_parked = True  # may park on the full queue
             await entries.put(_END)
 
     async def push(self, result: WorkResult | Future[WorkResult]) -> None:
@@ -183,25 +187,34 @@ class StreamItemQueue:
         awaitable for the asynchronous part of the cleanup, or None when the
         whole cleanup could be run synchronously.
         """
+        producer_task = self._producer_task
+        running = producer_task is not None and not producer_task.done()
+        parked = running and self._producer_parked and not self._producer_cancelled
+        if parked:
+            # release the producer parked on the back-pressured queue
+            # while trying to deliver its final entry
+            producer_task.cancel()  # type: ignore[union-attr]
+            self._producer_cancelled = True
         if self._aborted:
-            return None
+            # Aborted (or failed) before, so the cleanup has already run; only
+            # release a producer that was still parked.
+            return self._settle_parked() if parked else None
         self._aborted = True
         if self._finished:
-            # The source finished normally, so it must not be cleaned up;
-            # only settle any still pending early executed item futures.
-            if not self._pending_futures:
+            # The source finished normally, so it must not be cleaned up; only
+            # release a producer that was still parked and settle any still
+            # pending early executed item futures.
+            if not parked and not self._pending_futures:
                 return None
             for future in self._pending_futures:
                 future.cancel()
-            return self._settle_pending()
-        producer_task = self._producer_task
-        if producer_task is not None and not producer_task.done():
-            producer_task.cancel()
+            return self._settle_parked()
+        if running and not self._producer_cancelled:
+            producer_task.cancel()  # type: ignore[union-attr]
+            self._producer_cancelled = True
         for future in self._pending_futures:
             future.cancel()
-        if (producer_task is None or producer_task.done()) and (
-            not self._pending_futures
-        ):
+        if not running and not self._pending_futures:
             # nothing to cancel asynchronously, just run the cleanup callback
             on_abort = self._on_abort
             if on_abort is not None:
@@ -210,6 +223,13 @@ class StreamItemQueue:
                     return cleanup
             return None
         return self._cleanup(reason)
+
+    async def _settle_parked(self) -> None:
+        """Await the cancelled parked producer and settle pending item futures."""
+        # the callers guarantee that the producer task has been created
+        producer_task = cast("Task[None]", self._producer_task)
+        await gather(producer_task, return_exceptions=True)
+        await self._settle_pending()
 
     async def _settle_pending(self) -> None:
         """Cancel and settle all still pending item futures."""
@@ -225,6 +245,7 @@ class StreamItemQueue:
         producer_task = self._producer_task
         if producer_task is not None and not producer_task.done():
             producer_task.cancel()
+            self._producer_cancelled = True
             await gather(producer_task, return_exceptions=True)
         await self._settle_pending()
         on_abort = self._on_abort

@@ -326,3 +326,35 @@ def describe_stream_item_queue():
         cleanup = queue.abort()
         assert is_awaitable(cleanup)
         await cleanup
+
+    async def aborting_releases_a_producer_parked_on_the_end_marker():
+        aborted: list[BaseException | None] = []
+
+        async def produce(queue: StreamItemQueue) -> None:
+            await queue.push(WorkResult(1))
+
+        queue = make_queue(produce, aborted.append, eager=True, capacity=1)
+        for _ in range(3):  # let the producer park on the end marker
+            await sleep(0)
+        cleanup = queue.abort()
+        assert is_awaitable(cleanup)
+        await cleanup
+        assert aborted == []  # the source finished and must not be cleaned up
+        assert queue.abort() is None  # the producer has already been released
+
+    async def aborting_again_releases_a_producer_parked_on_a_failure_entry():
+        aborted: list[BaseException | None] = []
+
+        async def produce(queue: StreamItemQueue) -> None:
+            await queue.push(WorkResult(1))
+            raise RuntimeError("boom")
+
+        queue = make_queue(produce, aborted.append, eager=True, capacity=1)
+        for _ in range(3):  # let the producer park on the failure entry
+            await sleep(0)
+        assert len(aborted) == 1  # the producer has already run the cleanup
+        cleanup = queue.abort()
+        assert is_awaitable(cleanup)
+        await cleanup
+        assert len(aborted) == 1  # the cleanup must not run again
+        assert queue.abort() is None  # the producer has already been released
