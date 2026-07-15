@@ -2,7 +2,7 @@ from inspect import isasyncgen
 
 import pytest
 
-from graphql.execution import Executor, GraphQLWrappedResult, execute, subscribe
+from graphql.execution import Executor, execute, subscribe
 from graphql.language import parse
 from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
 
@@ -47,20 +47,17 @@ def describe_customize_execution():
                 source,
                 field_details_list,
                 path,
-                incremental_context,
-                defer_map,
+                position_context,
             ):
                 result = super().execute_field(
                     parent_type,
                     source,
                     field_details_list,
                     path,
-                    incremental_context,
-                    defer_map,
+                    position_context,
                 )
-                assert isinstance(result, GraphQLWrappedResult)
-                result.result *= 2
-                return result
+                assert isinstance(result, str)
+                return result * 2
 
         assert execute(
             schema,

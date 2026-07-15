@@ -149,6 +149,7 @@ ignore = [
    "I001",  # imports do not need to be sorted
 ]
 "src/graphql/execution/*" = [
+    "ARG002",  # allow unused arguments in overridable hook methods
     "BLE001",  # allow catching blind exception
 ]
 "src/graphql/language/ast.py" = [

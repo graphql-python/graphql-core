@@ -9,7 +9,6 @@ from graphql.error import GraphQLError
 from graphql.execution import (
     AbortedGraphQLExecutionError,
     CompletedResult,
-    DeferredFragmentRecord,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalDeferResult,
@@ -20,6 +19,7 @@ from graphql.execution import (
     execute,
     experimental_execute_incrementally,
 )
+from graphql.execution.incremental import DeliveryGroup
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import AbortController, AbortError, Path, is_awaitable
 from graphql.type import (
@@ -525,14 +525,12 @@ def describe_execute_defer_directive():
             "completed": completed,
         }
 
-    def can_print_deferred_fragment_record():
-        """Can print a DeferredFragmentRecord"""
-        record = DeferredFragmentRecord()
-        assert str(record) == "DeferredFragmentRecord()"
-        record = DeferredFragmentRecord(Path(None, "bar", "Bar"), "foo", record)
-        assert (
-            str(record) == "DeferredFragmentRecord(path=['bar'], label='foo', parent)"
-        )
+    def can_print_delivery_group():
+        """Can print a DeliveryGroup"""
+        group = DeliveryGroup(None, None, None)
+        assert str(group) == "DeliveryGroup()"
+        group = DeliveryGroup(Path(None, "bar", "Bar"), "foo", group)
+        assert str(group) == "DeliveryGroup(path=['bar'], label='foo', parent)"
 
     @pytest.mark.parametrize("early_execution", [False, True])
     async def can_defer_fragments_containing_scalar_types(early_execution):
@@ -1950,17 +1948,17 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {}},
-                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a"]}],
+                "pending": [{"id": "0", "path": ["a"]}, {"id": "1", "path": []}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {"data": {"b": {"c": {}}}, "id": "1"},
-                    {"data": {"d": "d"}, "id": "1", "subPath": ["b", "c"]},
+                    {"data": {"b": {"c": {}}}, "id": "0"},
+                    {"data": {"d": "d"}, "id": "0", "subPath": ["b", "c"]},
                 ],
                 "completed": [
                     {
-                        "id": "0",
+                        "id": "1",
                         "errors": [
                             {
                                 "message": "Cannot return null"
@@ -1970,7 +1968,7 @@ def describe_execute_defer_directive():
                             },
                         ],
                     },
-                    {"id": "1"},
+                    {"id": "0"},
                 ],
                 "hasNext": False,
             },
@@ -2164,18 +2162,18 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {}},
-                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a"]}],
+                "pending": [{"id": "0", "path": ["a"]}, {"id": "1", "path": []}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {"data": {"b": {"c": {}}}, "id": "1"},
-                    {"data": {"d": "d"}, "id": "0", "subPath": ["a", "b", "c"]},
+                    {"data": {"b": {"c": {}}}, "id": "0"},
+                    {"data": {"d": "d"}, "id": "1", "subPath": ["a", "b", "c"]},
                 ],
                 "completed": [
-                    {"id": "0"},
+                    {"id": "1"},
                     {
-                        "id": "1",
+                        "id": "0",
                         "errors": [
                             {
                                 "message": "Cannot return null"
@@ -2232,21 +2230,21 @@ def describe_execute_defer_directive():
         assert result == [
             {
                 "data": {"a": {}},
-                "pending": [{"id": "0", "path": []}, {"id": "1", "path": ["a"]}],
+                "pending": [{"id": "0", "path": ["a"]}, {"id": "1", "path": []}],
                 "hasNext": True,
             },
             {
                 "incremental": [
-                    {"data": {"b": {"c": {}}}, "id": "1"},
-                    {"data": {"d": "d"}, "id": "1", "subPath": ["b", "c"]},
+                    {"data": {"b": {"c": {}}}, "id": "0"},
+                    {"data": {"d": "d"}, "id": "0", "subPath": ["b", "c"]},
                 ],
-                "completed": [{"id": "1"}],
+                "completed": [{"id": "0"}],
                 "hasNext": True,
             },
             {
                 "completed": [
                     {
-                        "id": "0",
+                        "id": "1",
                         "errors": [
                             {
                                 "message": "Cannot return null"

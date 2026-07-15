@@ -60,20 +60,34 @@ class FakeStreamQueue:
         on_abort: Callable[[BaseException | None], Awaitable[None] | None]
         | None = None,
         never_stops: bool = False,
+        stops_early: bool = False,
     ) -> None:
         self.item_batches = item_batches
         self.error = error
         self.on_abort = on_abort
         self.never_stops = never_stops
+        self.stops_early = stops_early
+        self.stopped = False
         self.aborted_with: list[BaseException | None] = []
 
     async def batches(self) -> AsyncIterator[Sequence[WorkResult]]:
-        for item_batch in self.item_batches:
+        item_batches = self.item_batches
+        last_index = len(item_batches) - 1
+        for index, item_batch in enumerate(item_batches):
+            if index == last_index and self.stops_early:
+                # known to have stopped while delivering the last batch,
+                # like the real stream item queue for fast sources
+                self.stopped = True
             yield item_batch
         if self.error:
             raise self.error
         if self.never_stops:
-            await Event().wait()
+            # cancelled while parked, possibly before this step runs
+            await Event().wait()  # pragma: no cover
+        self.stopped = True
+
+    def is_stopped(self) -> bool:
+        return self.stopped
 
     def abort(self, reason: BaseException | None = None) -> Awaitable[None] | None:
         self.aborted_with.append(reason)
@@ -808,8 +822,9 @@ def describe_work_queue():
             return child_task_cleanup
 
         async def never() -> WorkResult:
-            await Event().wait()
-            raise AssertionError("never resolves")
+            # cancelled while parked, possibly before this step runs
+            await Event().wait()  # pragma: no cover
+            raise AssertionError("never resolves")  # pragma: no cover
 
         child_task = WorkTask([root], Computation(never, cancel_child_task))
 
@@ -861,8 +876,9 @@ def describe_work_queue():
         child_task_cancel_reasons: list[BaseException | None] = []
 
         async def never() -> WorkResult:
-            await Event().wait()
-            raise AssertionError("never resolves")
+            # cancelled while parked, possibly before this step runs
+            await Event().wait()  # pragma: no cover
+            raise AssertionError("never resolves")  # pragma: no cover
 
         child_task = WorkTask(
             [root], Computation(never, child_task_cancel_reasons.append)
@@ -888,8 +904,9 @@ def describe_work_queue():
         group = Group(name="group")
 
         async def never() -> WorkResult:
-            await Event().wait()
-            raise AssertionError("never resolves")
+            # cancelled while parked, possibly before this step runs
+            await Event().wait()  # pragma: no cover
+            raise AssertionError("never resolves")  # pragma: no cover
 
         never_task = make_task([group], never)
         work_queue = WorkQueue(Work(groups=[group], tasks=[never_task]))
@@ -912,8 +929,9 @@ def describe_work_queue():
         child = Group(parent, name="child")
 
         async def never() -> WorkResult:
-            await Event().wait()
-            raise AssertionError("never resolves")
+            # cancelled while parked, possibly before this step runs
+            await Event().wait()  # pragma: no cover
+            raise AssertionError("never resolves")  # pragma: no cover
 
         never_task = make_task([parent], never)
         run_spy = Spy(lambda: WorkResult("child"))
@@ -1192,3 +1210,34 @@ def describe_work_queue():
             GroupSuccessEvent(group, [], []),
             WorkQueueTerminationEvent(),
         ]
+
+    async def merges_stream_success_when_the_queue_is_known_to_have_stopped():
+        group = Group(name="group")
+        stream = Stream(FakeStreamQueue([[WorkResult(1)]], stops_early=True))
+
+        async def slow() -> WorkResult:
+            await sleep(0)
+            await sleep(0)
+            return WorkResult("slow")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(groups=[group], tasks=[make_task([group], slow)], streams=[stream])
+        )
+
+        assert initial_groups == [group]
+        assert initial_streams == [stream]
+        # the stream success is delivered together with its values,
+        # and the redundant stream success signal from the pump is ignored
+        assert events == [
+            StreamValuesEvent(stream, [1], [], []),
+            StreamSuccessEvent(stream),
+            GroupValuesEvent(group, ["slow"]),
+            GroupSuccessEvent(group, [], []),
+            WorkQueueTerminationEvent(),
+        ]
+
+    def can_print_test_groups_and_streams():
+        group = Group(name="some group")
+        assert repr(group) == "<Group some group>"
+        stream = Stream(FakeStreamQueue(), name="some stream")
+        assert repr(stream) == "<Stream some stream>"

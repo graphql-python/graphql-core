@@ -12,7 +12,6 @@ from ..language import (
     FragmentSpreadNode,
     InlineFragmentNode,
     OperationDefinitionNode,
-    OperationType,
     SelectionSetNode,
 )
 from ..type import (
@@ -201,7 +200,7 @@ def collect_fields_impl(
         schema,
         fragments,
         variable_values,
-        operation,
+        _operation,
         runtime_type,
         visited_fragment_names,
         hide_suggestions,
@@ -226,7 +225,6 @@ def collect_fields_impl(
                 continue
 
             new_defer_usage = get_defer_usage(
-                operation,
                 variable_values,
                 fragment_variable_values,
                 selection,
@@ -267,7 +265,6 @@ def collect_fields_impl(
                 continue
 
             new_defer_usage = get_defer_usage(
-                operation,
                 variable_values,
                 fragment_variable_values,
                 selection,
@@ -315,7 +312,6 @@ def collect_fields_impl(
 
 
 def get_defer_usage(
-    operation: OperationDefinitionNode,
     variable_values: VariableValues,
     fragment_variable_values: FragmentVariableValues | None,
     node: FragmentSpreadNode | InlineFragmentNode,
@@ -333,13 +329,6 @@ def get_defer_usage(
 
     if not defer or defer.get("if") is False:
         return None
-
-    if operation.operation == OperationType.SUBSCRIPTION:
-        msg = (
-            "`@defer` directive not supported on subscription operations."
-            " Disable `@defer` by setting the `if` argument to `false`."
-        )
-        raise TypeError(msg)
 
     return DeferUsage(defer.get("label"), parent_defer_usage)
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from asyncio import CancelledError, ensure_future
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from ...pyutils import is_awaitable
+from ...pyutils.is_awaitable import is_awaitable
 
 if TYPE_CHECKING:
     from asyncio import Future
@@ -75,6 +75,11 @@ class Computation(Generic[T]):
         else:
             self._status = _FULFILLED
             self._value = result
+
+    @property
+    def pending_future(self) -> Future[T] | None:
+        """Get the still pending future, or None if there is none."""
+        return self._value if self._status is _PENDING else None
 
     def result(self) -> AwaitableOrValue[T]:
         """Get the memoized result, priming the computation if necessary.

@@ -8,7 +8,6 @@ from .aborted_graphql_execution_error import AbortedGraphQLExecutionError
 from .async_iterables import map_async_iterable
 from .types import (
     CompletedResult,
-    DeferredFragmentRecord,
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     FormattedSubsequentIncrementalExecutionResult,
@@ -24,10 +23,6 @@ from .types import (
     InitialIncrementalExecutionResult,
     PendingResult,
     SubsequentIncrementalExecutionResult,
-    StreamRecord,
-    StreamItemRecord,
-    StreamItemResult,
-    StreamItemsResult,
 )
 from .middleware import MiddlewareManager
 from .values import (
@@ -50,7 +45,6 @@ from .execute import (
     AsyncWorkFinishedInfo,
     ExecutionHooks,
     Executor,
-    GraphQLWrappedResult,
     Middleware,
     RootSelectionSetExecutor,
 )
@@ -59,7 +53,6 @@ __all__ = [
     "AbortedGraphQLExecutionError",
     "AsyncWorkFinishedInfo",
     "CompletedResult",
-    "DeferredFragmentRecord",
     "ExecutionHooks",
     "ExecutionResult",
     "Executor",
@@ -71,7 +64,6 @@ __all__ = [
     "FormattedInitialIncrementalExecutionResult",
     "FormattedPendingResult",
     "FormattedSubsequentIncrementalExecutionResult",
-    "GraphQLWrappedResult",
     "IncrementalDeferResult",
     "IncrementalResult",
     "IncrementalStreamResult",
@@ -80,10 +72,6 @@ __all__ = [
     "MiddlewareManager",
     "PendingResult",
     "RootSelectionSetExecutor",
-    "StreamItemRecord",
-    "StreamItemResult",
-    "StreamItemsResult",
-    "StreamRecord",
     "SubsequentIncrementalExecutionResult",
     "VariableValues",
     "create_source_event_stream",
