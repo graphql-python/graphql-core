@@ -3766,3 +3766,133 @@ def describe_defer_directive_with_errors_and_nested_defer():
             (b_id,) = [id_ for id_, label in label_of_id.items() if label == "b"]
             fast_entries = [i for i in incremental if i.get("data") == {"fast": "fast"}]
             assert fast_entries == [{"data": {"fast": "fast"}, "id": b_id}]
+
+
+def describe_defer_and_stream_on_spec_invalid_queries():
+    """Regression tests for graphql-python/graphql-core#272."""
+
+    @pytest.mark.timeout(1)
+    @pytest.mark.parametrize("early_execution", [False, True])
+    async def terminates_when_streamed_field_conflicts_with_deferred_selection(
+        early_execution,
+    ):
+        """A spec-invalid ``@defer``/``@stream`` combination must not hang.
+
+        A streamed list field without a subselection that also merge-conflicts
+        with an unstreamed selection of the same field inside a sibling
+        ``@defer`` used to deadlock incremental delivery whenever another field
+        of that sibling resolved later than the streamed field: the incremental
+        graph never converged to a terminal state, so ``subsequent_results``
+        never yielded a final payload with ``hasNext: False``. Spec-valid
+        queries were not affected, but ``experimental_execute_incrementally``
+        may be called without a prior validation pass and must terminate on
+        invalid input, too. See issue #272.
+        """
+
+        async def resolve_fast(_source, _info) -> str:
+            # `fast` must resolve (at least) two event loop iterations later
+            # than `child` and `items` to trigger the deadlock
+            await sleep(0)
+            await sleep(0)
+            return "fast"
+
+        async def resolve_obj(_source, _info) -> dict:
+            return {}
+
+        async def resolve_list(_source, _info) -> list:
+            return [{}, {}]
+
+        obj_type: GraphQLObjectType = GraphQLObjectType(
+            "Obj",
+            lambda: {
+                "fast": GraphQLField(GraphQLString, resolve=resolve_fast),
+                "child": GraphQLField(obj_type, resolve=resolve_obj),
+                "items": GraphQLField(GraphQLList(obj_type), resolve=resolve_list),
+            },
+        )
+        local_schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query", {"obj": GraphQLField(obj_type, resolve=resolve_obj)}
+            )
+        )
+        # The query is spec-invalid in two ways: the streamed `items` field
+        # lacks a subselection, and it merge-conflicts with the unstreamed
+        # `items` selection inside the sibling `@defer`. Neither invalid
+        # feature alone triggered the deadlock, and fixing either (aliasing
+        # the conflict away or adding a subselection) made it disappear.
+        document = parse(
+            """
+            query {
+              obj {
+                ... {
+                  child {
+                    child {
+                      ... @defer(label: "L4") { items @stream(initialCount: 1) }
+                    }
+                    ... @defer { child { fast items } }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        result = experimental_execute_incrementally(
+            local_schema, document, {}, enable_early_execution=early_execution
+        )
+        assert is_awaitable(result)
+        result = await result
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        initial = result.initial_result.formatted
+        # Draining the stream must terminate (guarded by the timeout above).
+        subsequent = [patch.formatted async for patch in result.subsequent_results]
+        payloads: list[Any] = [initial, *subsequent]
+
+        # The stream must terminate cleanly: `hasNext` is true on every
+        # payload except the last, which ends the stream.
+        assert initial["hasNext"] is True
+        assert subsequent[-1]["hasNext"] is False
+        assert all(patch["hasNext"] is True for patch in subsequent[:-1])
+
+        assert initial["data"] == {"obj": {"child": {"child": {}}}}
+
+        # Aggregate announcements, deliveries and completions across the
+        # whole stream; their grouping into payloads is not asserted as it
+        # depends on resolver scheduling and `enable_early_execution`.
+        pending = [p for payload in payloads for p in payload.get("pending", [])]
+        incremental = [
+            i for payload in payloads for i in payload.get("incremental", [])
+        ]
+        completed = [c for payload in payloads for c in payload.get("completed", [])]
+
+        # Three delivery groups are announced: the anonymous `@defer`, the
+        # labeled nested `@defer`, and the stream over `items`.
+        id_of_path = {tuple(p["path"]): p["id"] for p in pending}
+        label_of_path = {tuple(p["path"]): p.get("label") for p in pending}
+        assert label_of_path == {
+            ("obj", "child"): None,
+            ("obj", "child", "child"): "L4",
+            ("obj", "child", "child", "items"): None,
+        }
+
+        # Every announced group completes exactly once and without errors.
+        assert sorted(c["id"] for c in completed) == sorted(id_of_path.values())
+        assert all("errors" not in c for c in completed)
+
+        # All three groups deliver: the initial streamed item under `L4` and
+        # the second item via the stream (both as empty objects, since the
+        # invalid selection has no subfields), and `fast` exactly once under
+        # the anonymous `@defer` (the conflicting unstreamed `items` selection
+        # merges into the streamed one instead of being delivered again).
+        expected_deliveries = [
+            {"data": {"items": [{}]}, "id": id_of_path["obj", "child", "child"]},
+            {"items": [{}], "id": id_of_path["obj", "child", "child", "items"]},
+            {
+                "data": {"fast": "fast"},
+                "id": id_of_path["obj", "child"],
+                "subPath": ["child"],
+            },
+        ]
+        assert len(incremental) == len(expected_deliveries)
+        for entry in expected_deliveries:
+            assert entry in incremental
