@@ -276,6 +276,58 @@ def describe_execute_stream_directive():
             },
         ]
 
+    async def does_not_call_return_on_an_exhausted_sync_iterator():
+        """Does not call ``return`` on an exhausted sync iterator
+
+        The JavaScript version asserts that return() is not called on the
+        exhausted iterator; Python iterators have no equivalent method in the
+        iteration protocol, but an analogous close() method must likewise not
+        be called by the implementation.
+        """
+        document = parse("{ scalarList @stream(initialCount: 1) }")
+
+        values = ["apple", "banana", "coconut"]
+
+        class Source:
+            def __init__(self):
+                self.index = 0
+                self.close_calls = 0
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                try:
+                    value = values[self.index]
+                except IndexError:
+                    raise StopIteration from None
+                finally:
+                    self.index += 1
+                return value
+
+            def close(self):
+                self.close_calls += 1  # pragma: no cover
+
+        source = Source()
+
+        result = await complete(document, {"scalarList": source})
+        assert result == [
+            {
+                "data": {"scalarList": ["apple"]},
+                "pending": [{"id": "0", "path": ["scalarList"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {"items": ["banana", "coconut"], "id": "0"},
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+        assert source.close_calls == 0
+        assert source.index == 4
+
     async def can_use_default_value_of_initial_count():
         """Can use default value of initialCount"""
         document = parse("{ scalarList @stream }")
@@ -1191,6 +1243,88 @@ def describe_execute_stream_directive():
             },
         ]
 
+    async def drains_sync_iterators_with_later_promises_when_null_bubbles():
+        """Drains sync iterators with later promises when null bubbles past the stream
+
+        The JavaScript version asserts that there is no unhandled rejection;
+        the asyncio analog is that the pending awaitable collected from the
+        drained iterator is settled in the background, so that its late error
+        is absorbed instead of being reported as never retrieved.
+        """
+        document = parse(
+            """
+            query {
+              nonNullFriendList @stream(initialCount: 1) {
+                name
+              }
+            }
+            """
+        )
+
+        rejected = False
+
+        async def delayed_reject():
+            nonlocal rejected
+            await sleep(0)
+            rejected = True
+            raise RuntimeError("third bad")
+
+        values = [friends[0], None, delayed_reject()]
+
+        class Source:
+            def __init__(self):
+                self.index = 0
+                self.close_calls = 0
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                try:
+                    value = values[self.index]
+                except IndexError:
+                    raise StopIteration from None
+                finally:
+                    self.index += 1
+                return value
+
+            def close(self):
+                self.close_calls += 1  # pragma: no cover
+
+        source = Source()
+
+        result = await complete(document, {"nonNullFriendList": source})
+        assert result == [
+            {
+                "data": {"nonNullFriendList": [{"name": "Luke"}]},
+                "pending": [{"id": "0", "path": ["nonNullFriendList"]}],
+                "hasNext": True,
+            },
+            {
+                "completed": [
+                    {
+                        "id": "0",
+                        "errors": [
+                            {
+                                "message": "Cannot return null for non-nullable field"
+                                " Query.nonNullFriendList.",
+                                "locations": [{"line": 3, "column": 15}],
+                                "path": ["nonNullFriendList", 1],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+        assert source.close_calls == 0
+        assert source.index == 4
+
+        # the pending awaitable from the drained iterator settles in background
+        for _ in range(2):
+            await sleep(0)
+        assert rejected
+
     async def handles_error_thrown_in_complete_value_after_initial_count_is_reached():
         """Handles errors thrown by completeValue after initialCount is reached"""
         document = parse(
@@ -1952,6 +2086,71 @@ def describe_execute_stream_directive():
             },
         ]
 
+    async def cancels_async_stream_items_when_null_bubbles_past_the_stream():
+        """Cancels async stream items when null bubbles past the stream
+
+        In the asyncio implementation, the pending stream item is cancelled
+        when the stream is filtered out by the null bubbling, so that it can
+        no longer be resolved late.
+        """
+        document = parse(
+            """
+            query {
+              nestedObject {
+                nestedFriendList @stream(initialCount: 0) {
+                  name
+                }
+                nonNullScalarField
+              }
+            }
+            """
+        )
+
+        friends_started = Event()
+        non_null_future: Future[Any] = Future()
+        name_future: Future[str] = Future()
+
+        def nested_friend_list(_info):
+            friends_started.set()
+            return [{"name": name_future}]
+
+        result_future = ensure_future(
+            experimental_execute_incrementally(  # type: ignore
+                schema,
+                document,
+                {
+                    "nestedObject": {
+                        "nestedFriendList": nested_friend_list,
+                        "nonNullScalarField": lambda _info: non_null_future,
+                    }
+                },
+                enable_early_execution=True,
+            )
+        )
+
+        await friends_started.wait()
+        await sleep(0)
+        non_null_future.set_result(None)
+
+        result = await result_future
+        assert not isinstance(result, ExperimentalIncrementalExecutionResults)
+        assert result.formatted == {
+            "data": {"nestedObject": None},
+            "errors": [
+                {
+                    "message": "Cannot return null for non-nullable field"
+                    " NestedObject.nonNullScalarField.",
+                    "locations": [{"line": 7, "column": 17}],
+                    "path": ["nestedObject", "nonNullScalarField"],
+                }
+            ],
+        }
+
+        # the pending stream item was cancelled instead of being resolved late
+        for _ in range(2):
+            await sleep(0)
+        assert name_future.cancelled()
+
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
         """Filters stream payloads that are nulled in a deferred payload"""
         document = parse(
@@ -2264,6 +2463,85 @@ def describe_execute_stream_directive():
                 "hasNext": False,
             },
         ]
+
+    async def repromotes_completed_stream_when_slower_sibling_defer_resolves_later():
+        """Re-promotes a completed stream when a slower sibling defer resolves later
+
+        The JavaScript version delivers the re-promoted stream items and the
+        slow deferred field as two separate payloads due to microtask timing;
+        the asyncio implementation delivers the same content in the same order
+        coalesced into a single payload.
+        """
+        document = parse(
+            """
+            query {
+              nestedObject {
+                ... @defer {
+                  nestedFriendList @stream {
+                    name
+                  }
+                }
+                ... @defer {
+                  scalarField
+                  nestedFriendList @stream {
+                    name
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        slow_field_future: Future[str] = Future()
+
+        execute_result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "nestedObject": {
+                    "nestedFriendList": lambda _info: friends,
+                    "scalarField": lambda _info: slow_field_future,
+                }
+            },
+        )
+        assert isinstance(execute_result, ExperimentalIncrementalExecutionResults)
+        iterator = execute_result.subsequent_results
+
+        result1 = execute_result.initial_result
+        assert result1 == {
+            "data": {"nestedObject": {}},
+            "pending": [
+                {"id": "0", "path": ["nestedObject"]},
+                {"id": "1", "path": ["nestedObject"]},
+            ],
+            "hasNext": True,
+        }
+
+        result2 = await anext(iterator)
+        assert result2 == {
+            "pending": [{"id": "2", "path": ["nestedObject", "nestedFriendList"]}],
+            "incremental": [{"data": {"nestedFriendList": []}, "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": True,
+        }
+
+        slow_field_future.set_result("slow")
+
+        result3 = await anext(iterator)
+        assert result3 == {
+            "incremental": [
+                {
+                    "items": [{"name": "Luke"}, {"name": "Han"}, {"name": "Leia"}],
+                    "id": "2",
+                },
+                {"data": {"scalarField": "slow"}, "id": "1"},
+            ],
+            "completed": [{"id": "2"}, {"id": "1"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
 
     async def returns_payloads_properly_when_parent_deferred_slower_than_stream():
         """Returns payloads in correct order when parent deferred slower than stream

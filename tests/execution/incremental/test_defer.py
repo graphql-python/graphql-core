@@ -109,6 +109,7 @@ a = GraphQLObjectType(
     {
         "b": GraphQLField(b),
         "someField": GraphQLField(GraphQLString),
+        "nonNullErrorField": GraphQLField(GraphQLNonNull(GraphQLString)),
     },
 )
 
@@ -137,6 +138,29 @@ query = GraphQLObjectType(
 )
 
 schema = GraphQLSchema(query)
+
+user_type = GraphQLObjectType("User", {"id": GraphQLField(GraphQLID)})
+
+todo_type = GraphQLObjectType(
+    "Todo",
+    {
+        "id": GraphQLField(GraphQLID),
+        "items": GraphQLField(GraphQLList(GraphQLString)),
+        "author": GraphQLField(user_type),
+    },
+)
+
+cancellation_schema = GraphQLSchema(
+    GraphQLObjectType(
+        "Query",
+        {
+            "todo": GraphQLField(todo_type),
+            "blocker": GraphQLField(GraphQLString),
+            "scalarList": GraphQLField(GraphQLList(GraphQLString)),
+            "slowScalarList": GraphQLField(GraphQLList(GraphQLString)),
+        },
+    )
+)
 
 
 class Resolvers:
@@ -2188,6 +2212,144 @@ def describe_execute_defer_directive():
             },
         ]
 
+    async def nulls_cross_defer_boundaries_failed_fragment_with_slower_shared_groups():
+        """Nulls cross defer boundaries, failed fragment with slower shared children
+
+        Nulls cross defer boundaries, failed fragment with slower shared child
+        execution groups.
+        """
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  someField
+                  nonNullErrorField
+                  b {
+                    c {
+                      d
+                    }
+                  }
+                }
+              }
+              a {
+                ... @defer {
+                  someField
+                  b {
+                    e {
+                      f
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        async def some_field(_info):
+            return "someField"
+
+        result = await complete(
+            document,
+            {"a": {"b": {"c": {"d": "d"}, "e": {"f": "f"}}, "someField": some_field}},
+        )
+        assert result == [
+            {
+                "data": {"a": {}},
+                "pending": [{"id": "0", "path": ["a"]}, {"id": "1", "path": []}],
+                "hasNext": True,
+            },
+            {
+                "completed": [
+                    {
+                        "id": "1",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field a.nonNullErrorField.",
+                                "locations": [{"line": 6, "column": 19}],
+                                "path": ["a", "nonNullErrorField"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {"data": {"b": {}, "someField": "someField"}, "id": "0"},
+                    {"data": {"e": {"f": "f"}}, "id": "0", "subPath": ["b"]},
+                ],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
+
+    async def handles_cancelling_child_deferred_fragments_if_parent_fragment_fails():
+        """Handles cancelling child deferred fragments if parent fragment fails"""
+        document = parse(
+            """
+            query {
+              ... @defer {
+                a {
+                  someField
+                  b {
+                    c {
+                      nonNullErrorField
+                    }
+                  }
+                }
+                ... @defer {
+                  a {
+                    someField
+                  }
+                }
+              }
+              a {
+                ... @defer {
+                  b {
+                    c {
+                      d
+                    }
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"a": {"b": {"c": {"d": "d"}}, "someField": "someField"}},
+        )
+        assert result == [
+            {
+                "data": {"a": {}},
+                "pending": [{"id": "0", "path": ["a"]}, {"id": "1", "path": []}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [
+                    {"data": {"b": {"c": {}}}, "id": "0"},
+                    {"data": {"d": "d"}, "id": "0", "subPath": ["b", "c"]},
+                ],
+                "completed": [
+                    {
+                        "id": "1",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field c.nonNullErrorField.",
+                                "locations": [{"line": 8, "column": 23}],
+                                "path": ["a", "b", "c", "nonNullErrorField"],
+                            },
+                        ],
+                    },
+                    {"id": "0"},
+                ],
+                "hasNext": False,
+            },
+        ]
+
     async def filters_a_payload_with_a_null_that_cannot_be_merged():
         """Filters a payload with a null that cannot be merged"""
         document = parse(
@@ -2259,8 +2421,48 @@ def describe_execute_defer_directive():
             },
         ]
 
-    async def cancels_deferred_fields_when_initial_result_exhibits_null_bubbling():
-        """Cancels deferred fields when initial result exhibits null bubbling"""
+    async def cancels_deferred_fields_when_null_bubbling_cancels_the_defer():
+        """Cancels deferred fields when initial result exhibits null bubbling
+
+        Cancels deferred fields when initial result exhibits null bubbling,
+        cancelling the defer.
+        """
+        document = parse(
+            """
+            query {
+              hero {
+                nonNullName
+                ... @defer {
+                  name
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {"hero": {**hero, "nonNullName": lambda _info: None}},
+            enable_early_execution=True,
+        )
+
+        assert result == {
+            "data": {"hero": None},
+            "errors": [
+                {
+                    "message": "Cannot return null"
+                    " for non-nullable field Hero.nonNullName.",
+                    "locations": [{"line": 4, "column": 17}],
+                    "path": ["hero", "nonNullName"],
+                },
+            ],
+        }
+
+    async def cancels_deferred_fields_when_null_bubbling_cancels_new_fields():
+        """Cancels deferred fields when initial result exhibits null bubbling
+
+        Cancels deferred fields when initial result exhibits null bubbling,
+        cancelling new fields.
+        """
         document = parse(
             """
             query {
@@ -2292,6 +2494,53 @@ def describe_execute_defer_directive():
                 },
             ],
         }
+
+    async def keeps_deferred_work_outside_nulled_error_paths():
+        """Keeps deferred work outside nulled error paths"""
+        document = parse(
+            """
+            query {
+              a {
+                ... @defer {
+                  someField
+                }
+                nonNullErrorField
+              }
+              g {
+                ... @defer {
+                  h
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document,
+            {
+                "a": {"someField": "someField", "nonNullErrorField": None},
+                "g": {"h": "value"},
+            },
+        )
+        assert result == [
+            {
+                "data": {"a": None, "g": {}},
+                "errors": [
+                    {
+                        "message": "Cannot return null"
+                        " for non-nullable field a.nonNullErrorField.",
+                        "locations": [{"line": 7, "column": 17}],
+                        "path": ["a", "nonNullErrorField"],
+                    },
+                ],
+                "pending": [{"id": "0", "path": ["g"]}],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"data": {"h": "value"}, "id": "0"}],
+                "completed": [{"id": "0"}],
+                "hasNext": False,
+            },
+        ]
 
     async def stops_late_initial_path_completion_before_deferred_response():
         """Stops late initial-path completion before publishing a deferred response"""
@@ -3041,6 +3290,165 @@ def describe_execute_defer_directive():
             " multiple payloads (due to @defer or @stream directive)"
         )
 
+    async def allows_deferred_execution_when_passed_abort_signal_if_not_aborted():
+        """Should allow deferred execution when passed abortSignal, if not aborted"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                ... on Todo @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"todo": {"author": {"id": "1"}}},
+            abort_signal=abort_controller.signal,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result == {
+            "data": {"todo": {"id": None}},
+            "pending": [{"id": "0", "path": ["todo"]}],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+        payload1 = await anext(iterator)
+        assert payload1 == {
+            "incremental": [{"data": {"author": {"id": "1"}}, "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def stops_deferred_execution_when_aborted():
+        """Should stop deferred execution when aborted"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                ... on Todo @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        author_calls = 0
+
+        def author(_info):
+            nonlocal author_calls
+            author_calls += 1  # pragma: no cover
+            return {"id": "1"}  # pragma: no cover
+
+        async def todo(_info):
+            # never reached: the execution is aborted before the todo resolves
+            return {"id": "1", "author": author}  # pragma: no cover
+
+        awaitable_result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"todo": todo},
+            abort_signal=abort_controller.signal,
+        )
+        assert is_awaitable(awaitable_result)
+        result_task = ensure_future(awaitable_result)
+
+        abort_controller.abort()
+
+        with pytest.raises(
+            AbortedGraphQLExecutionError, match="This operation was aborted"
+        ):
+            await result_task
+        assert author_calls == 0
+
+    async def stops_deferred_execution_when_aborted_mid_execution():
+        """Should stop deferred execution when aborted mid-execution"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              ... on Query @defer {
+                todo {
+                  id
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        author_calls = 0
+
+        async def author(_info):
+            nonlocal author_calls
+            author_calls += 1  # pragma: no cover
+            return {"id": "1"}  # pragma: no cover
+
+        async def todo(_info):
+            # never reached: the execution is aborted before the todo resolves
+            return {"id": "1", "author": author}  # pragma: no cover
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"todo": todo},
+            abort_signal=abort_controller.signal,
+        )
+        # the initial result has no non-deferred fields and completes early
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            async for _patch in result.subsequent_results:
+                pass  # pragma: no cover
+        assert author_calls == 0
+
+    async def cancels_pending_deferred_execution_groups():
+        """Cancels pending deferred execution groups"""
+        abort_controller = AbortController()
+        document = parse("{ scalarList ... @defer { slowScalarList } }")
+
+        slow_future: Future[Any] = Future()
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {
+                "scalarList": lambda _info: ["a"],
+                "slowScalarList": lambda _info: slow_future,
+            },
+            enable_early_execution=True,
+            abort_signal=abort_controller.signal,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        iterator = result.subsequent_results
+        abort_controller.abort()
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await anext(iterator)
+
     async def cancels_pending_deferred_tasks_with_async_child_stream_cleanup():
         """Cancels pending deferred tasks with async child stream cleanup
 
@@ -3050,25 +3458,6 @@ def describe_execute_defer_directive():
         only after the cleanup has settled, so that no cleanup coroutine is left
         behind unawaited.
         """
-        user_type = GraphQLObjectType("User", {"id": GraphQLField(GraphQLID)})
-        todo_type = GraphQLObjectType(
-            "Todo",
-            {
-                "id": GraphQLField(GraphQLID),
-                "items": GraphQLField(GraphQLList(GraphQLString)),
-                "author": GraphQLField(user_type),
-            },
-        )
-        cancellation_schema = GraphQLSchema(
-            GraphQLObjectType(
-                "Query",
-                {
-                    "todo": GraphQLField(todo_type),
-                    "blocker": GraphQLField(GraphQLString),
-                },
-            )
-        )
-
         abort_controller = AbortController()
         document = parse(
             """
@@ -3161,6 +3550,97 @@ def describe_execute_defer_directive():
         with pytest.raises(AbortError, match="This operation was aborted"):
             await anext_task
         assert items_source.aclose_finished
+
+    async def ignores_deferred_payloads_resolved_after_cancellation():
+        """Should ignore deferred payloads resolved after cancellation"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                ... @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        author_started = Event()
+        author_future: Future[Any] = Future()
+
+        def author(_info):
+            author_started.set()
+            return author_future
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"todo": {"id": "todo", "author": author}},
+            abort_signal=abort_controller.signal,
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        iterator = result.subsequent_results
+        next_task = ensure_future(anext(iterator))
+
+        await author_started.wait()
+        abort_controller.abort()
+
+        author_future.set_result({"id": "author"})  # the late result is ignored
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
+
+    async def ignores_deferred_errors_after_cancellation():
+        """Should ignore deferred errors after cancellation"""
+        abort_controller = AbortController()
+        document = parse(
+            """
+            query {
+              todo {
+                id
+                ... @defer {
+                  author {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+
+        author_started = Event()
+        author_future: Future[Any] = Future()
+
+        def author(_info):
+            author_started.set()
+            return author_future
+
+        result = experimental_execute_incrementally(
+            cancellation_schema,
+            document,
+            {"todo": {"id": "todo", "author": author}},
+            abort_signal=abort_controller.signal,
+            enable_early_execution=True,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        iterator = result.subsequent_results
+        next_task = ensure_future(anext(iterator))
+
+        await author_started.wait()
+        abort_controller.abort()
+
+        # the late error is ignored and absorbed instead of being reported
+        author_future.set_exception(RuntimeError("late error"))
+
+        with pytest.raises(AbortError, match="This operation was aborted"):
+            await next_task
 
 
 def describe_defer_directive_with_errors_and_nested_defer():
