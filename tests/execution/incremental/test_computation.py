@@ -130,7 +130,8 @@ def describe_computation():
 
     async def can_be_aborted_while_running_asynchronously():
         async def run() -> None:
-            await Event().wait()  # never resolves
+            # may be cancelled before it even starts running
+            await Event().wait()  # pragma: no cover
 
         on_abort_spy = Spy(lambda _reason: None)
         computation: Computation[Any] = Computation(run, on_abort_spy)
@@ -144,7 +145,8 @@ def describe_computation():
 
     async def returns_async_abort_cleanup_while_running():
         async def run() -> None:
-            await Event().wait()  # never resolves
+            # may be cancelled before it even starts running
+            await Event().wait()  # pragma: no cover
 
         cleanup_future: Future[None] = Future()
         computation: Computation[Any] = Computation(run, lambda _reason: cleanup_future)
@@ -168,7 +170,8 @@ def describe_computation():
 
     async def forwards_abort_reason_to_on_abort_while_running_asynchronously():
         async def run() -> None:
-            await Event().wait()  # never resolves
+            # may be cancelled before it even starts running
+            await Event().wait()  # pragma: no cover
 
         abort_reason = RuntimeError("aborted")
         recorded_reasons: list[BaseException | None] = []
@@ -198,7 +201,8 @@ def describe_computation():
 
     async def can_be_aborted_while_running_without_abort_callback():
         async def run() -> None:
-            await Event().wait()  # never resolves
+            # may be cancelled before it even starts running
+            await Event().wait()  # pragma: no cover
 
         computation: Computation[Any] = Computation(run)
 
@@ -223,7 +227,8 @@ def describe_computation():
 
     async def rejects_when_the_pending_future_is_cancelled_externally():
         async def run() -> None:
-            await Event().wait()  # never resolves
+            # may be cancelled before it even starts running
+            await Event().wait()  # pragma: no cover
 
         computation: Computation[Any] = Computation(run)
 

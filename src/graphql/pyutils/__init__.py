@@ -10,7 +10,6 @@ These functions are not part of the module interface and are subject to change.
 
 from .abort_signal import AbortController, AbortError, AbortSignal
 from .async_reduce import async_reduce
-from .boxed_awaitable_or_value import BoxedAwaitableOrValue
 from .gather_with_cancel import gather_with_cancel
 from .convert_case import camel_to_snake, snake_to_camel
 from .cached_property import cached_property
@@ -44,7 +43,6 @@ __all__ = [
     "AbortError",
     "AbortSignal",
     "AwaitableOrValue",
-    "BoxedAwaitableOrValue",
     "Description",
     "FrozenError",
     "Path",

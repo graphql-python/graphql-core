@@ -12,11 +12,10 @@ from graphql.execution import (
     ExecutionResult,
     ExperimentalIncrementalExecutionResults,
     IncrementalStreamResult,
-    StreamItemRecord,
-    StreamRecord,
     execute,
     experimental_execute_incrementally,
 )
+from graphql.execution.incremental import ItemStream, StreamItemQueue
 from graphql.language import DocumentNode, parse
 from graphql.pyutils import AbortController, AbortError, Path
 from graphql.type import (
@@ -244,15 +243,14 @@ def describe_execute_stream_directive():
             IncrementalStreamResult(**modified_args(args, extensions={"baz": 1}))
         )
 
-    def can_print_stream_record():
-        """Can print a StreamRecord"""
-        queue: list[StreamItemRecord] = []
+    def can_print_item_stream():
+        """Can print an ItemStream"""
         path = Path(None, "bar", "Bar")
-        expected_args = "stream_item_queue[0], path=['bar']"
-        record = StreamRecord(queue, path)
-        assert str(record) == f"StreamRecord({expected_args})"
-        record = StreamRecord(queue, path, "foo")
-        assert str(record) == f"StreamRecord({expected_args}, label='foo')"
+        queue = StreamItemQueue(None)  # type: ignore[arg-type]
+        stream = ItemStream(path, None, queue, 0)
+        assert str(stream) == "ItemStream(path=['bar'])"
+        stream = ItemStream(path, "foo", queue, 0)
+        assert str(stream) == "ItemStream(path=['bar'], label='foo')"
 
     @pytest.mark.parametrize("early_execution", [False, True])
     async def can_stream_a_list_field(early_execution):
@@ -524,9 +522,14 @@ def describe_execute_stream_directive():
             },
             {
                 "incremental": [
-                    {"items": [{"name": "Luke", "id": "1"}], "id": "0"},
-                    {"items": [{"name": "Han", "id": "2"}], "id": "0"},
-                    {"items": [{"name": "Leia", "id": "3"}], "id": "0"},
+                    {
+                        "items": [
+                            {"name": "Luke", "id": "1"},
+                            {"name": "Han", "id": "2"},
+                            {"name": "Leia", "id": "3"},
+                        ],
+                        "id": "0",
+                    },
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -764,7 +767,7 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None],
+                        "items": [None, {"name": "Leia", "id": "3"}],
                         "id": "0",
                         "errors": [
                             {
@@ -774,7 +777,6 @@ def describe_execute_stream_directive():
                             }
                         ],
                     },
-                    {"items": [{"name": "Leia", "id": "3"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -807,9 +809,14 @@ def describe_execute_stream_directive():
             },
             {
                 "incremental": [
-                    {"items": [{"name": "Luke", "id": "1"}], "id": "0"},
-                    {"items": [{"name": "Han", "id": "2"}], "id": "0"},
-                    {"items": [{"name": "Leia", "id": "3"}], "id": "0"},
+                    {
+                        "items": [
+                            {"name": "Luke", "id": "1"},
+                            {"name": "Han", "id": "2"},
+                            {"name": "Leia", "id": "3"},
+                        ],
+                        "id": "0",
+                    },
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -1260,7 +1267,7 @@ def describe_execute_stream_directive():
                 "hasNext": False,
                 "incremental": [
                     {
-                        "items": [None],
+                        "items": [None, {"nonNullName": "Han"}],
                         "id": "0",
                         "errors": [
                             {
@@ -1270,7 +1277,6 @@ def describe_execute_stream_directive():
                             }
                         ],
                     },
-                    {"items": [{"nonNullName": "Han"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
             },
@@ -1315,7 +1321,7 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None],
+                        "items": [None, {"nonNullName": "Han"}],
                         "id": "0",
                         "errors": [
                             {
@@ -1325,7 +1331,6 @@ def describe_execute_stream_directive():
                             }
                         ],
                     },
-                    {"items": [{"nonNullName": "Han"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -1414,7 +1419,10 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None],
+                        "items": [
+                            None,
+                            {"metadata": {"value": "later"}, "nonNullName": "Han"},
+                        ],
                         "id": "0",
                         "errors": [
                             {
@@ -1423,12 +1431,6 @@ def describe_execute_stream_directive():
                                 "path": ["friendList", 1, "nonNullName"],
                             },
                         ],
-                    },
-                    {
-                        "items": [
-                            {"metadata": {"value": "later"}, "nonNullName": "Han"}
-                        ],
-                        "id": "0",
                     },
                 ],
                 "completed": [{"id": "0"}],
@@ -1591,7 +1593,7 @@ def describe_execute_stream_directive():
             {
                 "incremental": [
                     {
-                        "items": [None],
+                        "items": [None, {"nonNullName": "Han"}],
                         "id": "0",
                         "errors": [
                             {
@@ -1601,7 +1603,6 @@ def describe_execute_stream_directive():
                             }
                         ],
                     },
-                    {"items": [{"nonNullName": "Han"}], "id": "0"},
                 ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
@@ -2197,11 +2198,15 @@ def describe_execute_stream_directive():
                 "hasNext": True,
             },
             {
-                "incremental": [{"items": [{"id": "2", "name": "Han"}], "id": "0"}],
-                "hasNext": True,
-            },
-            {
-                "incremental": [{"items": [{"id": "3", "name": "Leia"}], "id": "0"}],
+                "incremental": [
+                    {
+                        "items": [
+                            {"id": "2", "name": "Han"},
+                            {"id": "3", "name": "Leia"},
+                        ],
+                        "id": "0",
+                    },
+                ],
                 "completed": [{"id": "0"}],
                 "hasNext": False,
             },
@@ -2411,12 +2416,17 @@ def describe_execute_stream_directive():
         assert result3 == {
             "pending": [{"id": "2", "path": ["friendList", 1], "label": "DeferName"}],
             "incremental": [{"items": [{"id": "2"}], "id": "0"}],
-            "completed": [{"id": "0"}],
             "hasNext": True,
         }
 
         result4 = await anext(iterator)
         assert result4 == {
+            "completed": [{"id": "0"}],
+            "hasNext": True,
+        }
+
+        result5 = await anext(iterator)
+        assert result5 == {
             "incremental": [{"data": {"name": "Han"}, "id": "2"}],
             "completed": [{"id": "2"}],
             "hasNext": False,

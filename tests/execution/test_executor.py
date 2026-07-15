@@ -17,7 +17,7 @@ from graphql.execution.collect_fields import FieldDetails
 from graphql.execution.get_variable_signature import GraphQLVariableSignature
 from graphql.execution.values import VariableValues, VariableValueSource
 from graphql.language import FieldNode, OperationDefinitionNode, parse
-from graphql.pyutils import Undefined, inspect
+from graphql.pyutils import Undefined, inspect, is_awaitable
 from graphql.type import (
     GraphQLArgument,
     GraphQLBoolean,
@@ -1366,3 +1366,68 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         assert third is not first
+
+
+def describe_base_executor_without_incremental_delivery():
+    def deduplicates_errors_at_nulled_positions():
+        from graphql.execution.executor import CollectedErrors
+        from graphql.pyutils import Path
+
+        collected_errors = CollectedErrors()
+        path = Path(None, "foo", "Foo")
+        error = GraphQLError("first")
+        collected_errors.add(error, path)
+        assert collected_errors.errors == [error]
+        assert collected_errors.has_nulled_position(path)
+        # errors at or under an already nulled position are not added
+        collected_errors.add(GraphQLError("same position"), path)
+        collected_errors.add(GraphQLError("under position"), path.add_key("bar"))
+        assert collected_errors.errors == [error]
+        assert not collected_errors.has_nulled_position(Path(None, "other", "Foo"))
+
+    def ignores_stream_directives():
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query", {"list": GraphQLField(GraphQLList(GraphQLString))}
+            ),
+            directives=[GraphQLStreamDirective],
+        )
+        document = parse("{ list @stream(initialCount: 1) }")
+        executor = Executor.build(schema, document, {"list": ["a", "b", "c"]})
+        assert isinstance(executor, Executor)
+        # the base executor completes the whole list, ignoring @stream
+        assert executor.execute_operation() == ({"list": ["a", "b", "c"]}, None)
+
+    def ignores_defer_directives_on_subfields():
+        obj_type = GraphQLObjectType("Obj", {"echo": GraphQLField(GraphQLString)})
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"obj": GraphQLField(obj_type)}),
+            directives=[GraphQLDeferDirective],
+        )
+        document = parse("{ obj { ... @defer { echo } } }")
+        executor = Executor.build(schema, document, {"obj": {"echo": "hello"}})
+        assert isinstance(executor, Executor)
+        # the base executor executes deferred subfields inline
+        assert executor.execute_operation() == ({"obj": {"echo": "hello"}}, None)
+
+    async def completes_async_is_type_of_with_async_subfields():
+        async def is_obj(_value, _info):
+            return True
+
+        async def echo(_value, _info):
+            return "hello"
+
+        obj_type = GraphQLObjectType(
+            "Obj",
+            {"echo": GraphQLField(GraphQLString, resolve=echo)},
+            is_type_of=is_obj,
+        )
+        schema = GraphQLSchema(
+            GraphQLObjectType("Query", {"obj": GraphQLField(obj_type)})
+        )
+        document = parse("{ obj { echo } }")
+        executor = Executor.build(schema, document, {"obj": {}})
+        assert isinstance(executor, Executor)
+        result = executor.execute_operation()
+        assert is_awaitable(result)
+        assert await result == ({"obj": {"echo": "hello"}}, None)

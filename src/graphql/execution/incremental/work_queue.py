@@ -12,7 +12,7 @@ from asyncio import (
 )
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol, TypeAlias, cast
 
-from ...pyutils import is_awaitable
+from ...pyutils.is_awaitable import is_awaitable
 
 if TYPE_CHECKING:
     from asyncio import Future, Task
@@ -56,6 +56,10 @@ class StreamQueue(Protocol):
 
     def batches(self) -> AsyncIterator[Sequence[Any]]:
         """Iterate over the batches of settled stream items."""
+        ...
+
+    def is_stopped(self) -> bool:
+        """Check whether the stream is known to have stopped normally."""
         ...
 
     def abort(self, reason: BaseException | None = None) -> Awaitable[None] | None:
@@ -270,18 +274,22 @@ class WorkQueue:
             self._start_stream(stream)
         channel = self._channel
         while not self._stopped:
-            graph_events = []
+            work_queue_events: list[WorkQueueEvent] = []
             graph_event = await channel.get()
             while True:
                 if graph_event is not _STOP:
-                    graph_events.append(graph_event)
+                    # Handling a graph event may synchronously push further
+                    # graph events (e.g. when a completed group releases a
+                    # child group whose tasks complete synchronously); these
+                    # are picked up and handled within the same batch.
+                    work_queue_events.extend(self._handle_graph_event(graph_event))
                 try:
                     graph_event = channel.get_nowait()
                 except QueueEmpty:
                     break
-            if not graph_events:
-                continue  # woken up by the stop sentinel
-            work_queue_events = self._handle_graph_events(graph_events)
+            if not self._root_groups and not self._root_streams:
+                self._stopped = True
+                work_queue_events.append(WorkQueueTerminationEvent())
             if work_queue_events:
                 yield work_queue_events
 
@@ -508,33 +516,26 @@ class WorkQueue:
         pump_tasks.add(pump_task)
         pump_task.add_done_callback(pump_tasks.discard)
 
-    def _handle_graph_events(
-        self, graph_events: Sequence[Any]
-    ) -> Sequence[WorkQueueEvent]:
-        """Translate a batch of graph events into work queue events."""
-        work_queue_events: list[WorkQueueEvent] = []
+    def _handle_graph_event(self, graph_event: Any) -> Sequence[WorkQueueEvent]:
+        """Translate a single graph event into work queue events."""
+        if isinstance(graph_event, _TaskSuccess):
+            return self._task_success(graph_event)
+        if isinstance(graph_event, _TaskFailure):
+            return self._task_failure(graph_event)
+        if isinstance(graph_event, _StreamItems):
+            return self._stream_items(graph_event)
         root_streams = self._root_streams
-        for graph_event in graph_events:
-            if isinstance(graph_event, _TaskSuccess):
-                work_queue_events.extend(self._task_success(graph_event))
-            elif isinstance(graph_event, _TaskFailure):
-                work_queue_events.extend(self._task_failure(graph_event))
-            elif isinstance(graph_event, _StreamItems):
-                work_queue_events.extend(self._stream_items(graph_event))
-            elif isinstance(graph_event, _StreamSuccess):
-                stream = graph_event.stream
-                root_streams.pop(stream, None)
-                work_queue_events.append(StreamSuccessEvent(stream))
-            else:  # _StreamFailure
-                stream, error = graph_event
-                root_streams.pop(stream, None)
-                work_queue_events.append(StreamFailureEvent(stream, error))
-
-        if not self._root_groups and not root_streams:
-            self._stopped = True
-            work_queue_events.append(WorkQueueTerminationEvent())
-
-        return work_queue_events
+        if isinstance(graph_event, _StreamSuccess):
+            stream = graph_event.stream
+            # check whether already delivered within _stream_items()
+            if stream in root_streams:
+                del root_streams[stream]
+                return [StreamSuccessEvent(stream)]
+            return []
+        # _StreamFailure
+        stream, error = graph_event
+        root_streams.pop(stream, None)
+        return [StreamFailureEvent(stream, error)]
 
     def _task_success(
         self, graph_event: _TaskSuccess
@@ -584,7 +585,9 @@ class WorkQueue:
                 )
         return group_failure_events
 
-    def _stream_items(self, graph_event: _StreamItems) -> Sequence[StreamValuesEvent]:
+    def _stream_items(
+        self, graph_event: _StreamItems
+    ) -> Sequence[StreamValuesEvent | StreamSuccessEvent]:
         """Handle new stream items, integrating the work they produced."""
         stream, items, handled = graph_event
         values: list[Any] = []
@@ -598,7 +601,13 @@ class WorkQueue:
             new_groups.extend(non_empty_new_groups)
             new_streams.extend(item_new_streams)
         handled.set()  # resume the pump of this stream
-        return [StreamValuesEvent(stream, values, new_groups, new_streams)]
+        stream_values_event = StreamValuesEvent(stream, values, new_groups, new_streams)
+
+        # queues allow peeking ahead to see if the stream has stopped
+        if stream.queue.is_stopped():
+            self._root_streams.pop(stream, None)
+            return [stream_values_event, StreamSuccessEvent(stream)]
+        return [stream_values_event]
 
     def _finish_group_success(
         self, group: Group, group_node: _GroupNode

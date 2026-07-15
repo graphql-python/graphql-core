@@ -2,23 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator, Awaitable, Callable, Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
     NamedTuple,
     TypeAlias,
     TypedDict,
-    TypeVar,
 )
 
-from ..pyutils import BoxedAwaitableOrValue, Undefined
-
 if TYPE_CHECKING:
-    from typing import TypeGuard
+    from collections.abc import AsyncGenerator, Iterator
 
     from ..error import GraphQLError, GraphQLFormattedError
-    from ..pyutils import Path
 
     try:
         from typing import NotRequired
@@ -26,11 +21,10 @@ if TYPE_CHECKING:
         from typing_extensions import NotRequired
 
 __all__ = [
-    "DeferredFragmentRecord",
-    "DeliveryGroup",
-    "ExecutionGroupResult",
+    "CompletedResult",
     "ExecutionResult",
     "ExperimentalIncrementalExecutionResults",
+    "FormattedCompletedResult",
     "FormattedExecutionResult",
     "FormattedIncrementalDeferResult",
     "FormattedIncrementalResult",
@@ -38,23 +32,12 @@ __all__ = [
     "FormattedInitialIncrementalExecutionResult",
     "FormattedPendingResult",
     "FormattedSubsequentIncrementalExecutionResult",
-    "IncrementalDataRecord",
     "IncrementalDeferResult",
     "IncrementalResult",
     "IncrementalStreamResult",
     "InitialIncrementalExecutionResult",
     "PendingResult",
-    "StreamItemRecord",
-    "StreamItemResult",
-    "StreamItemsRecordResult",
-    "StreamItemsResult",
     "SubsequentIncrementalExecutionResult",
-    "SuccessfulExecutionGroup",
-    "is_cancellable_stream_record",
-    "is_completed_execution_group",
-    "is_deferred_fragment_record",
-    "is_failed_execution_group",
-    "is_pending_execution_group",
 ]
 
 
@@ -341,29 +324,16 @@ class FormattedSubsequentIncrementalExecutionResult(TypedDict):
     extensions: NotRequired[dict[str, Any]]
 
 
-class ExecutionGroupResult:
-    """Execution group result."""
-
-    errors: list[GraphQLError] | None
-    data: dict[str, Any]
-
-    __slots__ = "data", "errors"
-
-    def __init__(
-        self, data: dict[str, Any], errors: list[GraphQLError] | None = None
-    ) -> None:
-        self.data = data
-        self.errors = errors
-
-
-class IncrementalDeferResult(ExecutionGroupResult):  # noqa: PLW1641
+class IncrementalDeferResult:  # noqa: PLW1641
     """Incremental deferred execution result"""
 
+    data: dict[str, Any]
     id: str
     sub_path: list[str | int] | None
+    errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "extensions", "id", "sub_path"
+    __slots__ = "data", "errors", "extensions", "id", "sub_path"
 
     def __init__(
         self,
@@ -447,31 +417,16 @@ class FormattedInitialIncrementalExecutionResult(TypedDict):
     extensions: NotRequired[dict[str, Any]]
 
 
-class StreamItemsRecordResult:
-    """Stream items record result."""
-
-    errors: list[GraphQLError] | None
-    items: list[Any]
-
-    __slots__ = "errors", "items"
-
-    def __init__(
-        self,
-        items: list[Any],
-        errors: list[GraphQLError] | None = None,
-    ) -> None:
-        self.items = items
-        self.errors = errors
-
-
-class IncrementalStreamResult(StreamItemsRecordResult):
+class IncrementalStreamResult:
     """Incremental streamed execution result"""
 
+    items: list[Any]
     id: str
     sub_path: list[str | int] | None
+    errors: list[GraphQLError] | None
     extensions: dict[str, Any] | None
 
-    __slots__ = "extensions", "id", "sub_path"
+    __slots__ = "errors", "extensions", "id", "items", "sub_path"
 
     def __init__(
         self,
@@ -567,8 +522,6 @@ class FormattedIncrementalStreamResult(TypedDict):
     subPath: NotRequired[list[str | int]]
     extensions: NotRequired[dict[str, Any]]
 
-
-T = TypeVar("T")  # declare T for generic aliases
 
 IncrementalResult: TypeAlias = IncrementalDeferResult | IncrementalStreamResult
 
@@ -687,241 +640,3 @@ class FormattedCompletedResult(TypedDict):
 
     id: str
     errors: NotRequired[list[GraphQLFormattedError]]
-
-
-def is_pending_execution_group(
-    incremental_data_record: IncrementalDataRecord,
-) -> TypeGuard[PendingExecutionGroup]:
-    """Check if the incremental data record is a pending execution group."""
-    return isinstance(incremental_data_record, PendingExecutionGroup)
-
-
-class SuccessfulExecutionGroup:
-    """Successful execution group"""
-
-    pending_execution_group: PendingExecutionGroup
-    path: list[str | int]
-    result: ExecutionGroupResult
-    incremental_data_records: list[IncrementalDataRecord] | None
-    errors: None = None
-
-    __slots__ = (
-        "incremental_data_records",
-        "path",
-        "pending_execution_group",
-        "result",
-    )
-
-    def __init__(
-        self,
-        pending_execution_group: PendingExecutionGroup,
-        path: list[str | int],
-        result: ExecutionGroupResult,
-        incremental_data_records: list[IncrementalDataRecord] | None = None,
-    ) -> None:
-        self.pending_execution_group = pending_execution_group
-        self.path = path
-        self.result = result
-        self.incremental_data_records = incremental_data_records
-
-
-class FailedExecutionGroup:
-    """Failed execution group"""
-
-    pending_execution_group: PendingExecutionGroup
-    path: list[str | int]
-    errors: list[GraphQLError]
-    result: None = None
-
-    __slots__ = "errors", "path", "pending_execution_group"
-
-    def __init__(
-        self,
-        pending_execution_group: PendingExecutionGroup,
-        path: list[str | int],
-        errors: list[GraphQLError],
-    ) -> None:
-        self.pending_execution_group = pending_execution_group
-        self.path = path
-        self.errors = errors
-
-
-def is_failed_execution_group(
-    completed_execution_group: CompletedExecutionGroup,
-) -> TypeGuard[FailedExecutionGroup]:
-    """Check if the completed execution group is a failed execution group."""
-    return isinstance(completed_execution_group, FailedExecutionGroup)
-
-
-CompletedExecutionGroup: TypeAlias = SuccessfulExecutionGroup | FailedExecutionGroup
-
-
-def is_completed_execution_group(
-    incremental_data_record_result: IncrementalDataRecordResult,
-) -> TypeGuard[CompletedExecutionGroup]:
-    """Check if the subsequent result is a deferred grouped field set result."""
-    return isinstance(
-        incremental_data_record_result,
-        SuccessfulExecutionGroup | FailedExecutionGroup,
-    )
-
-
-ThunkIncrementalResult: TypeAlias = (
-    BoxedAwaitableOrValue[T] | Callable[[], BoxedAwaitableOrValue[T]]
-)
-
-
-class PendingExecutionGroup:
-    """Pending execution group"""
-
-    deferred_fragment_records: list[DeferredFragmentRecord]
-    result: ThunkIncrementalResult[CompletedExecutionGroup]
-
-    __slots__ = "deferred_fragment_records", "result"
-
-    def __init__(
-        self,
-        deferred_fragment_records: list[DeferredFragmentRecord],
-        result: ThunkIncrementalResult[CompletedExecutionGroup],
-    ) -> None:
-        self.result = result
-        self.deferred_fragment_records = deferred_fragment_records
-
-
-class DeferredFragmentRecord:
-    """Deferred fragment record"""
-
-    path: Path | None
-    label: str | None
-    id: str | None
-    parent: DeferredFragmentRecord | None
-    pending_execution_groups: dict[PendingExecutionGroup, None]
-    successful_execution_groups: dict[SuccessfulExecutionGroup, None]
-    children: dict[DeliveryGroup, None]
-
-    __slots__ = (
-        "children",
-        "id",
-        "label",
-        "parent",
-        "path",
-        "pending_execution_groups",
-        "successful_execution_groups",
-    )
-
-    def __init__(
-        self,
-        path: Path | None = None,
-        label: str | None = None,
-        parent: DeferredFragmentRecord | None = None,
-    ) -> None:
-        self.path = path
-        self.label = label
-        self.parent = parent
-        self.id = None
-        self.pending_execution_groups = {}
-        self.successful_execution_groups = {}
-        self.children = {}
-
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        args: list[str] = []
-        if self.path:
-            args.append(f"path={self.path.as_list()!r}")
-        if self.label:
-            args.append(f"label={self.label!r}")
-        if self.parent:
-            args.append("parent")
-        return f"{name}({', '.join(args)})"
-
-
-def is_deferred_fragment_record(
-    delivery_group: DeliveryGroup,
-) -> TypeGuard[DeferredFragmentRecord]:
-    """Check if the delivery group is a deferred fragment record."""
-    return isinstance(delivery_group, DeferredFragmentRecord)
-
-
-class StreamItemResult(NamedTuple):
-    """Stream item result"""
-
-    item: Any = Undefined
-    incremental_data_records: list[IncrementalDataRecord] | None = None
-    errors: list[GraphQLError] | None = None
-
-
-StreamItemRecord: TypeAlias = ThunkIncrementalResult[StreamItemResult]
-
-
-class StreamRecord:
-    """Stream record"""
-
-    stream_item_queue: list[StreamItemRecord]
-    path: Path
-    label: str | None
-    id: str | None
-
-    __slots__ = "id", "label", "path", "stream_item_queue"
-
-    def __init__(
-        self,
-        stream_item_queue: list[StreamItemRecord],
-        path: Path,
-        label: str | None = None,
-    ) -> None:
-        self.stream_item_queue = stream_item_queue
-        self.path = path
-        self.label = label
-        self.id = None
-
-    def __repr__(self) -> str:
-        name = self.__class__.__name__
-        args: list[str] = [
-            f"stream_item_queue[{len(self.stream_item_queue)}]",
-            f"path={self.path.as_list()!r}",
-        ]
-        if self.label:
-            args.append(f"label={self.label!r}")
-        return f"{name}({', '.join(args)})"
-
-
-DeliveryGroup: TypeAlias = DeferredFragmentRecord | StreamRecord
-
-
-class CancellableStreamRecord(StreamRecord):
-    """Cancellable stream record"""
-
-    early_return: Callable[[], Awaitable[None]]
-
-    __slots__ = ("early_return",)
-
-    def __init__(
-        self,
-        early_return: Callable[[], Awaitable[None]],
-        stream_item_queue: list[StreamItemRecord],
-        path: Path,
-        label: str | None = None,
-    ) -> None:
-        super().__init__(stream_item_queue, path, label)
-        self.early_return = early_return
-
-
-def is_cancellable_stream_record(
-    delivery_group: DeliveryGroup,
-) -> TypeGuard[CancellableStreamRecord]:
-    """Check if the delivery group is a cancellable stream record."""
-    return isinstance(delivery_group, CancellableStreamRecord)
-
-
-class StreamItemsResult(NamedTuple):
-    """Stream items result"""
-
-    stream_record: StreamRecord
-    incremental_data_records: list[IncrementalDataRecord] | None = None
-    result: StreamItemsRecordResult | None = None
-    errors: list[GraphQLError] | None = None
-
-
-IncrementalDataRecord: TypeAlias = PendingExecutionGroup | StreamRecord
-
-IncrementalDataRecordResult: TypeAlias = CompletedExecutionGroup | StreamItemsResult
