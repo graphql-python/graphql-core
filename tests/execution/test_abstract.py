@@ -1,5 +1,5 @@
 from inspect import isawaitable
-from typing import Any, NamedTuple, Optional
+from typing import Any, Callable, NamedTuple, Optional
 
 from pytest import mark
 
@@ -49,6 +49,7 @@ async def execute_query(
 
 def get_is_type_of(type_, sync=True):
     """Get a sync or async is_type_of function for the given type."""
+    is_type_of: Callable[[Any, Any], Any]
     if sync:
 
         def is_type_of(obj, _info):
@@ -65,6 +66,7 @@ def get_is_type_of(type_, sync=True):
 def get_type_error(sync=True):
     """Get a sync or async is_type_of or type resolver function that raises an error."""
     error = RuntimeError("We are testing this error")
+    type_error: Callable[..., Any]
     if sync:
 
         def type_error(*_args):
