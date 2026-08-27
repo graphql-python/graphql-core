@@ -10,17 +10,17 @@ jobs:
     steps:
     - name: Checkout project
       id: checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Set up Python 3.14
       id: setup-python
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: "3.14"
 
     - name: Install uv
       id: setup-uv
-      uses: astral-sh/setup-uv@v8.2.0
+      uses: astral-sh/setup-uv@v10.0.1
 
     - name: Install tox
       id: install-tox

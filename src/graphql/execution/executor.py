@@ -250,7 +250,7 @@ class Executor(Generic[TContext]):
         default_is_async_iterable  # type: ignore
     )
 
-    def __init__(  # noqa: PLR0913
+    def __init__(  # noqa: PLR0913, PLR0917
         self,
         schema: GraphQLSchema,
         fragment_definitions: dict[str, FragmentDefinitionNode],
@@ -305,7 +305,7 @@ class Executor(Generic[TContext]):
         self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
 
     @classmethod
-    def build(  # noqa: PLR0913
+    def build(  # noqa: PLR0913, PLR0917
         cls,
         schema: GraphQLSchema,
         document: DocumentNode,

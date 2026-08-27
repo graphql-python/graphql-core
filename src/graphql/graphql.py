@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 __all__ = ["graphql", "graphql_sync"]
 
 
-async def graphql(  # noqa: PLR0913
+async def graphql(  # noqa: PLR0913, PLR0917
     schema: GraphQLSchema,
     source: str | Source,
     root_value: Any = None,
@@ -155,7 +155,7 @@ def assume_not_async_iterable(_value: Any) -> TypeGuard[AsyncIterable]:
     return False
 
 
-def graphql_sync(  # noqa: PLR0913
+def graphql_sync(  # noqa: PLR0913, PLR0917
     schema: GraphQLSchema,
     source: str | Source,
     root_value: Any = None,
@@ -223,7 +223,7 @@ def graphql_sync(  # noqa: PLR0913
     return cast("ExecutionResult", result)
 
 
-def graphql_impl(  # noqa: PLR0913
+def graphql_impl(  # noqa: PLR0913, PLR0917
     schema: GraphQLSchema,
     source: str | Source,
     root_value: Any,

@@ -137,8 +137,10 @@ def describe_find_schema_changes():
         assert find_schema_changes(old_schema, new_schema) == [
             (
                 SafeChangeType.DESCRIPTION_CHANGED,
-                "Description of argument Query.foo(x)"
-                ' has changed to "New Description".',
+                (
+                    "Description of argument Query.foo(x)"
+                    ' has changed to "New Description".'
+                ),
             ),
         ]
 

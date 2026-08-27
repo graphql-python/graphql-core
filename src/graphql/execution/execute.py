@@ -96,7 +96,7 @@ UNEXPECTED_EXPERIMENTAL_DIRECTIVES = (
 )
 
 
-def execute(  # noqa: PLR0913
+def execute(  # noqa: PLR0913, PLR0917
     schema: GraphQLSchema,
     document: DocumentNode,
     root_value: Any = None,
@@ -170,7 +170,7 @@ def execute(  # noqa: PLR0913
     return await_result()
 
 
-def experimental_execute_incrementally(  # noqa: PLR0913
+def experimental_execute_incrementally(  # noqa: PLR0913, PLR0917
     schema: GraphQLSchema,
     document: DocumentNode,
     root_value: Any = None,

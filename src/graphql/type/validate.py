@@ -111,7 +111,7 @@ class SchemaValidationContext:
     def report_error(
         self,
         message: str,
-        nodes: Node | None | Collection[Node | None] = None,
+        nodes: Node | Collection[Node | None] | None = None,
     ) -> None:
         if nodes and not isinstance(nodes, Node):
             nodes = [node for node in nodes if node]

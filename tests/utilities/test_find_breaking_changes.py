@@ -55,8 +55,10 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.TYPE_REMOVED,
-                "Standard scalar Float was removed"
-                " because it is not referenced anymore.",
+                (
+                    "Standard scalar Float was removed"
+                    " because it is not referenced anymore."
+                ),
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
@@ -88,13 +90,17 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.TYPE_CHANGED_KIND,
-                "TypeWasInterfaceBecomesUnion changed"
-                " from an Interface type to a Union type.",
+                (
+                    "TypeWasInterfaceBecomesUnion changed"
+                    " from an Interface type to a Union type."
+                ),
             ),
             (
                 BreakingChangeType.TYPE_CHANGED_KIND,
-                "TypeWasObjectBecomesInputObject changed"
-                " from an Object type to an Input type.",
+                (
+                    "TypeWasObjectBecomesInputObject changed"
+                    " from an Object type to an Input type."
+                ),
             ),
         ]
 
@@ -472,13 +478,17 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Argument Type1.field1(arg2:) has changed type"
-                " from String to [String].",
+                (
+                    "Argument Type1.field1(arg2:) has changed type"
+                    " from String to [String]."
+                ),
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Argument Type1.field1(arg3:) has changed type"
-                " from [String] to String.",
+                (
+                    "Argument Type1.field1(arg3:) has changed type"
+                    " from [String] to String."
+                ),
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
@@ -514,8 +524,10 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Argument Type1.field1(arg15:) has changed type"
-                " from [[Int]!] to [[Int!]!].",
+                (
+                    "Argument Type1.field1(arg15:) has changed type"
+                    " from [[Int]!] to [[Int!]!]."
+                ),
             ),
         ]
 
@@ -742,14 +754,18 @@ def describe_find_breaking_changes():
         assert find_breaking_changes(old_schema, new_schema) == [
             (
                 BreakingChangeType.TYPE_REMOVED,
-                "Standard scalar Float was removed"
-                " because it is not referenced anymore.",
+                (
+                    "Standard scalar Float was removed"
+                    " because it is not referenced anymore."
+                ),
             ),
             (BreakingChangeType.TYPE_REMOVED, "TypeThatGetsRemoved was removed."),
             (
                 BreakingChangeType.ARG_CHANGED_KIND,
-                "Argument ArgThatChanges.field1(id:) has changed type"
-                " from Float to String.",
+                (
+                    "Argument ArgThatChanges.field1(id:) has changed type"
+                    " from Float to String."
+                ),
             ),
             (
                 BreakingChangeType.VALUE_REMOVED_FROM_ENUM,
@@ -773,8 +789,10 @@ def describe_find_breaking_changes():
             ),
             (
                 BreakingChangeType.FIELD_CHANGED_KIND,
-                "Field TypeThatHasBreakingFieldChanges.field2 changed type"
-                " from String to Boolean.",
+                (
+                    "Field TypeThatHasBreakingFieldChanges.field2 changed type"
+                    " from String to Boolean."
+                ),
             ),
             (
                 BreakingChangeType.DIRECTIVE_REMOVED,
@@ -982,8 +1000,10 @@ def describe_find_dangerous_changes():
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1(stringArg:) has changed defaultValue"
-                ' from "test" to "Test".',
+                (
+                    "Type1.field1(stringArg:) has changed defaultValue"
+                    ' from "test" to "Test".'
+                ),
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
@@ -991,14 +1011,18 @@ def describe_find_dangerous_changes():
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1(valueArray:) has changed defaultValue"
-                ' from [["a", "b"], ["c"]] to [["b", "a"], ["d"]].',
+                (
+                    "Type1.field1(valueArray:) has changed defaultValue"
+                    ' from [["a", "b"], ["c"]] to [["b", "a"], ["d"]].'
+                ),
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1(complexObject:) has changed defaultValue"
-                " from { innerInputArray: [{ arrayField: [1, 2, 3] }] }"
-                " to { innerInputArray: [{ arrayField: [3, 2, 1] }] }.",
+                (
+                    "Type1.field1(complexObject:) has changed defaultValue"
+                    " from { innerInputArray: [{ arrayField: [1, 2, 3] }] }"
+                    " to { innerInputArray: [{ arrayField: [3, 2, 1] }] }."
+                ),
             ),
         ]
 
@@ -1250,13 +1274,17 @@ def describe_find_dangerous_changes():
             ),
             (
                 DangerousChangeType.ARG_DEFAULT_VALUE_CHANGE,
-                "Type1.field1(argThatChangesDefaultValue:) has changed defaultValue"
-                ' from "test" to "Test".',
+                (
+                    "Type1.field1(argThatChangesDefaultValue:) has changed defaultValue"
+                    ' from "test" to "Test".'
+                ),
             ),
             (
                 DangerousChangeType.IMPLEMENTED_INTERFACE_ADDED,
-                "Interface1 added to interfaces implemented"
-                " by TypeThatGainsInterface1.",
+                (
+                    "Interface1 added to interfaces implemented"
+                    " by TypeThatGainsInterface1."
+                ),
             ),
             (
                 DangerousChangeType.TYPE_ADDED_TO_UNION,

@@ -21,7 +21,7 @@ suppress_attribute_error = suppress(AttributeError)
 
 def located_error(
     original_error: Exception,
-    nodes: None | Collection[Node] = None,
+    nodes: Collection[Node] | None = None,
     path: Collection[str | int] | None = None,
 ) -> GraphQLError:
     """Located GraphQL Error
