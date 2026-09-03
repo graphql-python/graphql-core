@@ -339,6 +339,34 @@ def describe_lexer():
             "Invalid Unicode escape sequence: '\\uD83D'.",
             (1, 6),
         )
+        # escape sequences truncated at the end of the source; these cases are
+        # specific to GraphQL-core, since in GraphQL.js reading beyond the end of
+        # the source yields NaN instead of raising an IndexError
+        assert_syntax_error(
+            '"bad esc \\', "Invalid character escape sequence: '\\'.", (1, 10)
+        )
+        assert_syntax_error(
+            '"bad esc \\u', "Invalid Unicode escape sequence: '\\u'.", (1, 10)
+        )
+        assert_syntax_error(
+            '"bad esc \\u0', "Invalid Unicode escape sequence: '\\u0'.", (1, 10)
+        )
+        assert_syntax_error(
+            '"bad esc \\u00', "Invalid Unicode escape sequence: '\\u00'.", (1, 10)
+        )
+        assert_syntax_error(
+            '"bad esc \\u000', "Invalid Unicode escape sequence: '\\u000'.", (1, 10)
+        )
+        assert_syntax_error(
+            '"bad surrogate pair \\uD83D\\u',
+            "Invalid Unicode escape sequence: '\\uD83D'.",
+            (1, 21),
+        )
+        assert_syntax_error(
+            '"bad surrogate pair \\uD83D\\uDE',
+            "Invalid Unicode escape sequence: '\\uD83D'.",
+            (1, 21),
+        )
 
     def lexes_block_strings():
         assert lex_one('""""""') == Token(TokenKind.BLOCK_STRING, 0, 6, 1, 1, "")

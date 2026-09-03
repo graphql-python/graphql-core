@@ -398,7 +398,10 @@ class Lexer:
     def read_escaped_character(self, position: int) -> EscapeSequence:
         """Read escaped character sequence"""
         body = self.source.body
-        value = _ESCAPED_CHARS.get(body[position + 1])
+        try:
+            value = _ESCAPED_CHARS.get(body[position + 1])
+        except IndexError:  # backslash at the end of the body
+            value = None
         if value:
             return EscapeSequence(value, 2)
         raise GraphQLSyntaxError(
@@ -553,13 +556,18 @@ def read_16_bit_hex_code(body: str, position: int) -> int:
     Returns a negative number if any char was not a valid hexadecimal digit.
     """
     # read_hex_digit() returns -1 on error. ORing a negative value with any other
-    # value always produces a negative value.
-    return (
-        read_hex_digit(body[position]) << 12
-        | read_hex_digit(body[position + 1]) << 8
-        | read_hex_digit(body[position + 2]) << 4
-        | read_hex_digit(body[position + 3])
-    )
+    # value always produces a negative value. An escape sequence truncated at the end
+    # of the body raises an IndexError in Python (in GraphQL.js it reads NaN); it is
+    # reported with the same negative value, keeping the normal path free of checks.
+    try:
+        return (
+            read_hex_digit(body[position]) << 12
+            | read_hex_digit(body[position + 1]) << 8
+            | read_hex_digit(body[position + 2]) << 4
+            | read_hex_digit(body[position + 3])
+        )
+    except IndexError:
+        return -1
 
 
 def read_hex_digit(char: str) -> int:
