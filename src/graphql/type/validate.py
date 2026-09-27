@@ -298,14 +298,14 @@ class SchemaValidationContext:
                 )
 
     def validate_types(self) -> None:
-        # Ensure Input Objects do not contain non-nullable circular references.
-        validate_input_object_non_null_circular_refs = (
-            InputObjectNonNullCircularRefsValidator(self)
-        )
         # Ensure Input Objects do not contain invalid default value circular refs.
         validate_input_object_default_value_circular_refs = (
             InputObjectDefaultValueCircularRefsValidator(self)
         )
+        finite_value_states: dict[
+            GraphQLInputObjectType, InputObjectFiniteValueState
+        ] = {}
+
         for type_ in self.schema.type_map.values():
             # Ensure all provided types are in fact GraphQL type.
             if not is_named_type(type_):
@@ -341,13 +341,13 @@ class SchemaValidationContext:
                 # Ensure Input Object fields are valid.
                 self.validate_input_fields(type_)
 
-                # Ensure Input Objects do not contain invalid field circular refs.
-                # Ensure Input Objects do not contain non-nullable circular refs.
-                validate_input_object_non_null_circular_refs(type_)
+                finite_value_states[type_] = InputObjectFiniteValueState(type_)
 
                 # Ensure Input Objects do not contain invalid default value
                 # circular references.
                 validate_input_object_default_value_circular_refs(type_)
+
+        detect_input_object_non_finite_values(self, finite_value_states)
 
     def validate_fields(self, type_: GraphQLObjectType | GraphQLInterfaceType) -> None:
         fields = type_.fields
@@ -721,61 +721,146 @@ def get_operation_type_node(
     return None
 
 
-class InputObjectNonNullCircularRefsValidator:
-    """Modified copy of algorithm from validation.rules.NoFragmentCycles"""
+class InputObjectFiniteValueState:
+    """State of an Input Object while checking whether it has a finite value."""
 
-    def __init__(self, context: SchemaValidationContext) -> None:
-        self.context = context
-        # Tracks already visited types to maintain O(N) and to ensure that cycles
-        # are not redundantly reported.
-        self.visited_types: set[str] = set()
-        # Array of types nodes used to produce meaningful errors
-        self.field_path: list[tuple[str, Node | None]] = []
-        # Position in the type path
-        self.field_path_index_by_type_name: dict[str, int] = {}
+    __slots__ = (
+        "dependents",
+        "has_finite_value",
+        "input_obj",
+        "targets",
+        "unresolved_target_count",
+    )
 
-    def __call__(self, input_obj: GraphQLInputObjectType) -> None:
-        """Detect cycles recursively."""
-        # This does a straight-forward DFS to find cycles.
-        # It does not terminate when a cycle was found but continues to explore
-        # the graph to find all possible cycles.
-        name = input_obj.name
-        if name in self.visited_types:
+    input_obj: GraphQLInputObjectType
+    targets: list[tuple[str, GraphQLInputField, GraphQLInputObjectType]]
+    dependents: list[InputObjectFiniteValueState]
+    unresolved_target_count: int
+    has_finite_value: bool
+
+    def __init__(self, input_obj: GraphQLInputObjectType) -> None:
+        self.input_obj = input_obj
+        self.targets = []
+        self.dependents = []
+        self.unresolved_target_count = 0
+        self.has_finite_value = False
+
+
+def detect_input_object_non_finite_values(
+    context: SchemaValidationContext,
+    finite_value_states: dict[GraphQLInputObjectType, InputObjectFiniteValueState],
+) -> None:
+    """Detect Input Objects that cannot be provided a finite value.
+
+    Implements the spec's InputObjectHasUnbreakableCycle algorithm for all Input
+    Objects in one pass by propagating known breakable types through reverse edges.
+    """
+    input_objects_with_finite_values: list[InputObjectFiniteValueState] = []
+
+    def mark_input_object_has_finite_value(
+        finite_value_state: InputObjectFiniteValueState,
+    ) -> None:
+        if not finite_value_state.has_finite_value:  # pragma: no branch
+            finite_value_state.has_finite_value = True
+            input_objects_with_finite_values.append(finite_value_state)
+
+    for state in finite_value_states.values():
+        input_obj = state.input_obj
+        fields = input_obj.fields
+
+        for field_name, field in fields.items():
+            target = get_finite_value_target(input_obj, field.type)
+            if target is None:
+                continue
+
+            state.targets.append((field_name, field, target))
+            target_state = finite_value_states.get(target)
+            if target_state is not None:  # pragma: no branch
+                target_state.dependents.append(state)
+
+        if input_obj.is_one_of:
+            # OneOf Input Objects have an unbreakable cycle if every field leads
+            # to an unbreakable cycle.
+            if not fields or len(state.targets) < len(fields):
+                mark_input_object_has_finite_value(state)
+        else:
+            # Non-OneOf Input Objects have an unbreakable cycle if any non-null
+            # field has one.
+            state.unresolved_target_count = len(state.targets)
+            if not state.targets:
+                mark_input_object_has_finite_value(state)
+
+    while input_objects_with_finite_values:
+        next_finite_value_state = input_objects_with_finite_values.pop()
+        for dependent_state in next_finite_value_state.dependents:
+            if dependent_state.has_finite_value:
+                continue
+
+            if dependent_state.input_obj.is_one_of:
+                mark_input_object_has_finite_value(dependent_state)
+                continue
+
+            dependent_state.unresolved_target_count -= 1
+            if not dependent_state.unresolved_target_count:
+                mark_input_object_has_finite_value(dependent_state)
+
+    # Tracks already visited types to ensure that cycles are not redundantly
+    # reported.
+    visited_types: set[GraphQLInputObjectType] = set()
+
+    # Array of fields used to produce meaningful errors.
+    field_path: list[tuple[str, Node | None]] = []
+
+    # Position in the field path.
+    field_path_index_by_type: dict[GraphQLInputObjectType, int] = {}
+
+    def report_cycle_recursive(state: InputObjectFiniteValueState) -> None:
+        input_obj = state.input_obj
+        if input_obj in visited_types:
             return
 
-        self.visited_types.add(name)
-        self.field_path_index_by_type_name[name] = len(self.field_path)
+        visited_types.add(input_obj)
+        field_path_index_by_type[input_obj] = len(field_path)
 
-        for field_name, field in input_obj.fields.items():
-            if is_non_null_type(field.type) and is_input_object_type(
-                field.type.of_type
-            ):
-                field_type = field.type.of_type
-                cycle_index = self.field_path_index_by_type_name.get(field_type.name)
+        for field_name, field, target in state.targets:
+            target_state = finite_value_states.get(target)
+            if target_state is None or target_state.has_finite_value:
+                continue
 
-                self.field_path.append((f"{input_obj}.{field_name}", field.ast_node))
-                if cycle_index is None:
-                    self(field_type)
-                else:
-                    cycle_path = self.field_path[cycle_index:]
-                    path_str = ", ".join(field_str for field_str, _ in cycle_path)
-                    self.context.report_error(
-                        f"Invalid circular reference. The Input Object {field_type}"
-                        " references itself"
-                        + (
-                            " via the non-null fields:"
-                            if len(cycle_path) > 1
-                            else " in the non-null field"
-                        )
-                        + f" {path_str}.",
-                        cast(
-                            "Collection[Node]",
-                            [ast_node for _, ast_node in cycle_path],
-                        ),
-                    )
-                self.field_path.pop()
+            cycle_index = field_path_index_by_type.get(target)
+            field_path.append((f"{input_obj}.{field_name}", field.ast_node))
 
-        del self.field_path_index_by_type_name[name]
+            if cycle_index is None:
+                report_cycle_recursive(target_state)
+            else:
+                cycle_path = field_path[cycle_index:]
+                path_str = ", ".join(field_str for field_str, _ in cycle_path)
+                context.report_error(
+                    f"Input Object {target} cannot be provided a finite value"
+                    f" because it references itself through fields: {path_str}.",
+                    cast("Collection[Node]", [ast_node for _, ast_node in cycle_path]),
+                )
+
+            field_path.pop()
+
+        del field_path_index_by_type[input_obj]
+
+    for state in finite_value_states.values():
+        if not state.has_finite_value:
+            report_cycle_recursive(state)
+
+
+def get_finite_value_target(
+    input_obj: GraphQLInputObjectType, field_type: GraphQLInputType
+) -> GraphQLInputObjectType | None:
+    """Get the Input Object a field requires to have a finite value, if any."""
+    if input_obj.is_one_of:
+        return field_type if is_input_object_type(field_type) else None
+
+    if is_non_null_type(field_type) and is_input_object_type(field_type.of_type):
+        return field_type.of_type
+
+    return None
 
 
 class InputObjectDefaultValueCircularRefsValidator:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from operator import attrgetter
 
 import pytest
@@ -13,6 +14,7 @@ from graphql.type import (
     GraphQLEnumType,
     GraphQLField,
     GraphQLInputField,
+    GraphQLInputFieldMap,
     GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLInt,
@@ -886,6 +888,27 @@ def describe_type_system_input_objects_must_have_fields():
             }
 
             input SomeInputObject {
+              nonNullSelf: SomeInputObject!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object SomeInputObject cannot be provided a finite"
+                " value because it references itself through fields:"
+                " SomeInputObject.nonNullSelf.",
+                "locations": [(7, 15)],
+            },
+        ]
+
+    def rejects_input_objects_with_non_breakable_circular_ref_spread_across_them():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: SomeInputObject): String
+            }
+
+            input SomeInputObject {
               startLoop: AnotherInputObject!
             }
 
@@ -900,10 +923,9 @@ def describe_type_system_input_objects_must_have_fields():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Invalid circular reference."
-                " The Input Object SomeInputObject references itself"
-                " via the non-null fields: SomeInputObject.startLoop,"
-                " AnotherInputObject.nextInLoop,"
+                "message": "Input Object SomeInputObject cannot be provided"
+                " a finite value because it references itself through fields:"
+                " SomeInputObject.startLoop, AnotherInputObject.nextInLoop,"
                 " YetAnotherInputObject.closeLoop.",
                 "locations": [(7, 15), (11, 15), (15, 15)],
             }
@@ -933,24 +955,57 @@ def describe_type_system_input_objects_must_have_fields():
         )
         assert validate_schema(schema) == [
             {
-                "message": "Invalid circular reference."
-                " The Input Object SomeInputObject references itself"
-                " via the non-null fields: SomeInputObject.startLoop,"
-                " AnotherInputObject.closeLoop.",
+                "message": "Input Object SomeInputObject cannot be provided"
+                " a finite value because it references itself through fields:"
+                " SomeInputObject.startLoop, AnotherInputObject.closeLoop.",
                 "locations": [(7, 15), (11, 15)],
             },
             {
-                "message": "Invalid circular reference."
-                " The Input Object AnotherInputObject references itself"
-                " via the non-null fields: AnotherInputObject.startSecondLoop,"
+                "message": "Input Object AnotherInputObject cannot be provided"
+                " a finite value because it references itself through fields:"
+                " AnotherInputObject.startSecondLoop,"
                 " YetAnotherInputObject.closeSecondLoop.",
                 "locations": [(12, 15), (16, 15)],
             },
             {
-                "message": "Invalid circular reference."
-                " The Input Object YetAnotherInputObject references itself"
-                " in the non-null field YetAnotherInputObject.nonNullSelf.",
+                "message": "Input Object YetAnotherInputObject cannot be provided"
+                " a finite value because it references itself through fields:"
+                " YetAnotherInputObject.nonNullSelf.",
                 "locations": [(17, 15)],
+            },
+        ]
+
+    def rejects_an_input_object_with_multiple_non_breakable_circular_references():
+        schema = build_schema(
+            """
+            type Query {
+              field(arg: A): String
+            }
+
+            input A {
+              b: B!
+              c: C!
+            }
+
+            input B {
+              a: A!
+            }
+
+            input C {
+              a: A!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.b, B.a.",
+                "locations": [(7, 15), (12, 15)],
+            },
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.c, C.a.",
+                "locations": [(8, 15), (16, 15)],
             },
         ]
 
@@ -2245,6 +2300,185 @@ def describe_type_system_input_object_field_default_values_must_be_valid():
 
 
 def describe_type_system_one_of_input_object_fields_must_be_nullable():
+    def accepts_a_one_of_input_object_with_a_scalar_field():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              a: Int
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_input_object_with_a_recursive_list_field():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              a: [A!]
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_input_object_referencing_a_non_one_of_input_object():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+            }
+
+            input B {
+              x: Int
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_input_object_referencing_an_already_checked_input_object():
+        schema = build_schema(
+            """
+            type Query {
+              a(arg: A): Int
+            }
+
+            input B {
+              value: Int
+            }
+
+            input A @oneOf {
+              b: B
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_input_object_with_multiple_acyclic_input_object_fields():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+              c: C
+            }
+
+            input B {
+              value: Int
+            }
+
+            input C {
+              value: Int
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_one_of_cycle_with_a_scalar_escape():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+              escape: Int
+            }
+
+            input B @oneOf {
+              a: A
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_non_one_of_cycle_with_a_nullable_escape():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+            }
+
+            input B {
+              a: A
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_one_of_non_one_of_with_scalar_escape():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+              escape: Int
+            }
+
+            input B {
+              a: A!
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_a_non_one_of_non_one_of_cycle_with_a_nullable_escape():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A {
+              b: B!
+            }
+
+            input B {
+              a: A
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_non_one_of_cycle_with_non_null_list_of_non_null_items_escape():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A {
+              b: [B!]!
+            }
+
+            input B {
+              a: A!
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
     def rejects_non_nullable_fields():
         schema = build_schema(
             """
@@ -2284,6 +2518,215 @@ def describe_type_system_one_of_input_object_fields_must_be_nullable():
                 " cannot have a default value.",
                 "locations": [(8, 15)],
             }
+        ]
+
+    def rejects_a_self_referencing_one_of_type_with_no_escapes():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              self: A
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.self.",
+                "locations": [(7, 15)],
+            },
+        ]
+
+    def rejects_a_non_one_of_input_object_requiring_an_unbreakable_one_of_cycle():
+        schema = build_schema(
+            """
+            type Query {
+              a(arg: A): Int
+            }
+
+            input T @oneOf {
+              self: T
+            }
+
+            input A {
+              t: T!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object T cannot be provided a finite value because"
+                " it references itself through fields: T.self.",
+                "locations": [(7, 15)],
+            },
+        ]
+
+    def checks_each_shared_unbreakable_one_of_subgraph_once():
+        get_fields_count = 0
+
+        class InputObjectType(GraphQLInputObjectType):
+            @property
+            def fields(self) -> GraphQLInputFieldMap:
+                nonlocal get_fields_count
+                caller = sys._getframe(1).f_code.co_name  # noqa: SLF001
+                if caller == "detect_input_object_non_finite_values":
+                    get_fields_count += 1
+                return super().fields
+
+        chain_length = 16
+        types: list[GraphQLInputObjectType] = []
+        types.append(
+            InputObjectType(
+                "T0", lambda: {"self": GraphQLInputField(types[0])}, is_one_of=True
+            )
+        )
+        for i in range(1, chain_length + 1):
+            previous_type = types[i - 1]
+            types.append(
+                InputObjectType(
+                    f"T{i}",
+                    {
+                        "a": GraphQLInputField(previous_type),
+                        "b": GraphQLInputField(previous_type),
+                    },
+                    is_one_of=True,
+                )
+            )
+
+        schema = GraphQLSchema(
+            query=GraphQLObjectType(
+                "Query",
+                {
+                    "test": GraphQLField(
+                        GraphQLInt,
+                        args={"input": GraphQLArgument(types[chain_length])},
+                    )
+                },
+            ),
+            types=types,
+        )
+
+        assert len(validate_schema(schema)) == 1
+        assert get_fields_count == 17
+
+    def rejects_a_mixed_one_of_non_one_of_cycle_with_no_escapes():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+            }
+
+            input B {
+              a: A!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.b, B.a.",
+                "locations": [(7, 15), (11, 15)],
+            },
+        ]
+
+    def rejects_multiple_one_of_branches_without_duplicate_cycle_reports():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+              c: C
+            }
+
+            input B {
+              a: A!
+            }
+
+            input C {
+              a: A!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.b, B.a.",
+                "locations": [(7, 15), (12, 15)],
+            },
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.c, C.a.",
+                "locations": [(8, 15), (16, 15)],
+            },
+        ]
+
+    def rejects_non_one_of_cycle_with_required_scalar_list_and_finite_input_fields():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A {
+              list: [B]!
+              finite: Finite!
+              b: B!
+            }
+
+            input B {
+              value: Int!
+              a: A!
+            }
+
+            input Finite {
+              value: Int!
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.b, B.a.",
+                "locations": [(9, 15), (14, 15)],
+            },
+        ]
+
+    def rejects_a_larger_mixed_one_of_non_one_of_cycle_with_no_escapes():
+        schema = build_schema(
+            """
+            type Query {
+              test(arg: A): Int
+            }
+
+            input A @oneOf {
+              b: B
+            }
+
+            input B {
+              c: C!
+            }
+
+            input C @oneOf {
+              a: A
+            }
+            """
+        )
+        assert validate_schema(schema) == [
+            {
+                "message": "Input Object A cannot be provided a finite value because"
+                " it references itself through fields: A.b, B.c, C.a.",
+                "locations": [(7, 15), (11, 15), (15, 15)],
+            },
         ]
 
 
