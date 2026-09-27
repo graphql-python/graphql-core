@@ -22,6 +22,21 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
     """Possible type extension
 
     A type extension is only valid if the type is defined and has the same kind.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema
+    >>> from graphql.validation import PossibleTypeExtensionsRule
+    >>> from graphql.validation.specified_rules import specified_sdl_rules
+    >>> PossibleTypeExtensionsRule in specified_sdl_rules
+    True
+    >>> sdl = 'extend type Missing { name: String } type Query { name: String }'
+    >>> build_schema(sdl)
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot extend type 'Missing' because it is not defined.
+    >>> sdl = 'type Query { name: String } extend type Query { other: String }'
+    >>> schema = build_schema(sdl)
     """
 
     def __init__(self, context: SDLValidationContext):
@@ -34,6 +49,10 @@ class PossibleTypeExtensionsRule(SDLValidationRule):
         }
 
     def check_extension(self, node: TypeExtensionNode, *_args: Any) -> None:
+        """Check that a type extension extends a defined type of the same kind.
+
+        :meta private:
+        """
         schema = self.schema
         type_name = node.name.value
         def_node = self.defined_types.get(type_name)

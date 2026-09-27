@@ -16,6 +16,21 @@ class MapAsyncIterator:
 
     When the resulting AsyncIterator is closed, the underlying AsyncIterable will also
     be closed.
+
+    :param iterable: The source AsyncIterable whose values shall be mapped.
+    :param callback: The function that is called with each source value. It may also
+        return an awaitable, which will be awaited.
+
+    >>> import asyncio
+    >>> from graphql import MapAsyncIterator
+    >>> async def numbers():
+    ...     for number in range(3):
+    ...         yield number
+    >>> async def doubled_numbers():
+    ...     iterator = MapAsyncIterator(numbers(), lambda number: 2 * number)
+    ...     return [value async for value in iterator]
+    >>> asyncio.run(doubled_numbers())
+    [0, 2, 4]
     """
 
     def __init__(self, iterable: AsyncIterable, callback: Callable) -> None:
@@ -70,7 +85,27 @@ class MapAsyncIterator:
         value: Optional[BaseException] = None,
         traceback: Optional[TracebackType] = None,
     ) -> None:
-        """Throw an exception into the asynchronous iterator."""
+        """Throw an exception into the asynchronous iterator.
+
+        :param type_: The exception type or instance to throw.
+        :param value: The exception instance if only the type has been passed.
+        :param traceback: The traceback that shall be attached to the exception.
+
+        >>> import asyncio
+        >>> from graphql import MapAsyncIterator
+        >>> async def numbers():
+        ...     for number in range(3):
+        ...         yield number
+        >>> async def throw_error():
+        ...     iterator = MapAsyncIterator(numbers(), lambda number: 2 * number)
+        ...     await iterator.__anext__()
+        ...     try:
+        ...         await iterator.athrow(ValueError('Stop!'))
+        ...     except ValueError as error:
+        ...         return error
+        >>> asyncio.run(throw_error())
+        ValueError('Stop!')
+        """
         if self.is_closed:
             return
         if isinstance(type_, BaseException):
@@ -91,7 +126,23 @@ class MapAsyncIterator:
             raise value
 
     async def aclose(self) -> None:
-        """Close the iterator."""
+        """Close the iterator.
+
+        This also closes the underlying AsyncIterable.
+
+        >>> import asyncio
+        >>> from graphql import MapAsyncIterator
+        >>> async def numbers():
+        ...     for number in range(3):
+        ...         yield number
+        >>> async def close_early():
+        ...     iterator = MapAsyncIterator(numbers(), lambda number: 2 * number)
+        ...     first = await iterator.__anext__()
+        ...     await iterator.aclose()
+        ...     return first, iterator.is_closed, [value async for value in iterator]
+        >>> asyncio.run(close_early())
+        (0, True, [])
+        """
         if not self.is_closed:
             aclose = getattr(self.iterator, "aclose", None)
             if aclose:

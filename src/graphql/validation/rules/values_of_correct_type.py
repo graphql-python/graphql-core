@@ -40,9 +40,26 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     their position.
 
     See https://spec.graphql.org/draft/#sec-Values-of-Correct-Type
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import ValuesOfCorrectTypeRule
+    >>> schema = build_schema('type Query { count(limit: Int): Int }')
+    >>> document = parse('{ count(limit: "many") }')
+    >>> errors = validate(schema, document, [ValuesOfCorrectTypeRule])
+    >>> print(errors[0].message)
+    Int cannot represent non-integer value: "many"
+    >>> document = parse('{ count(limit: 1) }')
+    >>> validate(schema, document, [ValuesOfCorrectTypeRule])
+    []
     """
 
     def enter_list_value(self, node: ListValueNode, *_args: Any) -> VisitorAction:
+        """Called when entering a list value node.
+
+        :meta private:
+        """
         # Note: TypeInfo will traverse into a list's item type, so look to the parent
         # input type to check if it is a list.
         type_ = get_nullable_type(self.context.get_parent_input_type())  # type: ignore
@@ -52,6 +69,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         return None
 
     def enter_object_value(self, node: ObjectValueNode, *_args: Any) -> VisitorAction:
+        """Called when entering an object value node.
+
+        :meta private:
+        """
         type_ = get_named_type(self.context.get_input_type())
         if not is_input_object_type(type_):
             self.is_valid_value_node(node)
@@ -75,6 +96,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         return None
 
     def enter_object_field(self, node: ObjectFieldNode, *_args: Any) -> None:
+        """Called when entering an object field node.
+
+        :meta private:
+        """
         parent_type = get_named_type(self.context.get_parent_input_type())
         field_type = self.context.get_input_type()
         if not field_type and is_input_object_type(parent_type):
@@ -90,6 +115,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
 
     def enter_null_value(self, node: NullValueNode, *_args: Any) -> None:
+        """Called when entering a null value node.
+
+        :meta private:
+        """
         type_ = self.context.get_input_type()
         if is_non_null_type(type_):
             self.report_error(
@@ -99,12 +128,24 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             )
 
     def enter_enum_value(self, node: EnumValueNode, *_args: Any) -> None:
+        """Called when entering an enum value node.
+
+        :meta private:
+        """
         self.is_valid_value_node(node)
 
     def enter_int_value(self, node: IntValueNode, *_args: Any) -> None:
+        """Called when entering an int value node.
+
+        :meta private:
+        """
         self.is_valid_value_node(node)
 
     def enter_float_value(self, node: FloatValueNode, *_args: Any) -> None:
+        """Called when entering a float value node.
+
+        :meta private:
+        """
         self.is_valid_value_node(node)
 
     # Descriptions are string values that would not validate according
@@ -113,9 +154,17 @@ class ValuesOfCorrectTypeRule(ValidationRule):
     # and do not require special handling.
     # See https://spec.graphql.org/draft/#sec-Descriptions
     def enter_string_value(self, node: StringValueNode, *_args: Any) -> None:
+        """Called when entering a string value node.
+
+        :meta private:
+        """
         self.is_valid_value_node(node)
 
     def enter_boolean_value(self, node: BooleanValueNode, *_args: Any) -> None:
+        """Called when entering a boolean value node.
+
+        :meta private:
+        """
         self.is_valid_value_node(node)
 
     def is_valid_value_node(self, node: ValueNode) -> None:
@@ -123,6 +172,10 @@ class ValuesOfCorrectTypeRule(ValidationRule):
 
         Any value literal may be a valid representation of a Scalar, depending on that
         scalar type.
+
+        :param node: the value node to check
+
+        :meta private:
         """
         # Report any error at the full type expected by the location.
         location_type = self.context.get_input_type()

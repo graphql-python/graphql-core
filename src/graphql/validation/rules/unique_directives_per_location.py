@@ -27,9 +27,23 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
     location are uniquely named.
 
     See https://spec.graphql.org/draft/#sec-Directives-Are-Unique-Per-Location
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import UniqueDirectivesPerLocationRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse('{ name @include(if: true) @include(if: false) }')
+    >>> errors = validate(schema, document, [UniqueDirectivesPerLocationRule])
+    >>> print(errors[0].message)
+    The directive '@include' can only be used once at this location.
+    >>> document = parse('{ name @include(if: true) }')
+    >>> validate(schema, document, [UniqueDirectivesPerLocationRule])
+    []
     """
 
     context: Union[ValidationContext, SDLValidationContext]
+    """The validation context used while checking the document."""
 
     def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
@@ -59,6 +73,10 @@ class UniqueDirectivesPerLocationRule(ASTValidationRule):
     # Many different AST nodes may contain directives. Rather than listing them all,
     # just listen for entering any node, and check to see if it defines any directives.
     def enter(self, node: Node, *_args: Any) -> None:
+        """Check the directives of any visited node for non-repeatable duplicates.
+
+        :meta private:
+        """
         directives = getattr(node, "directives", None)
         if not directives:
             return

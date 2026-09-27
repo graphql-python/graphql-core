@@ -23,6 +23,17 @@ def get_operation_root_type(
 
     .. deprecated:: 3.2
        Please use ``GraphQLSchema.get_root_type`` instead. Will be removed in v3.3.
+
+    :param schema: The GraphQL schema to use.
+    :param operation: The operation definition to inspect.
+    :returns: The root type of the operation.
+
+    >>> from graphql import build_schema, get_operation_root_type, parse
+    >>> schema = build_schema('type Query { name: String }')
+    >>> operation = parse('{ name }').definitions[0]
+    >>> root_type = get_operation_root_type(schema, operation)
+    >>> root_type.name
+    'Query'
     """
     operation_type = operation.operation
     if operation_type == OperationType.QUERY:

@@ -45,7 +45,43 @@ def coerce_input_value(
     on_error: OnErrorCB = default_on_error,
     path: Optional[Path] = None,
 ) -> Any:
-    """Coerce a Python value given a GraphQL Input Type."""
+    """Coerce a Python value given a GraphQL Input Type.
+
+    :param input_value: Python value to coerce.
+    :param type_: GraphQL input type to coerce the value against.
+    :param on_error: Callback invoked for each coercion error with the path, the
+        invalid value and the error. By default, the error is raised.
+    :param path: The path of the value inside an enclosing input value, used when
+        reporting errors.
+    :returns: Coerced value, or ``Undefined`` if coercion failed and errors were
+        reported.
+
+    Coerce runtime input values and raise on invalid input by default:
+
+    >>> from graphql import (
+    ...     GraphQLInputField, GraphQLInputObjectType, GraphQLInt, GraphQLList,
+    ...     GraphQLNonNull, GraphQLString, coerce_input_value)
+    >>> ReviewInput = GraphQLInputObjectType('ReviewInput', {
+    ...     'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...     'tags': GraphQLInputField(GraphQLList(GraphQLString)),
+    ... })
+    >>> coerce_input_value({'stars': 5, 'tags': ['featured']}, ReviewInput)
+    {'stars': 5, 'tags': ['featured']}
+    >>> coerce_input_value({'stars': 'bad'}, ReviewInput)
+    Traceback (most recent call last):
+    ...
+    graphql.error.graphql_error.GraphQLError: Invalid value 'bad' at 'value.stars': ...
+
+    This variant collects coercion errors with a custom ``on_error`` callback:
+
+    >>> errors = []
+    >>> def on_error(path, invalid_value, error):
+    ...     errors.append((path, invalid_value, error.message))
+    >>> coerce_input_value(None, GraphQLNonNull(GraphQLInt), on_error)
+    Undefined
+    >>> errors
+    [([], None, "Expected non-nullable type 'Int!' not to be None.")]
+    """
     if is_non_null_type(type_):
         if input_value is not None and input_value is not Undefined:
             type_ = cast(GraphQLNonNull, type_)

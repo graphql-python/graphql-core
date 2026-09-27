@@ -37,6 +37,8 @@ def collect_fields(
     object type returned by that field.
 
     For internal use only.
+
+    :meta private:
     """
     fields: Dict[str, List[FieldNode]] = {}
     collect_fields_impl(
@@ -62,6 +64,8 @@ def collect_sub_fields(
     object type returned by that field.
 
     For internal use only.
+
+    :meta private:
     """
     sub_field_nodes: Dict[str, List[FieldNode]] = {}
     visited_fragment_names: Set[str] = set()
@@ -88,7 +92,10 @@ def collect_fields_impl(
     fields: Dict[str, List[FieldNode]],
     visited_fragment_names: Set[str],
 ) -> None:
-    """Collect fields (internal implementation)."""
+    """Collect fields (internal implementation).
+
+    :meta private:
+    """
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
             if not should_include_node(variable_values, selection):
@@ -138,8 +145,10 @@ def should_include_node(
 ) -> bool:
     """Check if node should be included
 
-    Determines if a field should be included based on the @include and @skip
-    directives, where @skip has higher precedence than @include.
+    Determines if a field should be included based on the ``@include`` and ``@skip``
+    directives, where ``@skip`` has higher precedence than ``@include``.
+
+    :meta private:
     """
     skip = get_directive_values(GraphQLSkipDirective, node, variable_values)
     if skip and skip["if"]:
@@ -157,7 +166,10 @@ def does_fragment_condition_match(
     fragment: Union[FragmentDefinitionNode, InlineFragmentNode],
     type_: GraphQLObjectType,
 ) -> bool:
-    """Determine if a fragment is applicable to the given type."""
+    """Determine if a fragment is applicable to the given type.
+
+    :meta private:
+    """
     type_condition_node = fragment.type_condition
     if not type_condition_node:
         return True
@@ -170,5 +182,8 @@ def does_fragment_condition_match(
 
 
 def get_field_entry_key(node: FieldNode) -> str:
-    """Implements the logic to compute the key of a given field's entry"""
+    """Implement the logic to compute the key of a given field's entry.
+
+    :meta private:
+    """
     return node.alias.value if node.alias else node.name.value

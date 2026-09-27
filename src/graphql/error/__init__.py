@@ -2,6 +2,8 @@
 
 The :mod:`graphql.error` package is responsible for creating and formatting GraphQL
 errors.
+
+These exports are also available from the root :mod:`graphql` package.
 """
 
 from .graphql_error import (

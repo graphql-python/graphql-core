@@ -116,6 +116,7 @@ _Schema: GraphQLObjectType = GraphQLObjectType(
     " mutation, and subscription operations.",
     fields=SchemaFields,
 )
+"""The introspection type describing a GraphQL schema."""
 
 
 class DirectiveFields(GraphQLFieldMap):
@@ -203,6 +204,7 @@ _Directive: GraphQLObjectType = GraphQLObjectType(
     " additional information to the executor.",
     fields=DirectiveFields,
 )
+"""The introspection type describing a GraphQL directive."""
 
 
 _DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
@@ -292,6 +294,7 @@ _DirectiveLocation: GraphQLEnumType = GraphQLEnumType(
         ),
     },
 )
+"""The introspection enum describing directive locations."""
 
 
 class TypeFields(GraphQLFieldMap):
@@ -442,6 +445,7 @@ _Type: GraphQLObjectType = GraphQLObjectType(
     " other types.",
     fields=TypeFields,
 )
+"""The introspection type describing GraphQL types."""
 
 
 class FieldFields(GraphQLFieldMap):
@@ -506,6 +510,7 @@ _Field: GraphQLObjectType = GraphQLObjectType(
     " and a return type.",
     fields=FieldFields,
 )
+"""The introspection type describing object and interface fields."""
 
 
 class InputValueFields(GraphQLFieldMap):
@@ -567,6 +572,7 @@ _InputValue: GraphQLObjectType = GraphQLObjectType(
     " which describe their type and optionally a default value.",
     fields=InputValueFields,
 )
+"""The introspection type describing arguments and input fields."""
 
 
 class EnumValueFields(GraphQLFieldMap):
@@ -612,17 +618,28 @@ _EnumValue: GraphQLObjectType = GraphQLObjectType(
     " string.",
     fields=EnumValueFields,
 )
+"""The introspection type describing enum values."""
 
 
 class TypeKind(Enum):
+    """The introspection enum describing the different kinds of GraphQL types."""
+
     SCALAR = "scalar"
+    """A scalar type."""
     OBJECT = "object"
+    """An object type."""
     INTERFACE = "interface"
+    """An interface type."""
     UNION = "union"
+    """A union type."""
     ENUM = "enum"
+    """An enum type."""
     INPUT_OBJECT = "input object"
+    """An input object type."""
     LIST = "list"
+    """A list wrapper type."""
     NON_NULL = "non-null"
+    """A non-null wrapper type."""
 
 
 _TypeKind: GraphQLEnumType = GraphQLEnumType(
@@ -667,6 +684,7 @@ _TypeKind: GraphQLEnumType = GraphQLEnumType(
         ),
     },
 )
+"""The introspection enum describing GraphQL type kinds."""
 
 
 class MetaFields:
@@ -689,6 +707,7 @@ SchemaMetaFieldDef = GraphQLField(
     args={},
     resolve=MetaFields.schema,
 )
+"""The ``__schema`` meta field definition used by introspection."""
 
 
 TypeMetaFieldDef = GraphQLField(
@@ -697,6 +716,7 @@ TypeMetaFieldDef = GraphQLField(
     args={"name": GraphQLArgument(GraphQLNonNull(GraphQLString))},
     resolve=MetaFields.type,
 )
+"""The ``__type`` meta field definition used by introspection."""
 
 
 TypeNameMetaFieldDef = GraphQLField(
@@ -705,6 +725,7 @@ TypeNameMetaFieldDef = GraphQLField(
     args={},
     resolve=MetaFields.type_name,
 )
+"""The ``__typename`` meta field definition used by execution and introspection."""
 
 
 # Since double underscore names are subject to name mangling in Python,
@@ -723,7 +744,17 @@ introspection_types: Mapping[str, GraphQLNamedType] = {  # treat as read-only
 
 
 def is_introspection_type(type_: GraphQLNamedType) -> bool:
-    """Check whether the given named GraphQL type is an introspection type."""
+    """Check whether the given named GraphQL type is an introspection type.
+
+    :param type_: the GraphQL type to inspect
+    :returns: whether the type is one of the built-in introspection types
+
+    >>> from graphql import GraphQLString, introspection_types, is_introspection_type
+    >>> is_introspection_type(introspection_types['__Type'])
+    True
+    >>> is_introspection_type(GraphQLString)
+    False
+    """
     return type_.name in introspection_types
 
 

@@ -29,6 +29,19 @@ class VariablesInAllowedPositionRule(ValidationRule):
     Variable usages must be compatible with the arguments they are passed to.
 
     See https://spec.graphql.org/draft/#sec-All-Variable-Usages-are-Allowed
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import VariablesInAllowedPositionRule
+    >>> schema = build_schema('type Query { field(arg: ID!): String }')
+    >>> document = parse('query ($id: String) { field(arg: $id) }')
+    >>> errors = validate(schema, document, [VariablesInAllowedPositionRule])
+    >>> print(errors[0].message)
+    Variable '$id' of type 'String' used in position expecting type 'ID!'.
+    >>> document = parse('query ($id: ID!) { field(arg: $id) }')
+    >>> validate(schema, document, [VariablesInAllowedPositionRule])
+    []
     """
 
     def __init__(self, context: ValidationContext):
@@ -36,11 +49,19 @@ class VariablesInAllowedPositionRule(ValidationRule):
         self.var_def_map: Dict[str, Any] = {}
 
     def enter_operation_definition(self, *_args: Any) -> None:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         self.var_def_map.clear()
 
     def leave_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when leaving an operation definition node.
+
+        :meta private:
+        """
         var_def_map = self.var_def_map
         usages = self.context.get_recursive_variable_usages(operation)
 
@@ -86,6 +107,10 @@ class VariablesInAllowedPositionRule(ValidationRule):
     def enter_variable_definition(
         self, node: VariableDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering a variable definition node.
+
+        :meta private:
+        """
         self.var_def_map[node.variable.name.value] = node
 
 
@@ -98,9 +123,12 @@ def allowed_variable_usage(
 ) -> bool:
     """Check for allowed variable usage.
 
-    Returns True if the variable is allowed in the location it was found, which includes
+    Returns True if the variable is allowed in the location it was found, including
     considering if default values exist for either the variable or the location at which
     it is located.
+
+    OneOf Input Object Type fields are considered separately to provide a more
+    descriptive error message.
     """
     if is_non_null_type(location_type) and not is_non_null_type(var_type):
         has_non_null_variable_default_value = (

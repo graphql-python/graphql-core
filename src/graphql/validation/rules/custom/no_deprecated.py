@@ -17,9 +17,33 @@ class NoDeprecatedCustomRule(ValidationRule):
     Note: This rule is optional and is not part of the Validation section of the GraphQL
     Specification. The main purpose of this rule is detection of deprecated usages and
     not necessarily to forbid their use when querying a service.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import (
+    ...     GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString,
+    ...     parse, validate)
+    >>> from graphql.validation import NoDeprecatedCustomRule
+    >>> schema = GraphQLSchema(
+    ...     query=GraphQLObjectType('Query', {
+    ...         'name': GraphQLField(GraphQLString),
+    ...         'oldName': GraphQLField(
+    ...             GraphQLString, deprecation_reason='Use name instead.'),
+    ...     }))
+    >>> document = parse('{ oldName }')
+    >>> errors = validate(schema, document, [NoDeprecatedCustomRule])
+    >>> print(errors[0].message)
+    The field Query.oldName is deprecated. Use name instead.
+    >>> document = parse('{ name }')
+    >>> validate(schema, document, [NoDeprecatedCustomRule])
+    []
     """
 
     def enter_field(self, node: FieldNode, *_args: Any) -> None:
+        """Called when entering a field node.
+
+        :meta private:
+        """
         context = self.context
         field_def = context.get_field_def()
         if field_def:
@@ -36,6 +60,10 @@ class NoDeprecatedCustomRule(ValidationRule):
                 )
 
     def enter_argument(self, node: ArgumentNode, *_args: Any) -> None:
+        """Called when entering an argument node.
+
+        :meta private:
+        """
         context = self.context
         arg_def = context.get_argument()
         if arg_def:
@@ -65,6 +93,10 @@ class NoDeprecatedCustomRule(ValidationRule):
                     )
 
     def enter_object_field(self, node: ObjectFieldNode, *_args: Any) -> None:
+        """Called when entering an object field node.
+
+        :meta private:
+        """
         context = self.context
         input_object_def = get_named_type(context.get_parent_input_type())
         if is_input_object_type(input_object_def):
@@ -85,6 +117,10 @@ class NoDeprecatedCustomRule(ValidationRule):
                     )
 
     def enter_enum_value(self, node: EnumValueNode, *_args: Any) -> None:
+        """Called when entering an enum value node.
+
+        :meta private:
+        """
         context = self.context
         enum_value_def = context.get_enum_value()
         if enum_value_def:

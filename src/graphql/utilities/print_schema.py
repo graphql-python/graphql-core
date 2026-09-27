@@ -33,12 +33,51 @@ __all__ = ["print_schema", "print_introspection_schema", "print_type", "print_va
 
 
 def print_schema(schema: GraphQLSchema) -> str:
+    """Print the schema.
+
+    :param schema: The GraphQL schema to print.
+    :returns: The printed string representation in SDL.
+
+    >>> from graphql import build_schema, print_schema
+    >>> schema = build_schema('''
+    ...     directive @upper on FIELD_DEFINITION
+    ...
+    ...     type Query {
+    ...       greeting: String @upper
+    ...     }
+    ... ''')
+    >>> print(print_schema(schema))
+    directive @upper on FIELD_DEFINITION
+    <BLANKLINE>
+    type Query {
+      greeting: String
+    }
+    """
     return print_filtered_schema(
         schema, lambda n: not is_specified_directive(n), is_defined_type
     )
 
 
 def print_introspection_schema(schema: GraphQLSchema) -> str:
+    """Print the introspection schema.
+
+    :param schema: The GraphQL schema whose introspection types are printed.
+    :returns: The printed string representation in SDL.
+
+    >>> from graphql import build_schema, print_introspection_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> printed = print_introspection_schema(schema)
+    >>> 'type __Schema' in printed
+    True
+    >>> 'enum __TypeKind' in printed
+    True
+    >>> 'type Query' in printed
+    False
+    """
     return print_filtered_schema(schema, is_specified_directive, is_introspection_type)
 
 
@@ -112,6 +151,28 @@ def is_schema_of_common_names(schema: GraphQLSchema) -> bool:
 
 
 def print_type(type_: GraphQLNamedType) -> str:
+    """Print the type.
+
+    :param type_: The GraphQL named type to print.
+    :returns: The printed string representation in SDL.
+
+    >>> from graphql import build_schema, print_type
+    >>> schema = build_schema('''
+    ...     type User {
+    ...       id: ID!
+    ...       name: String
+    ...     }
+    ...
+    ...     type Query {
+    ...       viewer: User
+    ...     }
+    ... ''')
+    >>> print(print_type(schema.get_type('User')))
+    type User {
+      id: ID!
+      name: String
+    }
+    """
     if is_scalar_type(type_):
         type_ = cast(GraphQLScalarType, type_)
         return print_scalar(type_)
@@ -300,5 +361,18 @@ def print_description(
 
 
 def print_value(value: Any, type_: GraphQLInputType) -> str:
-    """@deprecated: Convenience function for printing a Python value"""
+    """Print a Python value as a GraphQL value literal.
+
+    This is a deprecated convenience function; use
+    ``print_ast(ast_from_value(value, type_))`` instead.
+
+    :param value: The Python value to print.
+    :param type_: The GraphQL input type used to interpret the value.
+    :returns: The printed GraphQL value literal.
+
+    >>> from graphql import GraphQLList, GraphQLString
+    >>> from graphql.utilities import print_value
+    >>> print(print_value(['a', 'b'], GraphQLList(GraphQLString)))
+    ["a", "b"]
+    """
     return print_ast(ast_from_value(value, type_))  # type: ignore

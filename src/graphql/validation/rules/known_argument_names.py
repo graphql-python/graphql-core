@@ -24,6 +24,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
     """
 
     context: Union[ValidationContext, SDLValidationContext]
+    """The validation context used while checking the document."""
 
     def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
@@ -71,14 +72,32 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
 
     See https://spec.graphql.org/draft/#sec-Argument-Names
     See https://spec.graphql.org/draft/#sec-Directives-Are-In-Valid-Locations
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import KnownArgumentNamesRule
+    >>> schema = build_schema('type Query { field(arg: String): String }')
+    >>> document = parse('{ field(unknown: "1") }')
+    >>> errors = validate(schema, document, [KnownArgumentNamesRule])
+    >>> print(errors[0].message)
+    Unknown argument 'unknown' on field 'Query.field'.
+    >>> document = parse('{ field(arg: "1") }')
+    >>> validate(schema, document, [KnownArgumentNamesRule])
+    []
     """
 
     context: ValidationContext
+    """The validation context used while checking the document."""
 
     def __init__(self, context: ValidationContext):
         super().__init__(context)
 
     def enter_argument(self, arg_node: ArgumentNode, *args: Any) -> None:
+        """Called when entering an argument node.
+
+        :meta private:
+        """
         context = self.context
         arg_def = context.get_argument()
         field_def = context.get_field_def()

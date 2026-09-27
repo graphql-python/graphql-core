@@ -55,6 +55,100 @@ async def subscribe(
 
     If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
     a stream of ExecutionResults representing the response stream.
+
+    Each payload yielded by the source event stream is executed with the payload as the
+    root value. This maps the subscription source stream into the response stream
+    described by the GraphQL specification.
+
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document containing the subscription operation.
+    :param root_value: Initial root value passed to the subscription resolver.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the subscription operation to execute when the
+        document contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own resolver
+        while executing the payloads of the source event stream.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :returns: A source stream mapped to execution results, or an execution result
+        containing subscription errors.
+
+    Use a same-named root value function to provide the source event stream:
+
+    >>> import asyncio
+    >>> from graphql import build_schema, parse, subscribe
+    >>> async def greetings():
+    ...     yield {'greeting': 'Hello'}
+    ...     yield {'greeting': 'Bonjour'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> async def first_payload():
+    ...     result = await subscribe(
+    ...         schema,
+    ...         parse('subscription { greeting }'),
+    ...         root_value={'greeting': lambda _info: greetings()},
+    ...     )
+    ...     return await result.__anext__()
+    >>> asyncio.run(first_payload())
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+    This variant supplies events through a custom ``subscribe_field_resolver``:
+
+    >>> async def default_greetings():
+    ...     yield {'greeting': 'Hello'}
+    >>> async def french_greetings():
+    ...     yield {'greeting': 'Bonjour'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting(locale: String): String
+    ...     }
+    ... ''')
+    >>> def greeting(args, context):
+    ...     locale = args.get('locale') or context['default_locale']
+    ...     return french_greetings() if locale == 'fr' else default_greetings()
+    >>> def subscribe_field_resolver(root_value, info, **args):
+    ...     assert args['locale'] == 'fr'
+    ...     return root_value[info.field_name](args, info.context)
+    >>> async def first_payload():
+    ...     result = await subscribe(
+    ...         schema,
+    ...         parse(
+    ...             'subscription Greeting($locale: String)'
+    ...             ' { greeting(locale: $locale) }'
+    ...         ),
+    ...         root_value={'greeting': greeting},
+    ...         context_value={'default_locale': 'fr'},
+    ...         variable_values={'locale': 'fr'},
+    ...         operation_name='Greeting',
+    ...         subscribe_field_resolver=subscribe_field_resolver,
+    ...     )
+    ...     return await result.__anext__()
+    >>> asyncio.run(first_payload())
+    ExecutionResult(data={'greeting': 'Bonjour'}, errors=None)
+
+    This variant shows the error result when the schema has no subscription root:
+
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ... ''')
+    >>> result = asyncio.run(subscribe(schema, parse('subscription { greeting }')))
+    >>> result.errors[0].message
+    'Schema is not configured to execute subscription operation.'
     """
     result_or_stream = await create_source_event_stream(
         schema,
@@ -126,6 +220,43 @@ async def create_source_event_stream(
     process or machine than the stateless GraphQL execution engine, or otherwise
     separating these two steps. For more on this, see the "Supporting Subscriptions
     at Scale" information in the GraphQL spec.
+
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document containing the subscription operation.
+    :param root_value: Initial root value passed to the subscription resolver.
+    :param context_value: Application context value passed to resolvers.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the subscription operation to execute when the
+        document contains multiple operations.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :returns: The source event stream, or an execution result containing subscription
+        errors.
+
+    >>> import asyncio
+    >>> from collections.abc import AsyncIterable
+    >>> from graphql import build_schema, create_source_event_stream, parse
+    >>> async def greetings():
+    ...     yield {'greeting': 'Hello'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> async def is_async_iterable():
+    ...     stream = await create_source_event_stream(
+    ...         schema,
+    ...         parse('subscription { greeting }'),
+    ...         {'greeting': lambda _info: greetings()},
+    ...     )
+    ...     return isinstance(stream, AsyncIterable)
+    >>> asyncio.run(is_async_iterable())
+    True
     """
     # If arguments are missing or incorrectly typed, this is an internal developer
     # mistake which should throw an early error.
@@ -165,6 +296,10 @@ async def create_source_event_stream(
 
 
 async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
+    """Resolve the event stream of the root subscription field.
+
+    :meta private:
+    """
     schema = context.schema
 
     root_type = schema.subscription_type

@@ -101,26 +101,65 @@ __all__ = [
 
 
 class FormattedExecutionResult(TypedDict, total=False):
-    """Formatted execution result"""
+    """Formatted execution result
+
+    A JSON-serializable GraphQL execution result.
+    """
 
     errors: List[GraphQLFormattedError]
+    """Errors raised while parsing, validating, or executing the operation."""
+
     data: Optional[Dict[str, Any]]
+    """Data returned by execution, or None when execution could not produce data."""
+
     extensions: Dict[str, Any]
+    """Extension fields to include in the formatted result."""
 
 
 class ExecutionResult:
     """The result of GraphQL execution.
 
+    Represents the response produced by executing a GraphQL operation.
+
     - ``data`` is the result of a successful execution of the query.
     - ``errors`` is included when any errors occurred as a non-empty list.
     - ``extensions`` is reserved for adding non-standard properties.
+
+    :param data: Data returned by execution, or None when execution could not produce
+        data.
+    :param errors: Errors raised while parsing, validating, or executing the operation.
+    :param extensions: Extension fields to include in the formatted result.
+
+    >>> from graphql import ExecutionResult, GraphQLError
+    >>> result = ExecutionResult(
+    ...     data={'greeting': None},
+    ...     errors=[GraphQLError('Resolver failed.', path=['greeting'])],
+    ...     extensions={'cost': 1},
+    ... )
+    >>> result.data
+    {'greeting': None}
+    >>> result.formatted
+    {'data': {'greeting': None},
+     'errors': [{'message': 'Resolver failed.', 'path': ['greeting']}],
+     'extensions': {'cost': 1}}
+
+    For backward compatibility, the result can also be unpacked as a tuple:
+
+    >>> data, errors = result
+    >>> errors[0].message
+    'Resolver failed.'
     """
 
     __slots__ = "data", "errors", "extensions"
 
     data: Optional[Dict[str, Any]]
+    """Data returned by execution, or None when execution could not produce data."""
+
     errors: Optional[List[GraphQLError]]
+    """Errors raised while parsing, validating, or executing the operation."""
+
     extensions: Optional[Dict[str, Any]]
+    """Extension fields to include in the formatted result."""
 
     def __init__(
         self,
@@ -216,19 +255,78 @@ class ExecutionContext:
 
     Namely, schema of the type system that is currently executing, and the fragments
     defined in the query document.
+
+    The execution context is normally created with the ``build()`` class method from
+    the arguments passed to :func:`~graphql.execution.execute`. You can pass a subclass
+    as ``execution_context_class`` to :func:`~graphql.execution.execute` in order to
+    customize the execution; the methods used internally for executing and completing
+    fields are not part of the public API, though.
+
+    :param schema: The schema of the type system that is currently executing.
+    :param fragments: The fragment definitions of the document, keyed by name.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param operation: The operation that is executed.
+    :param variable_values: The coerced variable values keyed by variable name.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its own
+        resolver.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param collected_errors: The errors collected during execution.
+    :param middleware_manager: The manager for the middleware that wraps the field
+        resolvers, if any.
+    :param is_awaitable: The predicate to be used for checking whether values are
+        awaitable. If not provided, the default predicate is used.
+
+    >>> from graphql import ExecutionContext, build_schema, parse
+    >>> schema = build_schema('type Query { greeting: String }')
+    >>> context = ExecutionContext.build(
+    ...     schema, parse('query Greeting { greeting }'), {'greeting': 'Hello'}
+    ... )
+    >>> context.operation.name.value
+    'Greeting'
+    >>> context.root_value
+    {'greeting': 'Hello'}
+
+    If the context cannot be built, a list of errors is returned instead:
+
+    >>> ExecutionContext.build(schema, parse('{ greeting }'), operation_name='Other')
+    [GraphQLError("Unknown operation named 'Other'.")]
     """
 
     schema: GraphQLSchema
+    """The schema of the type system that is currently executing."""
+
     fragments: Dict[str, FragmentDefinitionNode]
+    """The fragment definitions of the document, keyed by name."""
+
     root_value: Any
+    """Initial root value passed to the operation."""
+
     context_value: Any
+    """Application context value passed to every resolver."""
+
     operation: OperationDefinitionNode
+    """The operation that is executed."""
+
     variable_values: Dict[str, Any]
+    """The coerced variable values keyed by variable name."""
+
     field_resolver: GraphQLFieldResolver
+    """Resolver used when a field does not define its own resolver."""
+
     type_resolver: GraphQLTypeResolver
+    """Resolver used when an abstract type does not define its own resolver."""
+
     subscribe_field_resolver: GraphQLFieldResolver
+    """Resolver used for the root subscription field."""
+
     collected_errors: CollectedErrors
+    """The errors collected during execution."""
+
     middleware_manager: Optional[MiddlewareManager]
+    """The manager for the middleware that wraps the field resolvers, if any."""
 
     is_awaitable = staticmethod(default_is_awaitable)
 
@@ -283,9 +381,11 @@ class ExecutionContext:
         Constructs a ExecutionContext object from the arguments passed to execute, which
         we will pass throughout the other execution methods.
 
-        Throws a GraphQLError if a valid execution context cannot be created.
+        Returns a list of GraphQLErrors if a valid execution context cannot be created.
 
         For internal use only.
+
+        :meta private:
         """
         operation: Optional[OperationDefinitionNode] = None
         fragments: Dict[str, FragmentDefinitionNode] = {}
@@ -356,6 +456,8 @@ class ExecutionContext:
 
         Given a completed execution context and data, build the (data, errors) response
         defined by the "Response" section of the GraphQL spec.
+
+        :meta private:
         """
         if not errors:
             return ExecutionResult(data, None)
@@ -372,6 +474,8 @@ class ExecutionContext:
         """Execute an operation.
 
         Implements the "Executing operations" section of the spec.
+
+        :meta private:
         """
         root_type = self.schema.get_root_type(operation.operation)
         if root_type is None:
@@ -408,6 +512,8 @@ class ExecutionContext:
 
         Implements the "Executing selection sets" section of the spec
         for fields that must be executed serially.
+
+        :meta private:
         """
         results: AwaitableOrValue[Dict[str, Any]] = {}
         is_awaitable = self.is_awaitable
@@ -462,6 +568,8 @@ class ExecutionContext:
 
         Implements the "Executing selection sets" section of the spec
         for fields that may be executed in parallel.
+
+        :meta private:
         """
         results = {}
         is_awaitable = self.is_awaitable
@@ -506,6 +614,8 @@ class ExecutionContext:
         """Build the GraphQLResolveInfo object.
 
         For internal use only.
+
+        :meta private:
         """
         # The resolve function's first argument is a collection of information about
         # the current execution state.
@@ -538,6 +648,8 @@ class ExecutionContext:
         In particular, this method figures out the value that the field returns by
         calling its resolve function, then calls complete_value to await coroutine
         objects, serialize scalars, or execute the sub-selection-set for objects.
+
+        :meta private:
         """
         field_def = get_field_def(self.schema, parent_type, field_nodes[0])
         if not field_def:
@@ -606,6 +718,13 @@ class ExecutionContext:
         return_type: GraphQLOutputType,
         path: Path,
     ) -> None:
+        """Handle an error that occurred while resolving or completing a field.
+
+        Errors of non-nullable fields are propagated to the parent field, other errors
+        are collected and the field value is resolved as null.
+
+        :meta private:
+        """
         # If the field type is non-nullable, then it is resolved without any protection
         # from errors, however it still properly locates the error.
         if is_non_null_type(return_type):
@@ -626,7 +745,7 @@ class ExecutionContext:
         """Complete a value.
 
         Implements the instructions for completeValue as defined in the
-        "Value completion" section of the spec.
+        "Value Completion" section of the spec.
 
         If the field type is Non-Null, then this recursively completes the value
         for the inner type. It throws a field error if that completion returns null,
@@ -644,6 +763,8 @@ class ExecutionContext:
 
         Otherwise, the field type expects a sub-selection set, and will complete the
         value by evaluating all sub-selections.
+
+        :meta private:
         """
         # If result is an Exception, throw a located error.
         if isinstance(result, Exception):
@@ -711,6 +832,8 @@ class ExecutionContext:
         """Complete a list value.
 
         Complete a list value by completing each item in the list with the inner type.
+
+        :meta private:
         """
         if not is_iterable(result):
             # experimental: allow async iterables
@@ -813,6 +936,8 @@ class ExecutionContext:
 
         Complete a Scalar or Enum by serializing to a valid value, returning null if
         serialization is not possible.
+
+        :meta private:
         """
         serialized_result = return_type.serialize(result)
         if serialized_result is Undefined or serialized_result is None:
@@ -834,6 +959,8 @@ class ExecutionContext:
 
         Complete a value of an abstract type by determining the runtime object type of
         that value, then complete the value for that type.
+
+        :meta private:
         """
         resolve_type_fn = return_type.resolve_type or self.type_resolver
         runtime_type = resolve_type_fn(result, info, return_type)
@@ -880,6 +1007,13 @@ class ExecutionContext:
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
+        """Ensure that the resolved runtime type is a valid possible object type.
+
+        Returns the runtime object type for the given type name, or raises a
+        GraphQLError if that type is not a valid object type for the abstract type.
+
+        :meta private:
+        """
         if runtime_type_name is None:
             raise GraphQLError(
                 f"Abstract type '{return_type.name}' must resolve"
@@ -941,7 +1075,10 @@ class ExecutionContext:
         path: Path,
         result: Any,
     ) -> AwaitableOrValue[Dict[str, Any]]:
-        """Complete an Object value by executing all sub-selections."""
+        """Complete an Object value by executing all sub-selections.
+
+        :meta private:
+        """
         # Collect sub-fields to execute to complete this value.
         sub_field_nodes = self.collect_subfields(return_type, field_nodes)
 
@@ -978,6 +1115,8 @@ class ExecutionContext:
         kept in the execution context as ``_subfields_cache``. This ensures the
         subfields are not repeatedly calculated, which saves overhead when resolving
         lists of values.
+
+        :meta private:
         """
         cache = self._subfields_cache
         # We cannot use the field_nodes themselves as key for the cache, since they
@@ -1029,6 +1168,132 @@ def execute(
 
     If the arguments to this function do not result in a legal execution context,
     a GraphQLError will be thrown immediately explaining the invalid input.
+
+    Field errors are collected into the response instead of raising an exception.
+    Only the field that produced the error and its descendants are omitted; sibling
+    fields continue to execute. Errors from fields of non-null type may propagate to
+    the nearest nullable parent, which can be the entire response data.
+
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document to execute.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document contains
+        multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its own
+        resolver.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :param middleware: The middleware to wrap the resolvers with.
+    :param execution_context_class: The execution context class to use to build the
+        context.
+    :param is_awaitable: The predicate to be used for checking whether values are
+        awaitable.
+    :returns: A completed execution result, or a coroutine object yielding one when
+        execution is asynchronous.
+
+    Execute an asynchronous operation with variables:
+
+    >>> import asyncio
+    >>> from graphql import build_schema, execute, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting(name: String!): String
+    ...     }
+    ... ''')
+    >>> async def greeting(_info, name):
+    ...     return f'Hello, {name}!'
+    >>> result = asyncio.run(execute(
+    ...     schema,
+    ...     parse('query ($name: String!) { greeting(name: $name) }'),
+    ...     root_value={'greeting': greeting},
+    ...     variable_values={'name': 'Ada'},
+    ... ))
+    >>> result
+    ExecutionResult(data={'greeting': 'Hello, Ada!'}, errors=None)
+
+    This variant supplies context plus custom field and type resolvers. Since all
+    resolvers are synchronous, the result is returned directly:
+
+    >>> schema = build_schema('''
+    ...     interface Named {
+    ...       name: String!
+    ...     }
+    ...
+    ...     type User implements Named {
+    ...       name: String!
+    ...     }
+    ...
+    ...     type Query {
+    ...       viewer: Named
+    ...     }
+    ... ''')
+    >>> def field_resolver(source, info, **_args):
+    ...     assert info.context['locale'] == 'en'
+    ...     return source[info.field_name]
+    >>> def type_resolver(value, _info, _abstract_type):
+    ...     return 'User' if value['kind'] == 'user' else None
+    >>> execute(
+    ...     schema,
+    ...     parse('query Viewer { viewer { __typename name } }'),
+    ...     root_value={'viewer': {'kind': 'user', 'name': 'Ada'}},
+    ...     context_value={'locale': 'en'},
+    ...     operation_name='Viewer',
+    ...     field_resolver=field_resolver,
+    ...     type_resolver=type_resolver,
+    ... )
+    ExecutionResult(data={'viewer': {'__typename': 'User', 'name': 'Ada'}},
+                    errors=None)
+
+    This variant shows how resolver errors become field errors in the result:
+
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       broken: String
+    ...     }
+    ... ''')
+    >>> def broken(_info):
+    ...     raise RuntimeError('Resolver failed.')
+    >>> result = execute(schema, parse('{ broken }'), root_value={'broken': broken})
+    >>> result.data
+    {'broken': None}
+    >>> result.errors[0].message
+    'Resolver failed.'
+
+    This variant limits how many variable coercion errors are reported:
+
+    >>> schema = build_schema('''
+    ...     input ReviewInput {
+    ...       stars: Int!
+    ...     }
+    ...
+    ...     type Query {
+    ...       review(input: ReviewInput!): String
+    ...     }
+    ... ''')
+    >>> document = parse('''
+    ...     query ($first: ReviewInput!, $second: ReviewInput!) {
+    ...       first: review(input: $first)
+    ...       second: review(input: $second)
+    ...     }
+    ... ''')
+    >>> result = execute(
+    ...     schema,
+    ...     document,
+    ...     variable_values={
+    ...         'first': {'stars': 'bad'},
+    ...         'second': {'stars': 'also bad'},
+    ...     },
+    ...     max_coercion_errors=1,
+    ... )
+    >>> len(result.errors)
+    2
+    >>> result.errors[1].message
+    'Too many errors processing variables, error limit reached. Execution aborted.'
     """
     # If arguments are missing or incorrect, throw an error.
     assert_valid_execution_arguments(schema, document, variable_values)
@@ -1093,7 +1358,10 @@ def execute(
 
 
 def assume_not_awaitable(_value: Any) -> bool:
-    """Replacement for isawaitable if everything is assumed to be synchronous."""
+    """Replacement for isawaitable if everything is assumed to be synchronous.
+
+    :meta private:
+    """
     return False
 
 
@@ -1118,7 +1386,58 @@ def execute_sync(
     However, it guarantees to complete synchronously (or throw an error) assuming
     that all field resolvers are also synchronous.
 
-    Set check_sync to True to still run checks that no awaitable values are returned.
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document to execute.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document contains
+        multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its own
+        resolver.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :param middleware: The middleware to wrap the resolvers with.
+    :param execution_context_class: The execution context class to use to build the
+        context.
+    :param check_sync: Set this to ``True`` to still run checks that no awaitable
+        values are returned. By default, everything is assumed to be synchronous.
+    :returns: The completed execution result for a synchronous operation.
+
+    Execute an operation synchronously when all resolvers are synchronous:
+
+    >>> from graphql import build_schema, execute_sync, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> document = parse('{ greeting }')
+    >>> execute_sync(schema, document, root_value={'greeting': 'Hello'})
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+    This variant shows ``execute_sync`` raising an error when ``check_sync`` is set
+    and a resolver returns an awaitable (the check requires a running event loop, and
+    warnings about the resulting unawaited coroutines are suppressed here):
+
+    >>> import asyncio, gc, warnings
+    >>> async def greeting(_info):
+    ...     return 'Hello'
+    >>> async def main():
+    ...     try:
+    ...         execute_sync(
+    ...             schema, document, {'greeting': greeting}, check_sync=True
+    ...         )
+    ...     except RuntimeError as error:
+    ...         return error
+    >>> with warnings.catch_warnings():
+    ...     warnings.simplefilter('ignore', RuntimeWarning)
+    ...     error = asyncio.run(main())
+    ...     _ = gc.collect()
+    >>> error
+    RuntimeError('GraphQL execution failed to complete synchronously.')
     """
     is_awaitable = (
         check_sync
@@ -1161,6 +1480,8 @@ def assert_valid_execution_arguments(
     of the GraphQL library.
 
     For internal use only.
+
+    :meta private:
     """
     if not document:
         raise TypeError("Must provide document.")
@@ -1183,13 +1504,15 @@ def get_field_def(
     """Get field definition.
 
     This method looks up the field on the given type definition. It has special casing
-    for the three introspection fields, ``__schema``, ``__type`, and ``__typename``.
+    for the three introspection fields, ``__schema``, ``__type``, and ``__typename``.
     ``__typename`` is special because it can always be queried as a field, even in
     situations where no other fields are allowed, like on a Union. ``__schema`` and
     ``__type`` could get automatically added to the query type, but that would require
     mutating type definitions, which would cause issues.
 
     For internal use only.
+
+    :meta private:
     """
     field_name = field_node.name.value
 
@@ -1205,7 +1528,10 @@ def get_field_def(
 def invalid_return_type_error(
     return_type: GraphQLObjectType, result: Any, field_nodes: List[FieldNode]
 ) -> GraphQLError:
-    """Create a GraphQLError for an invalid return type."""
+    """Create a GraphQLError for an invalid return type.
+
+    :meta private:
+    """
     return GraphQLError(
         f"Expected value of type '{return_type.name}' but got: {inspect(result)}.",
         field_nodes,
@@ -1213,7 +1539,10 @@ def invalid_return_type_error(
 
 
 def get_typename(value: Any) -> Optional[str]:
-    """Get the ``__typename`` property of the given value."""
+    """Get the ``__typename`` property of the given value.
+
+    :meta private:
+    """
     if isinstance(value, Mapping):
         return value.get("__typename")
     # need to de-mangle the attribute assumed to be "private" in Python
@@ -1238,6 +1567,42 @@ def default_type_resolver(
     Otherwise, test each possible type for the abstract type by calling
     :meth:`~graphql.type.GraphQLObjectType.is_type_of` for the object
     being coerced, returning the first type that matches.
+
+    :param value: The value for which the object type shall be determined.
+    :param info: Information about the current execution state.
+    :param abstract_type: The abstract type whose possible types are tested.
+    :returns: The name of the resolved object type, or ``None`` if it could not be
+        determined (or an awaitable resolving to one of these values).
+
+    >>> from graphql import build_schema, default_type_resolver, graphql_sync
+    >>> schema = build_schema('''
+    ...     interface Pet {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Cat implements Pet {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Dog implements Pet {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Query {
+    ...       pets: [Pet]
+    ...     }
+    ... ''')
+    >>> schema.type_map['Dog'].is_type_of = lambda value, _info: 'barks' in value
+    >>> pets = [{'__typename': 'Cat', 'name': 'Tom'}, {'name': 'Rex', 'barks': True}]
+    >>> graphql_sync(
+    ...     schema,
+    ...     '{ pets { __typename name } }',
+    ...     root_value={'pets': pets},
+    ...     type_resolver=default_type_resolver,
+    ... )
+    ExecutionResult(data={'pets': [{'__typename': 'Cat', 'name': 'Tom'},
+                                   {'__typename': 'Dog', 'name': 'Rex'}]},
+                    errors=None)
     """
     # First, look for `__typename`.
     type_name = get_typename(value)
@@ -1296,6 +1661,30 @@ def default_field_resolver(source: Any, info: GraphQLResolveInfo, **args: Any) -
 
     For dictionaries, the field names are used as keys, for all other objects they are
     used as attribute names.
+
+    :param source: The source value of the parent field.
+    :param info: Information about the current execution state. The arguments passed
+        to the field follow as keyword arguments.
+    :returns: The resolved field value.
+
+    >>> from graphql import build_schema, default_field_resolver, graphql_sync
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting(name: String): String
+    ...       answer: Int
+    ...     }
+    ... ''')
+    >>> class Root:
+    ...     answer = 42
+    ...     def greeting(self, _info, name):
+    ...         return f'Hello, {name}!'
+    >>> graphql_sync(
+    ...     schema,
+    ...     '{ greeting(name: "Ada") answer }',
+    ...     root_value=Root(),
+    ...     field_resolver=default_field_resolver,
+    ... )
+    ExecutionResult(data={'greeting': 'Hello, Ada!', 'answer': 42}, errors=None)
     """
     # Ensure source is a value for which property access is acceptable.
     field_name = info.field_name

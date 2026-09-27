@@ -27,9 +27,26 @@ class FieldsOnCorrectTypeRule(ValidationRule):
     type, or are an allowed meta field such as ``__typename``.
 
     See https://spec.graphql.org/draft/#sec-Field-Selections
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import FieldsOnCorrectTypeRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse('{ missing }')
+    >>> errors = validate(schema, document, [FieldsOnCorrectTypeRule])
+    >>> print(errors[0].message)
+    Cannot query field 'missing' on type 'Query'.
+    >>> document = parse('{ name }')
+    >>> validate(schema, document, [FieldsOnCorrectTypeRule])
+    []
     """
 
     def enter_field(self, node: FieldNode, *_args: Any) -> None:
+        """Called when entering a field node.
+
+        :meta private:
+        """
         type_ = self.context.get_parent_type()
         if not type_:
             return

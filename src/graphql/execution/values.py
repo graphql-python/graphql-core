@@ -49,7 +49,61 @@ def get_variable_values(
 
     Prepares a dict of variable values of the correct type based on the provided
     variable definitions and arbitrary input. If the input cannot be parsed to match
-    the variable definitions, a GraphQLError will be raised.
+    the variable definitions, a list of GraphQLErrors will be returned instead.
+
+    :param schema: GraphQL schema to use.
+    :param var_def_nodes: The variable definition AST nodes to coerce.
+    :param inputs: The runtime variable values keyed by variable name.
+    :param max_errors: The maximum number of coercion errors to report (unlimited by
+        default). When the limit is exceeded, an additional error is added and
+        coercion is aborted.
+    :returns: Coerced variable values, or a list of request errors.
+
+    Coerce provided variables and apply operation defaults:
+
+    >>> from graphql import build_schema, get_variable_values, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       reviews(stars: Int!, limit: Int = 10): [String]
+    ...     }
+    ... ''')
+    >>> document = parse('''
+    ...     query ($stars: Int!, $limit: Int = 10) {
+    ...       reviews(stars: $stars, limit: $limit)
+    ...     }
+    ... ''')
+    >>> operation = document.definitions[0]
+    >>> get_variable_values(schema, operation.variable_definitions, {'stars': 5})
+    {'stars': 5, 'limit': 10}
+
+    This variant uses ``max_errors`` to cap reported coercion errors:
+
+    >>> schema = build_schema('''
+    ...     input ReviewInput {
+    ...       stars: Int!
+    ...     }
+    ...
+    ...     type Query {
+    ...       review(input: ReviewInput!): String
+    ...     }
+    ... ''')
+    >>> document = parse('''
+    ...     query ($first: ReviewInput!, $second: ReviewInput!) {
+    ...       first: review(input: $first)
+    ...       second: review(input: $second)
+    ...     }
+    ... ''')
+    >>> operation = document.definitions[0]
+    >>> errors = get_variable_values(
+    ...     schema,
+    ...     operation.variable_definitions,
+    ...     {'first': {'stars': 'bad'}, 'second': {'stars': 'also bad'}},
+    ...     max_errors=1,
+    ... )
+    >>> len(errors)
+    2
+    >>> errors[1].message
+    'Too many errors processing variables, error limit reached. Execution aborted.'
     """
     errors: List[GraphQLError] = []
 
@@ -77,6 +131,10 @@ def coerce_variable_values(
     inputs: Dict[str, Any],
     on_error: Callable[[GraphQLError], None],
 ) -> Dict[str, Any]:
+    """Coerce the variable values, reporting errors via the given callback.
+
+    :meta private:
+    """
     coerced_values: Dict[str, Any] = {}
     for var_def_node in var_def_nodes:
         var_name = var_def_node.variable.name.value
@@ -158,6 +216,45 @@ def get_argument_values(
 
     Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
+
+    :param type_def: The field or directive definition whose arguments should be
+        coerced.
+    :param node: The AST node to inspect.
+    :param variable_values: The runtime variable values keyed by variable name.
+    :returns: Coerced argument values keyed by argument name.
+
+    Read literal argument values and defaults:
+
+    >>> from graphql import build_schema, get_argument_values, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       reviews(stars: Int!, limit: Int = 10): [String]
+    ...     }
+    ... ''')
+    >>> field_def = schema.query_type.fields['reviews']
+    >>> document = parse('{ reviews(stars: 5) }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> get_argument_values(field_def, field_node)
+    {'stars': 5, 'limit': 10}
+
+    This variant resolves argument values from operation variables:
+
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       reviews(stars: Int!): [String]
+    ...     }
+    ... ''')
+    >>> field_def = schema.query_type.fields['reviews']
+    >>> document = parse('query ($stars: Int!) { reviews(stars: $stars) }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> get_argument_values(field_def, field_node, {'stars': 5})
+    {'stars': 5}
+    >>> get_argument_values(field_def, field_node, {})
+    Traceback (most recent call last):
+    ...
+    graphql.error.graphql_error.GraphQLError: Argument 'stars' of required type 'Int!'
+    was provided the variable '$stars' which was not provided a runtime value.
+    ...
     """
     coerced_values: Dict[str, Any] = {}
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}
@@ -250,6 +347,34 @@ def get_directive_values(
     which may contain directives. Optionally also accepts a dict of variable values.
 
     If the directive does not exist on the node, returns None.
+
+    :param directive_def: The directive definition whose arguments should be coerced.
+    :param node: The AST node to inspect.
+    :param variable_values: The runtime variable values keyed by variable name.
+    :returns: Coerced directive argument values keyed by argument name.
+
+    Read literal directive arguments from a node:
+
+    >>> from graphql import GraphQLSkipDirective, get_directive_values, parse
+    >>> document = parse('{ name @skip(if: true) }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> get_directive_values(GraphQLSkipDirective, field_node)
+    {'if': True}
+
+    This variant resolves directive arguments from variables and handles absent
+    directives:
+
+    >>> from graphql import FieldNode, GraphQLIncludeDirective
+    >>> document = parse(
+    ...     'query ($includeName: Boolean!) { name @include(if: $includeName) }'
+    ... )
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> get_directive_values(
+    ...     GraphQLIncludeDirective, field_node, {'includeName': False}
+    ... )
+    {'if': False}
+    >>> get_directive_values(GraphQLIncludeDirective, FieldNode(directives=[])) is None
+    True
     """
     directives = node.directives
     if directives:

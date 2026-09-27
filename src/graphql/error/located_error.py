@@ -19,6 +19,22 @@ def located_error(
     Given an arbitrary Exception, presumably thrown while attempting to execute a
     GraphQL operation, produce a new GraphQLError aware of the location in the document
     responsible for the original Exception.
+
+    :param original_error: The original error value to wrap.
+    :param nodes: The AST nodes associated with the error.
+    :param path: The response path associated with the error.
+    :returns: The GraphQL error.
+
+    >>> from graphql import located_error, parse
+    >>> document = parse('{ viewer { name } }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> error = located_error(RuntimeError('Resolver failed'), [field_node], ['viewer'])
+    >>> error.message
+    'Resolver failed'
+    >>> error.locations
+    [SourceLocation(line=1, column=3)]
+    >>> error.path
+    ['viewer']
     """
     # Sometimes a non-error is thrown, wrap it as a TypeError to ensure consistency.
     if not isinstance(original_error, Exception):

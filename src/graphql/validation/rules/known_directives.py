@@ -21,9 +21,23 @@ class KnownDirectivesRule(ASTValidationRule):
     legally positioned.
 
     See https://spec.graphql.org/draft/#sec-Directives-Are-Defined
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import KnownDirectivesRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse('{ name @unknown }')
+    >>> errors = validate(schema, document, [KnownDirectivesRule])
+    >>> print(errors[0].message)
+    Unknown directive '@unknown'.
+    >>> document = parse('{ name @include(if: true) }')
+    >>> validate(schema, document, [KnownDirectivesRule])
+    []
     """
 
     context: Union[ValidationContext, SDLValidationContext]
+    """The validation context used while checking the document."""
 
     def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
@@ -51,6 +65,10 @@ class KnownDirectivesRule(ASTValidationRule):
         _path: Any,
         ancestors: List[Node],
     ) -> None:
+        """Called when entering a directive node.
+
+        :meta private:
+        """
         name = node.name.value
         locations = self.locations_map.get(name)
         if locations:

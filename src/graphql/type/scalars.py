@@ -111,6 +111,7 @@ GraphQLInt = GraphQLScalarType(
     parse_value=coerce_int,
     parse_literal=parse_int_literal,
 )
+"""The built-in ``Int`` scalar type."""
 
 
 def serialize_float(output_value: Any) -> float:
@@ -160,6 +161,7 @@ GraphQLFloat = GraphQLScalarType(
     parse_value=coerce_float,
     parse_literal=parse_float_literal,
 )
+"""The built-in ``Float`` scalar type."""
 
 
 def serialize_string(output_value: Any) -> str:
@@ -206,6 +208,7 @@ GraphQLString = GraphQLScalarType(
     parse_value=coerce_string,
     parse_literal=parse_string_literal,
 )
+"""The built-in ``String`` scalar type."""
 
 
 def serialize_boolean(output_value: Any) -> bool:
@@ -245,6 +248,7 @@ GraphQLBoolean = GraphQLScalarType(
     parse_value=coerce_boolean,
     parse_literal=parse_boolean_literal,
 )
+"""The built-in ``Boolean`` scalar type."""
 
 
 def serialize_id(output_value: Any) -> str:
@@ -302,6 +306,7 @@ GraphQLID = GraphQLScalarType(
     parse_value=coerce_id,
     parse_literal=parse_id_literal,
 )
+"""The built-in ``ID`` scalar type."""
 
 
 specified_scalar_types: Mapping[str, GraphQLScalarType] = {
@@ -314,10 +319,22 @@ specified_scalar_types: Mapping[str, GraphQLScalarType] = {
         GraphQLID,
     )
 }
+"""All built-in scalar types defined by the GraphQL specification by name"""
 
 
 def is_specified_scalar_type(type_: GraphQLNamedType) -> bool:
-    """Check whether the given named GraphQL type is a specified scalar type."""
+    """Check whether the given named GraphQL type is a specified scalar type.
+
+    :param type_: the GraphQL type to inspect
+    :returns: whether the type is one of the scalars specified by GraphQL
+
+    >>> from graphql import GraphQLScalarType, GraphQLString, is_specified_scalar_type
+    >>> DateTime = GraphQLScalarType('DateTime')
+    >>> is_specified_scalar_type(GraphQLString)
+    True
+    >>> is_specified_scalar_type(DateTime)
+    False
+    """
     return type_.name in specified_scalar_types
 
 

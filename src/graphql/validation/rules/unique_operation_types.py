@@ -19,6 +19,24 @@ class UniqueOperationTypesRule(SDLValidationRule):
     """Unique operation types
 
     A GraphQL document is only valid if it has only one type per operation.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema
+    >>> from graphql.validation import UniqueOperationTypesRule
+    >>> from graphql.validation.specified_rules import specified_sdl_rules
+    >>> UniqueOperationTypesRule in specified_sdl_rules
+    True
+    >>> sdl = (
+    ...     'schema { query: Query query: Other } type Query { name: String }'
+    ...     ' type Other { name: String }'
+    ... )
+    >>> build_schema(sdl)
+    Traceback (most recent call last):
+    ...
+    TypeError: There can be only one query type in schema.
+    >>> sdl = 'schema { query: Query } type Query { name: String }'
+    >>> schema = build_schema(sdl)
     """
 
     def __init__(self, context: SDLValidationContext):
@@ -43,6 +61,10 @@ class UniqueOperationTypesRule(SDLValidationRule):
     def check_operation_types(
         self, node: Union[SchemaDefinitionNode, SchemaExtensionNode], *_args: Any
     ) -> VisitorAction:
+        """Report root operation types that are defined more than once.
+
+        :meta private:
+        """
         for operation_type in node.operation_types or []:
             operation = operation_type.operation
             already_defined_operation_type = self.defined_operation_types.get(operation)

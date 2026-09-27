@@ -2,6 +2,8 @@
 
 The :mod:`graphql.execution` package is responsible for the execution phase of
 fulfilling a GraphQL request.
+
+These exports are also available from the root :mod:`graphql` package.
 """
 
 from .execute import (

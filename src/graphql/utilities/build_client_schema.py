@@ -63,6 +63,19 @@ def build_client_schema(
 
     This function expects a complete introspection result. Don't forget to check the
     "errors" field of a server response before calling this function.
+
+    :param introspection: Introspection result data to build from.
+    :param assume_valid: Set to ``True`` to assume the produced schema is valid and
+        skip schema validation.
+    :returns: The client schema represented by the introspection result.
+
+    >>> from graphql import (
+    ...     build_client_schema, build_schema, introspection_from_schema)
+    >>> schema = build_schema('type Query { hello: String }')
+    >>> client_schema = build_client_schema(
+    ...     introspection_from_schema(schema), assume_valid=True)
+    >>> client_schema.query_type.name
+    'Query'
     """
     if not isinstance(introspection, dict) or not isinstance(
         introspection.get("__schema"), dict

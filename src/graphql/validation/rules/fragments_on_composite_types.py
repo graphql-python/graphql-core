@@ -21,9 +21,26 @@ class FragmentsOnCompositeTypesRule(ValidationRule):
     must also be a composite type.
 
     See https://spec.graphql.org/draft/#sec-Fragments-On-Composite-Types
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import FragmentsOnCompositeTypesRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse('fragment Bad on String { length }')
+    >>> errors = validate(schema, document, [FragmentsOnCompositeTypesRule])
+    >>> print(errors[0].message)
+    Fragment 'Bad' cannot condition on non composite type 'String'.
+    >>> document = parse('fragment Good on Query { name }')
+    >>> validate(schema, document, [FragmentsOnCompositeTypesRule])
+    []
     """
 
     def enter_inline_fragment(self, node: InlineFragmentNode, *_args: Any) -> None:
+        """Called when entering an inline fragment node.
+
+        :meta private:
+        """
         type_condition = node.type_condition
         if type_condition:
             type_ = type_from_ast(self.context.schema, type_condition)
@@ -40,6 +57,10 @@ class FragmentsOnCompositeTypesRule(ValidationRule):
     def enter_fragment_definition(
         self, node: FragmentDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering a fragment definition node.
+
+        :meta private:
+        """
         type_condition = node.type_condition
         type_ = type_from_ast(self.context.schema, type_condition)
         if type_ and not is_composite_type(type_):

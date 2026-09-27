@@ -12,7 +12,24 @@ MAX_LIST_DEPTH = 3
 
 
 class MaxIntrospectionDepthRule(ASTValidationRule):
-    """Checks maximum introspection depth"""
+    """Checks maximum introspection depth
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import MaxIntrospectionDepthRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse(
+    ...     '{ __schema { types { fields { type { fields {'
+    ...     ' type { fields { name } } } } } } } }'
+    ... )
+    >>> errors = validate(schema, document, [MaxIntrospectionDepthRule])
+    >>> print(errors[0].message)
+    Maximum introspection depth exceeded
+    >>> document = parse('{ __schema { queryType { name } } }')
+    >>> validate(schema, document, [MaxIntrospectionDepthRule])
+    []
+    """
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
@@ -23,7 +40,7 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
         """Check whether the maximum introspection depth has been reached.
 
         Counts the depth of list fields in "__Type" recursively
-        and returns `True` if the limit has been reached.
+        and returns ``True`` if the limit has been reached.
         """
         if isinstance(node, FragmentSpreadNode):
             visited_fragments = self._visited_fragments
@@ -70,6 +87,10 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
         return False
 
     def enter_field(self, node: FieldNode, *_args: Any) -> VisitorAction:
+        """Called when entering a field node.
+
+        :meta private:
+        """
         if node.name.value in ("__schema", "__type") and self._check_depth(node):
             self.report_error(
                 GraphQLError(

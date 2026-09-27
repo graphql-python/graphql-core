@@ -43,55 +43,75 @@ class ResolvedNamedType(NamedTuple):
     """A named type resolved from a schema coordinate."""
 
     type: GraphQLNamedType
+    """The resolved named type."""
     kind: str = "NamedType"
+    """The kind of the resolved schema element."""
 
 
 class ResolvedField(NamedTuple):
     """A field resolved from a schema coordinate."""
 
     type: Union[GraphQLObjectType, GraphQLInterfaceType]
+    """The object or interface type that declares the field."""
     field: GraphQLField
+    """The resolved field."""
     kind: str = "Field"
+    """The kind of the resolved schema element."""
 
 
 class ResolvedInputField(NamedTuple):
     """An input field resolved from a schema coordinate."""
 
     type: GraphQLInputObjectType
+    """The input object type that declares the input field."""
     input_field: GraphQLInputField
+    """The resolved input field."""
     kind: str = "InputField"
+    """The kind of the resolved schema element."""
 
 
 class ResolvedEnumValue(NamedTuple):
     """An enum value resolved from a schema coordinate."""
 
     type: GraphQLEnumType
+    """The enum type that declares the enum value."""
     enum_value: GraphQLEnumValue
+    """The resolved enum value."""
     kind: str = "EnumValue"
+    """The kind of the resolved schema element."""
 
 
 class ResolvedFieldArgument(NamedTuple):
     """A field argument resolved from a schema coordinate."""
 
     type: Union[GraphQLObjectType, GraphQLInterfaceType]
+    """The object or interface type that declares the field."""
     field: GraphQLField
+    """The field that declares the argument."""
     field_argument: GraphQLArgument
+    """The resolved field argument."""
     kind: str = "FieldArgument"
+    """The kind of the resolved schema element."""
 
 
 class ResolvedDirective(NamedTuple):
     """A directive resolved from a schema coordinate."""
 
     directive: GraphQLDirective
+    """The resolved directive."""
     kind: str = "Directive"
+    """The kind of the resolved schema element."""
 
 
 class ResolvedDirectiveArgument(NamedTuple):
     """A directive argument resolved from a schema coordinate."""
 
     directive: GraphQLDirective
+    """The directive that declares the argument."""
     directive_argument: GraphQLArgument
+    """The resolved directive argument."""
     kind: str = "DirectiveArgument"
+    """The kind of the resolved schema element."""
 
 
 ResolvedSchemaElement = Union[
@@ -116,6 +136,44 @@ def resolve_schema_coordinate(
     raise an error if the containing schema element (if applicable) does not exist.
 
     `<https://spec.graphql.org/draft/#sec-Schema-Coordinates.Semantics>`_
+
+    :param schema: The GraphQL schema to use.
+    :param schema_coordinate: The schema coordinate to resolve.
+    :returns: The schema element identified by the coordinate, or ``None`` if none
+        exists.
+
+    >>> from graphql import build_schema, resolve_schema_coordinate
+    >>> schema = build_schema('''
+    ...     directive @tag(name: String!) on FIELD_DEFINITION
+    ...
+    ...     input ReviewInput {
+    ...       stars: Int!
+    ...     }
+    ...
+    ...     enum Episode {
+    ...       NEW_HOPE
+    ...     }
+    ...
+    ...     type Query {
+    ...       reviews(input: ReviewInput): [String] @tag(name: "reviews")
+    ...     }
+    ... ''')
+    >>> resolve_schema_coordinate(schema, 'Query').kind
+    'NamedType'
+    >>> resolve_schema_coordinate(schema, 'Query.reviews').kind
+    'Field'
+    >>> resolve_schema_coordinate(schema, 'Query.reviews(input:)').kind
+    'FieldArgument'
+    >>> resolve_schema_coordinate(schema, 'ReviewInput.stars').kind
+    'InputField'
+    >>> resolve_schema_coordinate(schema, 'Episode.NEW_HOPE').kind
+    'EnumValue'
+    >>> resolve_schema_coordinate(schema, '@tag').kind
+    'Directive'
+    >>> resolve_schema_coordinate(schema, '@tag(name:)').kind
+    'DirectiveArgument'
+    >>> print(resolve_schema_coordinate(schema, 'Query.missing'))
+    None
     """
     return resolve_ast_schema_coordinate(
         schema, parse_schema_coordinate(schema_coordinate)
@@ -282,7 +340,29 @@ def resolve_directive_argument_coordinate(
 def resolve_ast_schema_coordinate(
     schema: GraphQLSchema, schema_coordinate: SchemaCoordinateNode
 ) -> Optional[ResolvedSchemaElement]:
-    """Resolve schema coordinate from a parsed SchemaCoordinate node."""
+    """Resolve schema coordinate from a parsed SchemaCoordinate node.
+
+    :param schema: The GraphQL schema to use.
+    :param schema_coordinate: The parsed schema coordinate to resolve.
+    :returns: The schema element identified by the parsed coordinate, or ``None`` if
+        none exists.
+
+    >>> from graphql import (
+    ...     build_schema, parse_schema_coordinate, resolve_ast_schema_coordinate)
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting(name: String): String
+    ...     }
+    ... ''')
+    >>> coordinate = parse_schema_coordinate('Query.greeting(name:)')
+    >>> resolved = resolve_ast_schema_coordinate(schema, coordinate)
+    >>> resolved.kind
+    'FieldArgument'
+    >>> resolved.type.name
+    'Query'
+    >>> resolved.field_argument.type
+    <GraphQLScalarType 'String'>
+    """
     if isinstance(schema_coordinate, TypeCoordinateNode):
         return resolve_type_coordinate(schema, schema_coordinate)
     if isinstance(schema_coordinate, MemberCoordinateNode):

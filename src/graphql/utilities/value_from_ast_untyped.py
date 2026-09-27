@@ -38,6 +38,15 @@ def value_from_ast_untyped(
        Null               null           None
     =================== ============== ================
 
+    :param value_node: GraphQL value AST node to convert.
+    :param variables: Optional runtime variable values keyed by variable name.
+    :returns: Python value represented by the GraphQL value AST.
+
+    >>> from graphql import parse_value, value_from_ast_untyped
+    >>> value_from_ast_untyped(parse_value('[1, 2, 3]'))
+    [1, 2, 3]
+    >>> value_from_ast_untyped(parse_value('$name'), {'name': 'Ada'})
+    'Ada'
     """
     func = _value_from_kind_functions.get(value_node.kind)
     if func:

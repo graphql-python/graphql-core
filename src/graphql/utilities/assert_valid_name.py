@@ -14,6 +14,17 @@ def assert_valid_name(name: str) -> str:
 
     .. deprecated:: 3.2
        Please use ``assert_name`` instead. Will be removed in v3.3.
+
+    :param name: The GraphQL name to validate.
+    :returns: The validated GraphQL name.
+
+    >>> from graphql import assert_valid_name
+    >>> assert_valid_name('User')
+    'User'
+    >>> assert_valid_name('__typename')
+    Traceback (most recent call last):
+    ...
+    graphql.error.graphql_error.GraphQLError: Name '__typename' must not begin ...
     """
     error = is_valid_name_error(name)
     if error:
@@ -30,6 +41,17 @@ def is_valid_name_error(name: str) -> Optional[GraphQLError]:
 
     .. deprecated:: 3.2
        Please use ``assert_name`` instead. Will be removed in v3.3.
+
+    :param name: The GraphQL name to validate.
+    :returns: A GraphQLError if the name is invalid; otherwise ``None``.
+
+    >>> from graphql import is_valid_name_error
+    >>> print(is_valid_name_error('User'))
+    None
+    >>> error = is_valid_name_error('__typename')
+    >>> print(error.message)
+    Name '__typename' must not begin with '__',
+    which is reserved by GraphQL introspection.
     """
     if not isinstance(name, str):
         raise TypeError("Expected name to be a string.")

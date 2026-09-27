@@ -55,6 +55,26 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> Optional[ValueNode]:
        null            NullValue
     ================ =======================
 
+    :param value: Runtime value to convert.
+    :param type_: The GraphQL input type used to interpret the value.
+    :returns: A GraphQL value AST for the provided Python value, or ``None`` when no
+        literal can represent it.
+
+    >>> from graphql import (
+    ...     GraphQLInputField, GraphQLInputObjectType, GraphQLInt, GraphQLList,
+    ...     GraphQLNonNull, GraphQLString, Undefined, ast_from_value, print_ast)
+    >>> ReviewInput = GraphQLInputObjectType('ReviewInput', {
+    ...     'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...     'tags': GraphQLInputField(GraphQLList(GraphQLString)),
+    ... })
+    >>> value_node = ast_from_value(
+    ...     {'stars': 5, 'tags': ['featured', 'verified']}, ReviewInput)
+    >>> print(print_ast(value_node))
+    {stars: 5, tags: ["featured", "verified"]}
+    >>> print(ast_from_value(Undefined, GraphQLString))
+    None
+    >>> print(ast_from_value(None, GraphQLNonNull(GraphQLString)))
+    None
     """
     if is_non_null_type(type_):
         type_ = cast(GraphQLNonNull, type_)

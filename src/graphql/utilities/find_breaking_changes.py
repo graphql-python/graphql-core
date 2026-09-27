@@ -42,41 +42,75 @@ __all__ = [
 
 
 class BreakingChangeType(Enum):
+    """Categories of schema changes that may break existing operations."""
+
     TYPE_REMOVED = 10
+    """Breaking change code for type removed."""
     TYPE_CHANGED_KIND = 11
+    """Breaking change code for type changed kind."""
     TYPE_REMOVED_FROM_UNION = 20
+    """Breaking change code for type removed from union."""
     VALUE_REMOVED_FROM_ENUM = 21
+    """Breaking change code for value removed from enum."""
     REQUIRED_INPUT_FIELD_ADDED = 22
+    """Breaking change code for required input field added."""
     IMPLEMENTED_INTERFACE_REMOVED = 23
+    """Breaking change code for implemented interface removed."""
     FIELD_REMOVED = 30
+    """Breaking change code for field removed."""
     FIELD_CHANGED_KIND = 31
+    """Breaking change code for field changed kind."""
     REQUIRED_ARG_ADDED = 40
+    """Breaking change code for required arg added."""
     ARG_REMOVED = 41
+    """Breaking change code for arg removed."""
     ARG_CHANGED_KIND = 42
+    """Breaking change code for arg changed kind."""
     DIRECTIVE_REMOVED = 50
+    """Breaking change code for directive removed."""
     DIRECTIVE_ARG_REMOVED = 51
+    """Breaking change code for directive arg removed."""
     REQUIRED_DIRECTIVE_ARG_ADDED = 52
+    """Breaking change code for required directive arg added."""
     DIRECTIVE_REPEATABLE_REMOVED = 53
+    """Breaking change code for directive repeatable removed."""
     DIRECTIVE_LOCATION_REMOVED = 54
+    """Breaking change code for directive location removed."""
 
 
 class DangerousChangeType(Enum):
+    """Categories of schema changes that may be dangerous for existing operations."""
+
     VALUE_ADDED_TO_ENUM = 60
+    """Dangerous change code for value added to enum."""
     TYPE_ADDED_TO_UNION = 61
+    """Dangerous change code for type added to union."""
     OPTIONAL_INPUT_FIELD_ADDED = 62
+    """Dangerous change code for optional input field added."""
     OPTIONAL_ARG_ADDED = 63
+    """Dangerous change code for optional arg added."""
     IMPLEMENTED_INTERFACE_ADDED = 64
+    """Dangerous change code for implemented interface added."""
     ARG_DEFAULT_VALUE_CHANGE = 65
+    """Dangerous change code for arg default value change."""
 
 
 class BreakingChange(NamedTuple):
+    """Description of a schema change that may break existing operations."""
+
     type: BreakingChangeType
+    """Specific kind of breaking schema change."""
     description: str
+    """Human-readable description of the breaking schema change."""
 
 
 class DangerousChange(NamedTuple):
+    """Description of a schema change that may be dangerous for existing operations."""
+
     type: DangerousChangeType
+    """Specific kind of dangerous schema change."""
     description: str
+    """Human-readable description of the dangerous schema change."""
 
 
 Change = Union[BreakingChange, DangerousChange]
@@ -89,6 +123,36 @@ def find_breaking_changes(
 
     Given two schemas, returns a list containing descriptions of all the types of
     breaking changes covered by the other functions down below.
+
+    :param old_schema: Schema before the change.
+    :param new_schema: Schema after the change.
+    :returns: Breaking changes between the two schemas.
+
+    >>> from graphql import build_schema, find_breaking_changes
+    >>> old_schema = build_schema('''
+    ...     type User {
+    ...       id: ID!
+    ...       name: String
+    ...     }
+    ...
+    ...     type Query {
+    ...       viewer: User
+    ...     }
+    ... ''')
+    >>> new_schema = build_schema('''
+    ...     type User {
+    ...       id: ID!
+    ...     }
+    ...
+    ...     type Query {
+    ...       viewer: User
+    ...     }
+    ... ''')
+    >>> changes = find_breaking_changes(old_schema, new_schema)
+    >>> changes[0].type
+    <BreakingChangeType.FIELD_REMOVED: 30>
+    >>> changes[0].description
+    'User.name was removed.'
     """
     return [
         change
@@ -104,6 +168,36 @@ def find_dangerous_changes(
 
     Given two schemas, returns a list containing descriptions of all the types of
     potentially dangerous changes covered by the other functions down below.
+
+    :param old_schema: Schema before the change.
+    :param new_schema: Schema after the change.
+    :returns: Dangerous changes between the two schemas.
+
+    >>> from graphql import build_schema, find_dangerous_changes
+    >>> old_schema = build_schema('''
+    ...     enum Episode {
+    ...       NEW_HOPE
+    ...     }
+    ...
+    ...     type Query {
+    ...       episode: Episode
+    ...     }
+    ... ''')
+    >>> new_schema = build_schema('''
+    ...     enum Episode {
+    ...       NEW_HOPE
+    ...       EMPIRE
+    ...     }
+    ...
+    ...     type Query {
+    ...       episode: Episode
+    ...     }
+    ... ''')
+    >>> changes = find_dangerous_changes(old_schema, new_schema)
+    >>> changes[0].type
+    <DangerousChangeType.VALUE_ADDED_TO_ENUM: 60>
+    >>> changes[0].description
+    'EMPIRE was added to enum type Episode.'
     """
     return [
         change

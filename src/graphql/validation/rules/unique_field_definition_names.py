@@ -13,6 +13,21 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
     """Unique field definition names
 
     A GraphQL complex type is only valid if all its fields are uniquely named.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema
+    >>> from graphql.validation import UniqueFieldDefinitionNamesRule
+    >>> from graphql.validation.specified_rules import specified_sdl_rules
+    >>> UniqueFieldDefinitionNamesRule in specified_sdl_rules
+    True
+    >>> sdl = 'type Query { name: String name: String }'
+    >>> build_schema(sdl)
+    Traceback (most recent call last):
+    ...
+    TypeError: Field 'Query.name' can only be defined once.
+    >>> sdl = 'type Query { name: String other: String }'
+    >>> schema = build_schema(sdl)
     """
 
     def __init__(self, context: SDLValidationContext):
@@ -24,6 +39,10 @@ class UniqueFieldDefinitionNamesRule(SDLValidationRule):
     def check_field_uniqueness(
         self, node: ObjectTypeDefinitionNode, *_args: Any
     ) -> VisitorAction:
+        """Report field definitions with the same name.
+
+        :meta private:
+        """
         existing_type_map = self.existing_type_map
         type_name = node.name.value
         field_names = self.known_field_names[type_name]

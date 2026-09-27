@@ -1,4 +1,14 @@
 [flake8]
-ignore = E203,E704,W503
+ignore = E203,E704,W503,D105,D107,D203,D213,D400,D403,D415,D401,
+    # missing docstrings outside the public API, to be added
+    D100,D101,D102,D103
+docstring-convention = all
+per-file-ignores =
+    src/graphql/language/ast.py: D101
+    src/graphql/utilities/get_introspection_query.py: D101
+    src/graphql/utilities/type_info.py: D102
+    src/graphql/validation/rules/*: D102
+    src/graphql/validation/validation_context.py: D102
+    tests/*: D100,D101,D102,D103
 exclude = .git,.mypy_cache,.pytest_cache,.tox,.venv,__pycache__,build,dist,docs
 max-line-length = 88

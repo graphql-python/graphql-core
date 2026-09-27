@@ -72,6 +72,21 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     either correspond to distinct response names or can be merged without ambiguity.
 
     See https://spec.graphql.org/draft/#sec-Field-Selection-Merging
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import OverlappingFieldsCanBeMergedRule
+    >>> sdl = 'type Query { dog: Dog } type Dog { name: String barkVolume: Int }'
+    >>> schema = build_schema(sdl)
+    >>> document = parse('{ dog { value: barkVolume value: name } }')
+    >>> errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+    >>> print(errors[0].message)
+    Fields 'value' conflict because 'barkVolume' and 'name' are different fields.
+    Use different aliases on the fields to fetch both if this was intentional.
+    >>> document = parse('{ dog { barkVolume name } }')
+    >>> validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+    []
     """
 
     def __init__(self, context: ValidationContext):
@@ -92,6 +107,10 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         self._budget_exceeded = False
 
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
+        """Called when entering a selection set node.
+
+        :meta private:
+        """
         if self._budget_exceeded:
             return
         try:
@@ -155,7 +174,7 @@ NodeAndDefCollection = Dict[str, List[NodeAndDef]]
 # A) Each selection set represented in the document first compares "within" its
 # collected set of fields, finding any conflicts between every pair of
 # overlapping fields.
-# Note: This is the#only time* that a the fields "within" a set are compared
+# Note: This is the *only time* that the fields "within" a set are compared
 # to each other. After this only fields "between" sets are compared.
 #
 # B) Also, if any fragment is referenced in a selection set, then a
@@ -167,14 +186,14 @@ NodeAndDefCollection = Dict[str, List[NodeAndDef]]
 #
 # D) When comparing "between" a set of fields and a referenced fragment, first
 # a comparison is made between each field in the original set of fields and
-# each field in the the referenced set of fields.
+# each field in the referenced set of fields.
 #
 # E) Also, if any fragment is referenced in the referenced selection set,
 # then a comparison is made "between" the original set of fields and the
 # referenced fragment (recursively referring to step D).
 #
 # F) When comparing "between" two fragments, first a comparison is made between
-# each field in the first referenced set of fields and each field in the the
+# each field in the first referenced set of fields and each field in the
 # second referenced set of fields.
 #
 # G) Also, any fragments referenced by the first must be compared to the

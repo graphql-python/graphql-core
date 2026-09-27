@@ -48,6 +48,58 @@ def get_introspection_query(
     Larger values will result in more accurate results, but have a higher load
     on the server. Some servers might restrict the maximum query depth or
     complexity. If that's the case, try decreasing this value. The default is 9.
+
+    :param descriptions: Whether to include descriptions in the introspection result.
+    :param specified_by_url: Whether to include ``specifiedByURL`` in the
+        introspection result.
+    :param directive_is_repeatable: Whether to include the ``isRepeatable`` flag on
+        directives.
+    :param schema_description: Whether to include the ``description`` field on the
+        schema.
+    :param input_value_deprecation: Whether the target GraphQL server supports
+        deprecation of input values.
+    :param experimental_directive_deprecation: Whether the target GraphQL server
+        supports deprecation of directives.
+    :param input_object_one_of: Whether the target GraphQL server supports ``@oneOf``
+        input objects.
+    :param type_depth: How deep to recurse into nested types.
+    :returns: The resolved introspection query.
+
+    Generate the default introspection query:
+
+    >>> from graphql import get_introspection_query
+    >>> query = get_introspection_query()
+    >>> '__schema' in query
+    True
+    >>> 'description' in query
+    True
+    >>> 'specifiedByURL' in query
+    False
+
+    This variant customizes optional introspection fields and nesting depth:
+
+    >>> query = get_introspection_query(
+    ...     descriptions=False,
+    ...     specified_by_url=True,
+    ...     directive_is_repeatable=True,
+    ...     schema_description=True,
+    ...     input_value_deprecation=True,
+    ...     experimental_directive_deprecation=True,
+    ...     input_object_one_of=True,
+    ...     type_depth=3,
+    ... )
+    >>> 'description' in query
+    False
+    >>> 'specifiedByURL' in query
+    True
+    >>> 'isRepeatable' in query
+    True
+    >>> 'includeDeprecated: true' in query
+    True
+    >>> 'isOneOf' in query
+    True
+    >>> query.count('ofType') > 0
+    True
     """
     maybe_description = "description" if descriptions else ""
     maybe_specified_by_url = "specifiedByURL" if specified_by_url else ""
@@ -162,81 +214,140 @@ SimpleIntrospectionType = Dict[str, Any]
 
 
 class MaybeWithDescription(TypedDict, total=False):
+    """Introspection data with an optional description."""
+
     description: Optional[str]
+    """Human-readable description for this schema element, if provided."""
 
 
 class WithName(MaybeWithDescription):
+    """Introspection data with a name and an optional description."""
+
     name: str
+    """The GraphQL name for this schema element."""
 
 
 class MaybeWithSpecifiedByUrl(TypedDict, total=False):
+    """Introspection data with an optional ``specifiedByURL``."""
+
     specifiedByURL: Optional[str]
+    """URL identifying the behavior specified for this custom scalar."""
 
 
 class WithDeprecated(TypedDict):
+    """Introspection data with deprecation information."""
+
     isDeprecated: bool
+    """Whether this field, argument, enum value, or input value is deprecated."""
     deprecationReason: Optional[str]
+    """Reason this element is deprecated, if one was provided."""
 
 
 class MaybeWithDeprecated(TypedDict, total=False):
+    """Introspection data with optional deprecation information."""
+
     isDeprecated: bool
+    """Whether this field, argument, enum value, or input value is deprecated."""
     deprecationReason: Optional[str]
+    """Reason this element is deprecated, if one was provided."""
 
 
 class IntrospectionInputValue(WithName, MaybeWithDeprecated):
+    """The introspection representation of an argument or input field."""
+
     type: SimpleIntrospectionType  # should be IntrospectionInputType
+    """The GraphQL type reference or runtime type for this element."""
     defaultValue: Optional[str]
+    """Default value used when no explicit value is supplied."""
 
 
 class IntrospectionField(WithName, WithDeprecated):
+    """The introspection representation of a field."""
+
     args: List[IntrospectionInputValue]
+    """Arguments accepted by this field or directive."""
     type: SimpleIntrospectionType  # should be IntrospectionOutputType
+    """The GraphQL type reference or runtime type for this element."""
 
 
 class IntrospectionEnumValue(WithName, WithDeprecated):
-    pass
+    """The introspection representation of an enum value."""
 
 
 class MaybeWithIsRepeatable(TypedDict, total=False):
+    """Introspection data with an optional ``isRepeatable`` flag."""
+
     isRepeatable: bool
+    """Whether this directive may appear more than once at the same location."""
 
 
 class IntrospectionDirective(WithName, MaybeWithIsRepeatable, MaybeWithDeprecated):
+    """The introspection representation of a directive."""
+
     locations: List[DirectiveLocation]
+    """Locations where this directive may be applied."""
     args: List[IntrospectionInputValue]
+    """Arguments accepted by this field or directive."""
 
 
 class IntrospectionScalarType(WithName, MaybeWithSpecifiedByUrl):
+    """The introspection representation of a scalar type."""
+
     kind: Literal["scalar"]
+    """The introspection kind discriminator for this type reference or type."""
 
 
 class IntrospectionInterfaceType(WithName):
+    """The introspection representation of an interface type."""
+
     kind: Literal["interface"]
+    """The introspection kind discriminator for this type reference or type."""
     fields: List[IntrospectionField]
+    """Fields declared by this object, interface, input object, or literal."""
     interfaces: List[SimpleIntrospectionType]  # should be InterfaceType
+    """Interfaces implemented by this object or interface type."""
     possibleTypes: List[SimpleIntrospectionType]  # should be NamedType
+    """Object types that may be returned for this abstract type."""
 
 
 class IntrospectionObjectType(WithName):
+    """The introspection representation of an object type."""
+
     kind: Literal["object"]
+    """The introspection kind discriminator for this type reference or type."""
     fields: List[IntrospectionField]
+    """Fields declared by this object, interface, input object, or literal."""
     interfaces: List[SimpleIntrospectionType]  # should be InterfaceType
+    """Interfaces implemented by this object or interface type."""
 
 
 class IntrospectionUnionType(WithName):
+    """The introspection representation of a union type."""
+
     kind: Literal["union"]
+    """The introspection kind discriminator for this type reference or type."""
     possibleTypes: List[SimpleIntrospectionType]  # should be NamedType
+    """Object types that may be returned for this abstract type."""
 
 
 class IntrospectionEnumType(WithName):
+    """The introspection representation of an enum type."""
+
     kind: Literal["enum"]
+    """The introspection kind discriminator for this type reference or type."""
     enumValues: List[IntrospectionEnumValue]
+    """Values declared by this enum type."""
 
 
 class IntrospectionInputObjectType(WithName):
+    """The introspection representation of an input object type."""
+
     kind: Literal["input_object"]
+    """The introspection kind discriminator for this type reference or type."""
     inputFields: List[IntrospectionInputValue]
+    """Input fields declared by this input object type."""
     isOneOf: bool
+    """Whether this input object uses the OneOf input object semantics."""
 
 
 IntrospectionType = Union[
@@ -262,13 +373,21 @@ IntrospectionInputType = Union[
 
 
 class IntrospectionListType(TypedDict):
+    """The introspection representation of a list type reference."""
+
     kind: Literal["list"]
+    """The introspection kind discriminator for this type reference or type."""
     ofType: SimpleIntrospectionType  # should be IntrospectionType
+    """The type wrapped by this list or non-null type."""
 
 
 class IntrospectionNonNullType(TypedDict):
+    """The introspection representation of a non-null type reference."""
+
     kind: Literal["non_null"]
+    """The introspection kind discriminator for this type reference or type."""
     ofType: SimpleIntrospectionType  # should be IntrospectionType
+    """The type wrapped by this list or non-null type."""
 
 
 IntrospectionTypeRef = Union[
@@ -277,11 +396,18 @@ IntrospectionTypeRef = Union[
 
 
 class IntrospectionSchema(MaybeWithDescription):
+    """The introspection representation of a GraphQL schema."""
+
     queryType: IntrospectionObjectType
+    """The root object type used for query operations."""
     mutationType: Optional[IntrospectionObjectType]
+    """The root object type used for mutation operations, if supported."""
     subscriptionType: Optional[IntrospectionObjectType]
+    """The root object type used for subscription operations, if supported."""
     types: List[IntrospectionType]
+    """All named types that belong to this schema."""
     directives: List[IntrospectionDirective]
+    """Directives available in this schema."""
 
 
 # The root typed dictionary for schema introspections.
@@ -290,3 +416,7 @@ IntrospectionQuery = TypedDict(
     "IntrospectionQuery",
     {"__schema": IntrospectionSchema},
 )
+IntrospectionQuery.__doc__ = """The result shape returned by a full introspection query.
+
+The ``__schema`` key holds the introspection representation of the schema.
+"""

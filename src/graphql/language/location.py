@@ -15,17 +15,22 @@ class FormattedSourceLocation(TypedDict):
     """Formatted source location"""
 
     line: int
+    """One-indexed line number in the source document."""
     column: int
+    """One-indexed column number in the source document."""
 
 
 class SourceLocation(NamedTuple):
     """Represents a location in a Source."""
 
     line: int
+    """One-indexed line number in the source document."""
     column: int
+    """One-indexed column number in the source document."""
 
     @property
     def formatted(self) -> FormattedSourceLocation:
+        """Get the location formatted as a dictionary."""
         return dict(line=self.line, column=self.column)
 
     def __eq__(self, other: Any) -> bool:
@@ -42,5 +47,14 @@ def get_location(source: "Source", position: int) -> SourceLocation:
 
     Takes a Source and a UTF-8 character offset, and returns the corresponding line and
     column as a SourceLocation.
+
+    :param source: The source document that contains the position.
+    :param position: The UTF-8 character offset in the source body.
+    :returns: The 1-indexed line and column for the given source position.
+
+    >>> from graphql.language import Source, get_location
+    >>> source = Source('type Query { hello: String }')
+    >>> get_location(source, 13)
+    SourceLocation(line=1, column=14)
     """
     return source.get_location(position)

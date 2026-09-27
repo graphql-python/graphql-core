@@ -15,9 +15,31 @@ class PossibleFragmentSpreadsRule(ValidationRule):
     A fragment spread is only valid if the type condition could ever possibly be true:
     if there is a non-empty intersection of the possible parent types, and possible
     types which pass the type condition.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import PossibleFragmentSpreadsRule
+    >>> sdl = (
+    ...     'type Query { dog: Dog } type Dog { barkVolume: Int }'
+    ...     ' type Cat { meowVolume: Int }'
+    ... )
+    >>> schema = build_schema(sdl)
+    >>> document = parse('{ dog { ... on Cat { meowVolume } } }')
+    >>> errors = validate(schema, document, [PossibleFragmentSpreadsRule])
+    >>> print(errors[0].message)
+    Fragment cannot be spread here as objects of type 'Dog' can never be of type
+    'Cat'.
+    >>> document = parse('{ dog { ... on Dog { barkVolume } } }')
+    >>> validate(schema, document, [PossibleFragmentSpreadsRule])
+    []
     """
 
     def enter_inline_fragment(self, node: InlineFragmentNode, *_args: Any) -> None:
+        """Called when entering an inline fragment node.
+
+        :meta private:
+        """
         context = self.context
         frag_type = context.get_type()
         parent_type = context.get_parent_type()
@@ -39,6 +61,10 @@ class PossibleFragmentSpreadsRule(ValidationRule):
             )
 
     def enter_fragment_spread(self, node: FragmentSpreadNode, *_args: Any) -> None:
+        """Called when entering a fragment spread node.
+
+        :meta private:
+        """
         context = self.context
         frag_name = node.name.value
         frag_type = self.get_fragment_type(frag_name)
@@ -57,6 +83,10 @@ class PossibleFragmentSpreadsRule(ValidationRule):
             )
 
     def get_fragment_type(self, name: str) -> Optional[GraphQLCompositeType]:
+        """Get the type condition of the fragment with the given name.
+
+        :meta private:
+        """
         context = self.context
         frag = context.get_fragment(name)
         if frag:
