@@ -127,7 +127,6 @@ def assert_valid_sdl(document_ast: DocumentNode) -> None:
     Utility function which asserts a SDL document is valid by throwing an error if it
     is invalid.
     """
-
     errors = validate_sdl(document_ast)
     if errors:
         raise TypeError("\n\n".join(error.message for error in errors))
@@ -141,7 +140,6 @@ def assert_valid_sdl_extension(
     Utility function which asserts a SDL document is valid by throwing an error if it
     is invalid.
     """
-
     errors = validate_sdl(document_ast, schema)
     if errors:
         raise TypeError("\n\n".join(error.message for error in errors))

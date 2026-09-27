@@ -21,7 +21,8 @@ __all__ = ["is_equal_type", "is_type_sub_type_of", "do_types_overlap"]
 def is_equal_type(type_a: GraphQLType, type_b: GraphQLType) -> bool:
     """Check whether two types are equal.
 
-    Provided two types, return true if the types are equal (invariant)."""
+    Provided two types, return true if the types are equal (invariant).
+    """
     # Equivalent types are equal.
     if type_a is type_b:
         return True

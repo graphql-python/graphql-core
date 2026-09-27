@@ -9,7 +9,7 @@ __all__ = ["strip_ignored_characters"]
 
 
 def strip_ignored_characters(source: Union[str, Source]) -> str:
-    """Strip characters that are ignored anyway.
+    '''Strip characters that are ignored anyway.
 
     Strips characters that are not significant to the validity or execution
     of a GraphQL document:
@@ -30,7 +30,6 @@ def strip_ignored_characters(source: Union[str, Source]) -> str:
     Warning: It is guaranteed that this function will always produce stable results.
     However, it's not guaranteed that it will stay the same between different
     releases due to bugfixes or changes in the GraphQL specification.
-    """ '''
 
     Query example::
 

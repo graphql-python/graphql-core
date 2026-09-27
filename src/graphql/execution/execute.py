@@ -505,7 +505,8 @@ class ExecutionContext:
     ) -> GraphQLResolveInfo:
         """Build the GraphQLResolveInfo object.
 
-        For internal use only."""
+        For internal use only.
+        """
         # The resolve function's first argument is a collection of information about
         # the current execution state.
         return GraphQLResolveInfo(

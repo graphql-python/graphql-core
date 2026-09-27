@@ -568,8 +568,7 @@ def is_unicode_scalar_value(char: str) -> bool:
 
 
 def is_supplementary_code_point(body: str, location: int) -> bool:
-    """
-    Check whether the current location is a supplementary code point.
+    """Check whether the current location is a supplementary code point.
 
     The GraphQL specification defines source text as a sequence of unicode scalar
     values (which Unicode defines to exclude surrogate code points).

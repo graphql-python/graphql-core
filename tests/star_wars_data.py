@@ -1,6 +1,6 @@
-"""This defines a basic set of data for our Star Wars Schema.
+"""Define a basic set of data for our Star Wars Schema.
 
-This data is hard coded for the sake of the demo, but you could imagine fetching this
+The data is hard coded for the sake of the demo, but you could imagine fetching this
 data from a backend service rather than from hardcoded JSON objects in a more complex
 demo.
 """
