@@ -39,4 +39,4 @@ jobs:
         with:
           mode: instrumentation
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: tox -e py313 -- -k benchmarks --benchmark-enable --codspeed
+          run: tox -e py314 -- -k benchmarks --benchmark-enable --codspeed
