@@ -233,8 +233,6 @@ class GraphQLSchema:
     True
     >>> schema.extensions
     {'owner': 'platform'}
-    >>> schema.validation_errors
-    []
     """
 
     query_type: Optional[GraphQLObjectType]
@@ -714,7 +712,10 @@ class GraphQLSchema:
 
     @property
     def validation_errors(self) -> Optional[List[GraphQLError]]:
-        """Cached schema validation errors, if validation has already run."""
+        """Cached schema validation errors, if validation has already run.
+
+        :meta private:
+        """
         return self._validation_errors
 
 
