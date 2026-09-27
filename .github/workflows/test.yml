@@ -38,3 +38,10 @@ jobs:
       - name: Run unit tests with tox
         id: test
         run: tox
+
+      - name: Check that the package works without extra dependencies
+        id: check-install
+        run: |
+          uv venv --python ${{ matrix.python-version }} /tmp/check-install
+          uv pip install --python /tmp/check-install/bin/python .
+          /tmp/check-install/bin/python -c "import graphql; print(graphql.version)"

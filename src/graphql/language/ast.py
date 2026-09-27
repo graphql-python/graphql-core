@@ -2,16 +2,24 @@
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, fields
 from enum import Enum
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias, TypeVar
 
 from ..pyutils import camel_to_snake
 
-try:
+if sys.version_info < (3, 11):
+    if TYPE_CHECKING:
+        from typing_extensions import dataclass_transform
+    else:
+        # typing_extensions is not a runtime dependency, and the decorator is
+        # only a hint for static type checkers, so we can do without it here
+        def dataclass_transform(**_kwargs: Any) -> Any:
+            return lambda cls: cls
+
+else:
     from typing import dataclass_transform
-except ImportError:  # Python < 3.11
-    from typing_extensions import dataclass_transform
 
 if TYPE_CHECKING:
     from .source import Source
