@@ -37,6 +37,6 @@ jobs:
         id: run-benchmarks
         uses: CodSpeedHQ/action@v5
         with:
-          mode: instrumentation
+          mode: simulation
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: tox -e py314 -- -k benchmarks --benchmark-enable --codspeed
