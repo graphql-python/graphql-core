@@ -26,6 +26,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 packages = [
     { include = "graphql", from = "src" },
@@ -54,7 +55,8 @@ typing-extensions = [
 
 [tool.black]
 target-version = [
-    'py37', 'py38', 'py39', 'py310', 'py311', 'py312', 'py313', 'py314'
+    'py37', 'py38', 'py39', 'py310', 'py311', 'py312', 'py313', 'py314',
+    'py315'
 ]
 
 [tool.pyright]

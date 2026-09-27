@@ -37,6 +37,7 @@ setup(
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
         "Programming Language :: Python :: 3.14",
+        "Programming Language :: Python :: 3.15",
     ],
     install_requires=[
         "typing-extensions>=4.7,<5; python_version < '3.10'",
