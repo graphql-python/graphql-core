@@ -9,7 +9,6 @@ from ...language import (
     NullValueNode,
     OperationDefinitionNode,
     ValueNode,
-    VariableDefinitionNode,
 )
 from ...pyutils import Undefined
 from ...type import (
@@ -37,8 +36,13 @@ class VariablesInAllowedPositionRule(ValidationRule):
         super().__init__(context)
         self.var_def_map: dict[str, Any] = {}
 
-    def enter_operation_definition(self, *_args: Any) -> None:
-        self.var_def_map.clear()
+    def enter_operation_definition(
+        self, operation: OperationDefinitionNode, *_args: Any
+    ) -> None:
+        var_def_map = self.var_def_map
+        var_def_map.clear()
+        for var_def in operation.variable_definitions or ():
+            var_def_map[var_def.variable.name.value] = var_def
 
     def leave_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
@@ -86,11 +90,6 @@ class VariablesInAllowedPositionRule(ValidationRule):
                             [var_def, node],
                         )
                     )
-
-    def enter_variable_definition(
-        self, node: VariableDefinitionNode, *_args: Any
-    ) -> None:
-        self.var_def_map[node.variable.name.value] = node
 
 
 def allowed_variable_usage(

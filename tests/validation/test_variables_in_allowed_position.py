@@ -374,6 +374,27 @@ def describe_validate_variables_are_in_allowed_positions():
             )
 
     def describe_fragment_arguments_are_validated():
+        def validates_fragment_variables_defined_before_the_operation():
+            assert_errors(
+                """
+                fragment A($intVar: Int) on ComplicatedArgs {
+                  nonNullIntArgField(nonNullIntArg: $intVar)
+                }
+                query Query($intVar: Int!) {
+                  complicatedArgs {
+                    ...A(i: $intVar)
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Variable '$intVar' of type 'Int' used"
+                        " in position expecting type 'Int!'.",
+                        "locations": [(2, 28), (3, 53)],
+                    },
+                ],
+            )
+
         def boolean_to_boolean():
             assert_valid(
                 """
