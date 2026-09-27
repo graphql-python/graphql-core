@@ -211,34 +211,34 @@ class IntrospectionDirective(WithName, MaybeWithIsRepeatable, MaybeWithDeprecate
 
 
 class IntrospectionScalarType(WithName, MaybeWithSpecifiedByUrl):
-    kind: Literal["scalar"]
+    kind: Literal["SCALAR"]
 
 
 class IntrospectionInterfaceType(WithName):
-    kind: Literal["interface"]
+    kind: Literal["INTERFACE"]
     fields: list[IntrospectionField]
     interfaces: list[SimpleIntrospectionType]  # should be InterfaceType
     possibleTypes: list[SimpleIntrospectionType]  # should be NamedType
 
 
 class IntrospectionObjectType(WithName):
-    kind: Literal["object"]
+    kind: Literal["OBJECT"]
     fields: list[IntrospectionField]
     interfaces: list[SimpleIntrospectionType]  # should be InterfaceType
 
 
 class IntrospectionUnionType(WithName):
-    kind: Literal["union"]
+    kind: Literal["UNION"]
     possibleTypes: list[SimpleIntrospectionType]  # should be NamedType
 
 
 class IntrospectionEnumType(WithName):
-    kind: Literal["enum"]
+    kind: Literal["ENUM"]
     enumValues: list[IntrospectionEnumValue]
 
 
 class IntrospectionInputObjectType(WithName):
-    kind: Literal["input_object"]
+    kind: Literal["INPUT_OBJECT"]
     inputFields: list[IntrospectionInputValue]
     isOneOf: bool
 
@@ -266,12 +266,12 @@ IntrospectionInputType: TypeAlias = (
 
 
 class IntrospectionListType(TypedDict):
-    kind: Literal["list"]
+    kind: Literal["LIST"]
     ofType: SimpleIntrospectionType  # should be IntrospectionType
 
 
 class IntrospectionNonNullType(TypedDict):
-    kind: Literal["non_null"]
+    kind: Literal["NON_NULL"]
     ofType: SimpleIntrospectionType  # should be IntrospectionType
 
 
