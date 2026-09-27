@@ -1,3 +1,5 @@
+"""Sorting GraphQL schemas"""
+
 from typing import Collection, Dict, Optional, Tuple, Union, cast
 
 from ..language import DirectiveLocation

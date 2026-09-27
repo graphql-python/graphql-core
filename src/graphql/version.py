@@ -1,3 +1,5 @@
+"""GraphQL-core version number"""
+
 import re
 from typing import NamedTuple
 

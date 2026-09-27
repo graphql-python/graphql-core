@@ -1,3 +1,5 @@
+"""GraphQL schemas"""
+
 from copy import copy, deepcopy
 from typing import (
     Any,

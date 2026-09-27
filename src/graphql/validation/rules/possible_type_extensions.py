@@ -1,3 +1,5 @@
+"""Possible type extension rule"""
+
 import re
 from functools import partial
 from typing import Any, Optional

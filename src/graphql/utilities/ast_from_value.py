@@ -1,3 +1,5 @@
+"""GraphQL AST creation from Python"""
+
 import re
 from math import isfinite
 from typing import Any, Mapping, Optional, cast

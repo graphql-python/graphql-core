@@ -1,3 +1,5 @@
+"""Cached properties"""
+
 from typing import Any, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:

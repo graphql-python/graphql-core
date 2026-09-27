@@ -1,3 +1,5 @@
+"""Lone anonymous operation rule"""
+
 from typing import Any
 
 from ...error import GraphQLError

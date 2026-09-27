@@ -1,3 +1,5 @@
+"""Schema validation"""
+
 from operator import attrgetter, itemgetter
 from typing import (
     Any,

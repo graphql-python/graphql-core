@@ -1,3 +1,5 @@
+"""Unique enum value names rule"""
+
 from collections import defaultdict
 from typing import cast, Any, Dict
 

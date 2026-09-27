@@ -1,3 +1,5 @@
+"""GraphQL scalar types"""
+
 from math import isfinite
 from typing import Any, Mapping
 

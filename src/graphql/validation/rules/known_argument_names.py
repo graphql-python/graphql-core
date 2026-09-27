@@ -1,3 +1,5 @@
+"""Known argument names on directives rule"""
+
 from typing import cast, Any, Dict, List, Union
 
 from ...error import GraphQLError

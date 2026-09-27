@@ -1,3 +1,5 @@
+"""Merge arguments"""
+
 from typing import cast, Any, Dict, TypeVar
 
 T = TypeVar("T")

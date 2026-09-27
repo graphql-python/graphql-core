@@ -1,3 +1,5 @@
+"""Unique variable names rule"""
+
 from operator import attrgetter
 from typing import Any
 

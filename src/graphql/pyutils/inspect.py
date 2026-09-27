@@ -1,3 +1,5 @@
+"""Value inspection for error messages"""
+
 from inspect import (
     isclass,
     ismethod,

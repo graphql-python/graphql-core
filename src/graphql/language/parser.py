@@ -1,3 +1,5 @@
+"""GraphQL parser"""
+
 from functools import partial
 from typing import Callable, Dict, List, Optional, TypeVar, Union, cast
 

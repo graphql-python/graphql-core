@@ -1,3 +1,5 @@
+"""Grouping function"""
+
 from collections import defaultdict
 from typing import Callable, Collection, Dict, List, TypeVar
 

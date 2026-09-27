@@ -1,3 +1,5 @@
+"""GraphQL type definitions."""
+
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
@@ -356,6 +358,7 @@ class GraphQLNamedType(GraphQLType):
     """
 
     def __new__(cls, name: str, *_args: Any, **_kwargs: Any) -> "GraphQLNamedType":
+        """Create a named type, but do not allow to redefine a reserved type."""
         if name in cls.reserved_types:
             raise TypeError(f"Redefinition of reserved type {name!r}")
         return super().__new__(cls)

@@ -1,3 +1,5 @@
+"""Unique input field names rule"""
+
 from typing import Any, Dict, List
 
 from ...error import GraphQLError

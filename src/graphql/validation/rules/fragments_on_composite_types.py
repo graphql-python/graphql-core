@@ -1,3 +1,5 @@
+"""Fragments on composite type rule"""
+
 from typing import Any
 
 from ...error import GraphQLError

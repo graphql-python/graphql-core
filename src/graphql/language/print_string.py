@@ -1,3 +1,5 @@
+"""Print a string as a GraphQL expression."""
+
 __all__ = ["print_string"]
 
 

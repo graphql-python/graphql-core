@@ -1,3 +1,5 @@
+"""GraphQL Schema Coordinate Lexer"""
+
 from ..error import GraphQLSyntaxError
 from .ast import Token
 from .character_classes import is_name_start

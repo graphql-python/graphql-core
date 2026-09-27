@@ -1,3 +1,5 @@
+"""Executable definitions rule"""
+
 from typing import Any, Union, cast
 
 from ...error import GraphQLError

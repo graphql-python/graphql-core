@@ -1,3 +1,5 @@
+"""The Undefined value"""
+
 import warnings
 from typing import Any, Optional
 
@@ -10,6 +12,7 @@ class UndefinedType(ValueError):
     _instance: Optional["UndefinedType"] = None
 
     def __new__(cls) -> "UndefinedType":
+        """Create the Undefined singleton."""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         else:

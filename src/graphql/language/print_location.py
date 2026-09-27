@@ -1,3 +1,5 @@
+"""Print location in GraphQL source"""
+
 import re
 from typing import Optional, Tuple, cast
 

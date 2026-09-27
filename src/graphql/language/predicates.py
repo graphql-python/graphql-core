@@ -1,3 +1,5 @@
+"""Predicates for GraphQL nodes"""
+
 from .ast import (
     ArgumentCoordinateNode,
     DirectiveArgumentCoordinateNode,

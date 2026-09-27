@@ -1,3 +1,5 @@
+"""Unique field definition names rule"""
+
 from collections import defaultdict
 from typing import Any, Dict
 

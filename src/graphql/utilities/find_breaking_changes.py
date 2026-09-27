@@ -1,3 +1,5 @@
+"""Find breaking and dangerous changes between two schemas"""
+
 from enum import Enum
 from typing import Any, Collection, Dict, List, NamedTuple, Union, cast
 

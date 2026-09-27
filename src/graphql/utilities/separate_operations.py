@@ -1,3 +1,5 @@
+"""Separation of GraphQL operations"""
+
 from typing import Any, Dict, List, Set
 
 from ..language import (

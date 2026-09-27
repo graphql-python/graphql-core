@@ -1,3 +1,5 @@
+"""Generating GraphQL types from AST nodes"""
+
 from typing import Optional, cast, overload
 
 from ..language import ListTypeNode, NamedTypeNode, NonNullTypeNode, TypeNode

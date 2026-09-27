@@ -1,3 +1,5 @@
+"""Input value coercion"""
+
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 

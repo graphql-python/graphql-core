@@ -1,3 +1,5 @@
+"""No unused variables rule"""
+
 from typing import Any, List, Set
 
 from ...error import GraphQLError

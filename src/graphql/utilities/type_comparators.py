@@ -1,3 +1,5 @@
+"""GraphQL type comparators"""
+
 from typing import cast
 
 from ..type import (

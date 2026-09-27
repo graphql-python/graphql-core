@@ -1,3 +1,5 @@
+"""GraphQL Lexer"""
+
 from typing import List, NamedTuple, Optional
 
 from ..error import GraphQLSyntaxError

@@ -1,3 +1,5 @@
+"""Single field subscriptions rule"""
+
 from typing import Any, Dict, cast
 
 from ...error import GraphQLError

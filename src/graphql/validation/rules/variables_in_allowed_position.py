@@ -1,3 +1,5 @@
+"""Variables in allowed position rule"""
+
 from typing import Any, Dict, Optional, cast
 
 from ...error import GraphQLError

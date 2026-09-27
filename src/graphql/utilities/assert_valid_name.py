@@ -1,3 +1,5 @@
+"""Assert that a name is a valid GraphQL name"""
+
 from typing import Optional
 
 from ..type.assert_name import assert_name

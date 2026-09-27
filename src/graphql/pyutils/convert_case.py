@@ -1,3 +1,5 @@
+"""Conversion between camel and snake case"""
+
 # uses code from https://github.com/daveoncode/python-string-utils
 
 import re

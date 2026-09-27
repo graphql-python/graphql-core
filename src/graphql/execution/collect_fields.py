@@ -1,3 +1,5 @@
+"""Collect fields"""
+
 from typing import Any, Dict, List, Set, Union, cast
 
 from ..language import (

@@ -1,3 +1,5 @@
+"""Overlapping fields can be merged rule"""
+
 from itertools import chain
 from typing import Any, Dict, List, Optional, Tuple, Union, cast
 

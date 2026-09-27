@@ -1,3 +1,5 @@
+"""Printing GraphQL Schemas in SDL format"""
+
 from typing import Any, Callable, Dict, List, Optional, Union, cast
 
 from ..language import print_ast, StringValueNode

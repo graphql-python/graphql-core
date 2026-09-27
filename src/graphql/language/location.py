@@ -1,3 +1,5 @@
+"""Source locations"""
+
 from typing import Any, NamedTuple, TYPE_CHECKING
 
 try:

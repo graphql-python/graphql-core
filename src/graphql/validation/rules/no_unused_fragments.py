@@ -1,3 +1,5 @@
+"""No unused fragments rule"""
+
 from typing import Any, List
 
 from ...error import GraphQLError

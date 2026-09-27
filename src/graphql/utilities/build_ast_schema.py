@@ -1,3 +1,5 @@
+"""GraphQL Schema creation from GraphQL AST"""
+
 from typing import cast, Union
 
 from ..language import DocumentNode, Source, parse

@@ -1,3 +1,5 @@
+"""Check whether objects are iterable"""
+
 from collections.abc import Collection, Iterable, Mapping, ValuesView
 from typing import Any
 

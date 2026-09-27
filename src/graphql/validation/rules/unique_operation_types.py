@@ -1,3 +1,5 @@
+"""Unique operation types rule"""
+
 from typing import Any, Dict, Optional, Union
 
 from ...error import GraphQLError

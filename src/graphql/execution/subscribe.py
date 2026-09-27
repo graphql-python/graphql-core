@@ -1,3 +1,5 @@
+"""Subscribe to GraphQL events"""
+
 from inspect import isawaitable
 from typing import (
     Any,

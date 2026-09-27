@@ -1,3 +1,5 @@
+"""GraphQL directives"""
+
 from typing import Any, Collection, Dict, Optional, Tuple, cast
 
 from ..language import DirectiveLocation, ast

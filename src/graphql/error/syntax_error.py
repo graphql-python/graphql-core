@@ -1,3 +1,5 @@
+"""GraphQL Syntax Error"""
+
 from typing import TYPE_CHECKING
 
 from .graphql_error import GraphQLError

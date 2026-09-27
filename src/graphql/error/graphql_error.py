@@ -1,3 +1,5 @@
+"""GraphQL Error"""
+
 from sys import exc_info
 from typing import Any, Collection, Dict, List, Optional, Union, TYPE_CHECKING
 

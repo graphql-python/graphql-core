@@ -1,3 +1,5 @@
+"""Removal of insignificant characters"""
+
 from typing import Union, cast
 
 from ..language import Lexer, TokenKind

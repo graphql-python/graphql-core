@@ -1,3 +1,5 @@
+"""Validation"""
+
 from typing import Collection, Dict, List, Optional, Tuple, Type
 
 from ..error import GraphQLError

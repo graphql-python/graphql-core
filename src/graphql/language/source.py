@@ -1,3 +1,5 @@
+"""GraphQL source input"""
+
 from typing import Any
 
 from .location import SourceLocation

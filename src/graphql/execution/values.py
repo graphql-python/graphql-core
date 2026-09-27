@@ -1,3 +1,5 @@
+"""Helpers for handling values"""
+
 from typing import Any, Callable, Collection, Dict, List, Optional, Union, cast
 
 from ..error import GraphQLError

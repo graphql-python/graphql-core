@@ -1,3 +1,5 @@
+"""Python dictionary creation from GraphQL AST"""
+
 from typing import Any, Collection, Dict, List, Optional, overload
 
 from ..language import Node, OperationType

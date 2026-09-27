@@ -1,3 +1,5 @@
+"""GraphQL introspection"""
+
 from enum import Enum
 from typing import Mapping
 

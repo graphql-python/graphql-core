@@ -1,3 +1,5 @@
+"""Setup script for GraphQL-core."""
+
 from re import search
 
 from setuptools import find_packages, setup

@@ -1,3 +1,5 @@
+"""No fragment cycles rule"""
+
 from typing import Any, Dict, List, Set
 
 from ...error import GraphQLError

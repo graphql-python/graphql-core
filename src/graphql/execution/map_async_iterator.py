@@ -1,3 +1,5 @@
+"""Map an async iterator"""
+
 from asyncio import CancelledError, Event, Task, ensure_future, wait
 from concurrent.futures import FIRST_COMPLETED
 from inspect import isasyncgen, isawaitable

@@ -1,3 +1,5 @@
+"""Unique directive names per location rule"""
+
 from collections import defaultdict
 from typing import Any, Dict, List, Union, cast
 

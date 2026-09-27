@@ -1,3 +1,5 @@
+"""No deprecated rule"""
+
 from typing import Any, cast
 
 from ....error import GraphQLError

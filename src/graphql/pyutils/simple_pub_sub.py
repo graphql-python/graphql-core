@@ -1,3 +1,5 @@
+"""Simple public-subscribe system"""
+
 from asyncio import Future, Queue, ensure_future, sleep
 from inspect import isawaitable
 from typing import Any, AsyncIterator, Callable, Optional, Set
@@ -35,10 +37,13 @@ class SimplePubSub:
     def get_subscriber(
         self, transform: Optional[Callable] = None
     ) -> "SimplePubSubIterator":
+        """Get an async iterator subscribed to the events, optionally transformed."""
         return SimplePubSubIterator(self, transform)
 
 
 class SimplePubSubIterator(AsyncIterator):
+    """Async iterator over the events emitted by a SimplePubSub."""
+
     def __init__(self, pubsub: SimplePubSub, transform: Optional[Callable]) -> None:
         self.pubsub = pubsub
         self.transform = transform
@@ -61,10 +66,12 @@ class SimplePubSubIterator(AsyncIterator):
         return future
 
     async def aclose(self) -> None:
+        """Close the iterator and stop listening to events."""
         if self.listening:
             await self.empty_queue()
 
     async def empty_queue(self) -> None:
+        """Stop listening and empty the queues."""
         self.listening = False
         self.pubsub.subscribers.remove(self.push_value)
         while not self.pull_queue.empty():
@@ -74,6 +81,7 @@ class SimplePubSubIterator(AsyncIterator):
             await self.push_queue.get()
 
     async def push_value(self, event: Any) -> None:
+        """Push a (transformed) event to the iterator."""
         value = event if self.transform is None else self.transform(event)
         if self.pull_queue.empty():
             await self.push_queue.put(value)

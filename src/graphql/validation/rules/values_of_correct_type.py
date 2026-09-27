@@ -1,3 +1,5 @@
+"""Value literals of correct type rule"""
+
 from typing import cast, Any, Mapping
 
 from ...error import GraphQLError

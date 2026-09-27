@@ -1,3 +1,5 @@
+"""Awaitable or value type"""
+
 from typing import Awaitable, TypeVar, Union
 
 __all__ = ["AwaitableOrValue"]

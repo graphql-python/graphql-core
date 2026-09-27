@@ -1,3 +1,5 @@
+"""Middleware manager"""
+
 from functools import partial, reduce
 from inspect import isfunction
 

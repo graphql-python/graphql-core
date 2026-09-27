@@ -1,3 +1,5 @@
+"""Building introspection queries from GraphQL schemas"""
+
 from typing import cast
 
 from ..error import GraphQLError

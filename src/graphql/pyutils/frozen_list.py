@@ -1,3 +1,5 @@
+"""Frozen list"""
+
 from copy import deepcopy
 from typing import Dict, List, TypeVar
 
@@ -46,25 +48,33 @@ class FrozenList(List[T]):
         return FrozenList(deepcopy(value, memo) for value in self)
 
     def append(self, x):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def extend(self, iterable):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def insert(self, i, x):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def remove(self, x):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def pop(self, i=None):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def clear(self):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def sort(self, *, key=None, reverse=False):
+        """Raise an error since the list is frozen."""
         raise FrozenError
 
     def reverse(self):
+        """Raise an error since the list is frozen."""
         raise FrozenError

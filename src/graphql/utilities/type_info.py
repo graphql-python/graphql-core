@@ -1,3 +1,5 @@
+"""Managing type information"""
+
 from typing import Any, Callable, List, Optional, Union, cast
 
 from ..language import (

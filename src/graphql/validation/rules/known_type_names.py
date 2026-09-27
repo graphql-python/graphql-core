@@ -1,3 +1,5 @@
+"""Known type names rule"""
+
 from typing import Any, Collection, List, Union, cast
 
 from ...error import GraphQLError

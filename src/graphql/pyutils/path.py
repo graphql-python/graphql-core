@@ -1,3 +1,5 @@
+"""Path of indices"""
+
 from typing import Any, List, NamedTuple, Optional, Union
 
 __all__ = ["Path"]

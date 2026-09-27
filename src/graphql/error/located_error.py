@@ -1,3 +1,5 @@
+"""Located GraphQL Error"""
+
 from typing import TYPE_CHECKING, Collection, Optional, Union
 
 from ..pyutils import inspect

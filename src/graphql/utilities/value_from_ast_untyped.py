@@ -1,3 +1,5 @@
+"""Conversion from GraphQL value AST to Python values without type."""
+
 from math import nan
 from typing import Any, Callable, Dict, Optional, Union
 

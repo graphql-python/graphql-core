@@ -1,3 +1,5 @@
+"""Fields on correct type rule"""
+
 from collections import defaultdict
 from functools import cmp_to_key
 from typing import Any, Dict, List, Union, cast

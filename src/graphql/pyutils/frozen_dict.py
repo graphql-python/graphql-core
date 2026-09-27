@@ -1,3 +1,5 @@
+"""Frozen dictionary"""
+
 from copy import deepcopy
 from typing import Dict, TypeVar
 
@@ -37,16 +39,21 @@ class FrozenDict(Dict[KT, VT]):
         return FrozenDict({k: deepcopy(v, memo) for k, v in self.items()})
 
     def clear(self):
+        """Raise an error since the dictionary is frozen."""
         raise FrozenError
 
     def pop(self, key, default=None):
+        """Raise an error since the dictionary is frozen."""
         raise FrozenError
 
     def popitem(self):
+        """Raise an error since the dictionary is frozen."""
         raise FrozenError
 
     def setdefault(self, key, default=None):
+        """Raise an error since the dictionary is frozen."""
         raise FrozenError
 
     def update(self, other=None):
+        """Raise an error since the dictionary is frozen."""
         raise FrozenError

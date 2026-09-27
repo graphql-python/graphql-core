@@ -1,3 +1,5 @@
+"""Get the root type for an operation"""
+
 from typing import Union
 
 from ..error import GraphQLError

@@ -1,3 +1,5 @@
+"""Helpers for block strings"""
+
 from typing import Collection, List
 from sys import maxsize
 

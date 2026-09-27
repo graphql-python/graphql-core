@@ -1,3 +1,5 @@
+"""Possible fragment spread rule"""
+
 from typing import cast, Any, Optional
 
 from ...error import GraphQLError

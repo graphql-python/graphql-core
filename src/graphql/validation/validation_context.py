@@ -1,3 +1,5 @@
+"""Validation context"""
+
 from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
 
 from ..error import GraphQLError
@@ -36,6 +38,8 @@ NodeWithSelectionSet = Union[OperationDefinitionNode, FragmentDefinitionNode]
 
 
 class VariableUsage(NamedTuple):
+    """A usage of a variable together with the expected input type."""
+
     node: VariableNode
     type: Optional[GraphQLInputType]
     default_value: Any

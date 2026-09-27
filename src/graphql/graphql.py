@@ -1,3 +1,5 @@
+"""Execute a GraphQL operation"""
+
 from asyncio import ensure_future
 from inspect import isawaitable
 from typing import Any, Callable, Dict, Optional, Type, Union

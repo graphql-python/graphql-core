@@ -1,3 +1,5 @@
+"""AST concatenation"""
+
 from itertools import chain
 from typing import Collection
 

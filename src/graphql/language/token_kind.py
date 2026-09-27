@@ -1,3 +1,5 @@
+"""Token kinds"""
+
 from enum import Enum
 
 __all__ = ["TokenKind"]

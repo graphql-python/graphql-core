@@ -1,3 +1,5 @@
+"""Unique type names rule"""
+
 from typing import Any, Dict
 
 from ...error import GraphQLError

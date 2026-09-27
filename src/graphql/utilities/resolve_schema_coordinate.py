@@ -1,3 +1,5 @@
+"""Resolve schema coordinates"""
+
 from typing import NamedTuple, Optional, Union
 
 from ..language import (

@@ -1,3 +1,5 @@
+"""No undefined variables rule"""
+
 from typing import Any, Set
 
 from ...error import GraphQLError

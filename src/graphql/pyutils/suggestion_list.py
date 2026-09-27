@@ -1,3 +1,5 @@
+"""List with suggestions"""
+
 from typing import Collection, Optional, List
 
 from .natural_compare import natural_comparison_key

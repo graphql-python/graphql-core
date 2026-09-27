@@ -1,3 +1,5 @@
+"""Known directives rule"""
+
 from typing import cast, Any, Dict, List, Optional, Tuple, Union
 
 from ...error import GraphQLError

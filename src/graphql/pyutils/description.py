@@ -1,3 +1,5 @@
+"""Human-readable descriptions"""
+
 from typing import Any, Tuple, Type, Union
 
 __all__ = [
@@ -21,6 +23,7 @@ class Description:
 
     @classmethod
     def isinstance(cls, obj: Any) -> bool:
+        """Check whether the given object is accepted as a description."""
         return isinstance(obj, cls.bases)
 
     @classmethod

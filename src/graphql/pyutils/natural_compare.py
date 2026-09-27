@@ -1,3 +1,5 @@
+"""Natural sort order"""
+
 import re
 from typing import Tuple
 

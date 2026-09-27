@@ -1,3 +1,5 @@
+"""Print AST"""
+
 from typing import Any, Collection, Optional
 
 from ..language.ast import Node, OperationType

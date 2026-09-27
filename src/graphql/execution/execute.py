@@ -1,3 +1,5 @@
+"""GraphQL execution"""
+
 from asyncio import ensure_future, gather
 from collections.abc import Mapping
 from contextlib import suppress

@@ -1,3 +1,5 @@
+"""Assertions for naming conventions"""
+
 from ..error import GraphQLError
 from ..language.character_classes import is_name_start, is_name_continue
 

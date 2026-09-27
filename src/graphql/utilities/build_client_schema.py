@@ -1,3 +1,5 @@
+"""GraphQL client schema creation"""
+
 from itertools import chain
 from typing import cast, Callable, Collection, Dict, List, Union
 

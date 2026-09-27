@@ -1,3 +1,5 @@
+"""Specified rules"""
+
 from typing import Tuple, Type
 
 from .rules import ASTValidationRule
