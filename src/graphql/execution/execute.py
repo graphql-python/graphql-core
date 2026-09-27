@@ -385,7 +385,7 @@ def experimental_execute_incrementally(  # noqa: PLR0913, PLR0917
     :returns: A single execution result or incremental execution results.
 
     >>> from graphql import build_schema, parse
-    >>> from graphql.execution import experimental_execute_incrementally
+    >>> from graphql import experimental_execute_incrementally
     >>> schema = build_schema('''
     ...     type Query {
     ...       greeting: String
