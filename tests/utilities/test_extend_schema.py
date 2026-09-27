@@ -1580,7 +1580,6 @@ def describe_extend_schema():
                 """
 extend directive @isDeprecated @deprecated(reason: "use another directive")
 """,
-                experimental_directives_on_directive_definitions=True,
             )
             extended_schema = extend_schema(schema, extend_ast)
 
@@ -1599,7 +1598,6 @@ type Query {
 
 directive @isDeprecated @deprecated(reason: "use another directive") on FIELD_DEFINITION
 """,
-                    experimental_directives_on_directive_definitions=True,
                 )
             )
             extend_ast = parse(
@@ -1625,7 +1623,6 @@ directive @isDeprecated @deprecated(reason: "use another directive") on FIELD_DE
 
                     extend directive @someDirective @onDirective
                     """),
-                    experimental_directives_on_directive_definitions=True,
                 )
             )
 
@@ -1645,7 +1642,6 @@ extend directive @isDeprecated @deprecated(reason: "use another directive")
                 schema,
                 parse(
                     extension_sdl,
-                    experimental_directives_on_directive_definitions=True,
                 ),
             )
 
@@ -1673,7 +1669,6 @@ extend directive @isDeprecated @deprecated(reason: "use another directive")
                     extend directive @someDirective @onDirective
                     extend directive @someDirective @otherDirective
                     """),
-                    experimental_directives_on_directive_definitions=True,
                 )
             )
 
@@ -1691,6 +1686,5 @@ extend directive @isDeprecated @deprecated(reason: "use another directive")
             with pytest.raises(GraphQLSyntaxError) as exc_info:
                 parse(
                     "extend directive @isDeprecated",
-                    experimental_directives_on_directive_definitions=True,
                 )
             assert str(exc_info.value).startswith("Syntax Error: Unexpected <EOF>.")

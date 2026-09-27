@@ -1762,7 +1762,6 @@ directive @isNotDeprecated on FIELD_DEFINITION
 directive @isDeprecated @deprecated(reason: "No longer supported") on FIELD_DEFINITION
 directive @isDeprecatedWithEmptyReason @deprecated(reason: "") on FIELD_DEFINITION
 """,
-            experimental_directives_on_directive_definitions=True,
         )
 
         source = """
@@ -1836,7 +1835,6 @@ type Query {
 directive @isNotDeprecated on FIELD_DEFINITION
 directive @isDeprecated @deprecated(reason: "No longer supported") on FIELD_DEFINITION
 """,
-            experimental_directives_on_directive_definitions=True,
         )
 
         source = """

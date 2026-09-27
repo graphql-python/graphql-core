@@ -119,7 +119,6 @@ def build_schema(
     assume_valid_sdl: bool = False,
     no_location: bool = False,
     experimental_fragment_arguments: bool = False,
-    experimental_directives_on_directive_definitions: bool = False,
 ) -> GraphQLSchema:
     r"""Build a GraphQLSchema directly from a source document.
 
@@ -134,8 +133,6 @@ def build_schema(
         information.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
-    :param experimental_directives_on_directive_definitions: Allows directives on
-        directive definitions to be parsed (experimental).
     :returns: The schema built from the provided SDL document.
 
     Build a schema from SDL source using the default options:
@@ -150,7 +147,6 @@ def build_schema(
     >>> schema = build_schema(
     ...     'directive @tag on DIRECTIVE_DEFINITION\n'
     ...     'directive @compose @tag on FIELD_DEFINITION',
-    ...     experimental_directives_on_directive_definitions=True,
     ...     experimental_fragment_arguments=True,
     ...     no_location=True,
     ... )
@@ -165,9 +161,6 @@ def build_schema(
             source,
             no_location=no_location,
             experimental_fragment_arguments=experimental_fragment_arguments,
-            experimental_directives_on_directive_definitions=(
-                experimental_directives_on_directive_definitions
-            ),
         ),
         assume_valid=assume_valid,
         assume_valid_sdl=assume_valid_sdl,

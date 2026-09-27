@@ -1,18 +1,12 @@
 from __future__ import annotations
 
 from functools import partial
-from typing import TYPE_CHECKING, Any
 
 from graphql.language import parse
 from graphql.utilities import extend_schema
 from graphql.validation import UniqueDirectivesPerLocationRule
-from graphql.validation.validate import validate_sdl
 
 from .harness import assert_sdl_validation_errors, assert_validation_errors, test_schema
-
-if TYPE_CHECKING:
-    from graphql.error import GraphQLError
-    from graphql.type import GraphQLSchema
 
 extension_sdl = """
   directive @directive on FIELD | FRAGMENT_DEFINITION
@@ -33,17 +27,6 @@ assert_valid = partial(assert_errors, errors=[])
 assert_sdl_errors = partial(
     assert_sdl_validation_errors, UniqueDirectivesPerLocationRule
 )
-
-
-def assert_experimental_sdl_errors(
-    sdl_str: str,
-    errors: list[GraphQLError | dict[str, Any]],
-    schema: GraphQLSchema | None = None,
-) -> list[GraphQLError]:
-    doc = parse(sdl_str, experimental_directives_on_directive_definitions=True)
-    returned_errors = validate_sdl(doc, schema, [UniqueDirectivesPerLocationRule])
-    assert returned_errors == errors
-    return returned_errors
 
 
 def describe_validate_directives_are_unique_per_location():
@@ -352,7 +335,7 @@ def describe_validate_directives_are_unique_per_location():
         )
 
     def duplicate_directives_on_directive_definitions():
-        assert_experimental_sdl_errors(
+        assert_sdl_errors(
             """
             directive @nonRepeatable on DIRECTIVE_DEFINITION
 
@@ -368,7 +351,7 @@ def describe_validate_directives_are_unique_per_location():
         )
 
     def duplicate_directives_on_directive_extensions():
-        assert_experimental_sdl_errors(
+        assert_sdl_errors(
             """
             directive @nonRepeatable on DIRECTIVE_DEFINITION
 
@@ -384,7 +367,7 @@ def describe_validate_directives_are_unique_per_location():
         )
 
     def duplicate_directives_between_directive_definitions_and_extensions():
-        assert_experimental_sdl_errors(
+        assert_sdl_errors(
             """
             directive @nonRepeatable on DIRECTIVE_DEFINITION
 
@@ -401,7 +384,7 @@ def describe_validate_directives_are_unique_per_location():
         )
 
     def duplicate_directives_between_directive_extensions():
-        assert_experimental_sdl_errors(
+        assert_sdl_errors(
             """
             directive @nonRepeatable on DIRECTIVE_DEFINITION
 

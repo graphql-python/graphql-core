@@ -94,7 +94,6 @@ class GraphQLDirective:  # noqa: PLW1641
     ...     directive @cacheControl(maxAge: Int) repeatable on FIELD_DEFINITION
     ...     extend directive @cacheControl @tag
     ...     ''',
-    ...     experimental_directives_on_directive_definitions=True,
     ... )
     >>> definition = document.definitions[0]
     >>> cache_control = GraphQLDirective(

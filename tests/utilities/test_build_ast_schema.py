@@ -1185,7 +1185,7 @@ def describe_schema_builder():
         build_schema(sdl, assume_valid=True)
         build_schema(sdl, assume_valid_sdl=True)
 
-    def forwards_parser_options_to_build_schema():
+    def build_schema_parses_directives_on_directive_definitions():
         schema = build_schema(
             """
 type Query {
@@ -1194,7 +1194,6 @@ type Query {
 
 directive @bar @deprecated(reason: "Use another directive") on FIELD_DEFINITION
 """,
-            experimental_directives_on_directive_definitions=True,
         )
 
         bar_directive = assert_directive(schema.get_directive("bar"))

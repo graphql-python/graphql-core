@@ -825,11 +825,8 @@ def describe_schema_parser():
             name_node("INTERFACE", (38, 47)),
         )
 
-    def directive_extension_with_experimental_option_enabled():
-        doc = parse(
-            "extend directive @foo @bar",
-            experimental_directives_on_directive_definitions=True,
-        )
+    def directive_extension():
+        doc = parse("extend directive @foo @bar")
         assert isinstance(doc, DocumentNode)
         definition = doc.definitions[0]
         assert isinstance(definition, DirectiveExtensionNode)
@@ -838,13 +835,6 @@ def describe_schema_parser():
             directive_node(name_node("bar", (23, 26)), None, (22, 26)),
         )
         assert definition.loc == (0, 26)
-
-    def directive_definition_extensions_require_the_experimental_flag():
-        assert_syntax_error(
-            "extend directive @foo @bar",
-            "Unexpected Name 'directive'.",
-            (1, 8),
-        )
 
     def directive_with_incorrect_locations():
         assert_syntax_error(
