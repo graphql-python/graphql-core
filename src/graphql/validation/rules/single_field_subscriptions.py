@@ -30,15 +30,32 @@ class SingleFieldSubscriptionsRule(ValidationRule):
     """Subscriptions must only include a single non-introspection field.
 
     A GraphQL subscription is valid only if it contains a single root field and
-    that root field is not an introspection field. `@skip` and `@include`
-    directives are forbidden.
+    that root field is not an introspection field.
 
     See https://spec.graphql.org/draft/#sec-Single-root-field
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import SingleFieldSubscriptionsRule
+    >>> sdl = 'type Query { name: String } type Subscription { a: String b: String }'
+    >>> schema = build_schema(sdl)
+    >>> document = parse('subscription { a b }')
+    >>> errors = validate(schema, document, [SingleFieldSubscriptionsRule])
+    >>> print(errors[0].message)
+    Anonymous Subscription must select only one top level field.
+    >>> document = parse('subscription { a }')
+    >>> validate(schema, document, [SingleFieldSubscriptionsRule])
+    []
     """
 
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         if node.operation != OperationType.SUBSCRIPTION:
             return
         schema = self.context.schema

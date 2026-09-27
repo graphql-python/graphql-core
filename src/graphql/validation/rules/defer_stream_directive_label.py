@@ -15,6 +15,25 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
 
     A GraphQL document is only valid if defer and stream directives' label argument
     is static and unique.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import DeferStreamDirectiveLabel
+    >>> schema = build_schema('type Query { friends: [String] }')
+    >>> document = parse(
+    ...     '{ friends @stream(label: "friends")'
+    ...     ' other: friends @stream(label: "friends") }'
+    ... )
+    >>> errors = validate(schema, document, [DeferStreamDirectiveLabel])
+    >>> print(errors[0].message)
+    Defer/Stream directive label argument must be unique.
+    >>> document = parse(
+    ...     '{ friends @stream(label: "friends")'
+    ...     ' other: friends @stream(label: "otherFriends") }'
+    ... )
+    >>> validate(schema, document, [DeferStreamDirectiveLabel])
+    []
     """
 
     def __init__(self, context: ValidationContext) -> None:
@@ -29,6 +48,10 @@ class DeferStreamDirectiveLabel(ASTValidationRule):
         _path: Any,
         _ancestors: list[Node],
     ) -> None:
+        """Called when entering a directive node.
+
+        :meta private:
+        """
         if node.name.value not in (
             GraphQLDeferDirective.name,
             GraphQLStreamDirective.name,

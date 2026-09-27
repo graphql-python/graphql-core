@@ -40,11 +40,30 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
 
     A GraphQL document is only valid if defer directives are not used on root
     mutation or subscription types.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import DeferStreamDirectiveOnRootField
+    >>> schema = build_schema(
+    ...     'type Query { message: String } type Mutation { updateMessage: String }'
+    ... )
+    >>> document = parse('mutation { ... @defer { updateMessage } }')
+    >>> errors = validate(schema, document, [DeferStreamDirectiveOnRootField])
+    >>> print(errors[0].message)
+    Defer directive cannot be used on root mutation type 'Mutation'.
+    >>> document = parse('{ ... @defer { message } }')
+    >>> validate(schema, document, [DeferStreamDirectiveOnRootField])
+    []
     """
 
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         operation = node.operation
         if operation not in (OperationType.SUBSCRIPTION, OperationType.MUTATION):
             return
@@ -69,6 +88,10 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
         selection_set: SelectionSetNode,
         visited_fragments: set[str],
     ) -> None:
+        """Report defer and stream directives used on the root type.
+
+        :meta private:
+        """
         for selection in selection_set.selections:
             if isinstance(selection, FieldNode):
                 stream = get_directive(selection, GraphQLStreamDirective.name)

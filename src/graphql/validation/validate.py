@@ -64,7 +64,42 @@ def validate(
 
     Validate will stop validation after a ``max_errors`` limit has been reached.
     Attackers can send pathologically invalid queries to induce a DoS attack,
-    so by default ``max_errors`` set to 100 errors.
+    so ``max_errors`` defaults to 100 errors.
+
+    :param schema: Schema to validate against.
+    :param document_ast: Document AST to validate.
+    :param rules: Validation rules to apply. Defaults to
+        :data:`~graphql.validation.specified_rules`.
+    :param max_errors: Maximum number of validation errors before validation stops.
+        Defaults to 100.
+    :param hide_suggestions: Whether suggestion text should be omitted from
+        validation errors.
+    :returns: Validation errors, or an empty list when the document is valid.
+
+    Validate with the default specified rules:
+
+    >>> from graphql import build_schema, parse, validate
+    >>> schema = build_schema('type Query { greeting: String }')
+    >>> validate(schema, parse('{ greeting }'))
+    []
+    >>> errors = validate(schema, parse('{ missing }'))
+    >>> print(errors[0].message)
+    Cannot query field 'missing' on type 'Query'.
+
+    This variant uses a custom rule list and validation options:
+
+    >>> from graphql.validation import FieldsOnCorrectTypeRule
+    >>> document = parse('{ missingOne missingTwo }')
+    >>> errors = validate(schema, document, [FieldsOnCorrectTypeRule], max_errors=1)
+    >>> len(errors)
+    2
+    >>> print(errors[1].message)
+    Too many validation errors, error limit reached. Validation aborted.
+    >>> errors = validate(
+    ...     schema, parse('{ name }'), [FieldsOnCorrectTypeRule], hide_suggestions=True
+    ... )
+    >>> print(errors[0].message)
+    Cannot query field 'name' on type 'Query'.
     """
     # If the schema used for validation is invalid, throw an error.
     assert_valid_schema(schema)

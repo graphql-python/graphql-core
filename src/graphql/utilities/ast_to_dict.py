@@ -40,7 +40,21 @@ def ast_to_dict(
 ) -> Any:
     """Convert a language AST to a nested Python dictionary.
 
-    Set `locations` to True in order to get the locations as well.
+    Set ``locations`` to ``True`` in order to get the locations as well.
+
+    :param node: The AST node (or collection of AST nodes) to convert.
+    :param locations: Whether to include the start and end locations of the nodes.
+    :param cache: Mapping of already converted nodes, used internally to share the
+        dictionaries of nodes that appear multiple times in the AST.
+    :returns: A nested dictionary representing the AST.
+
+    >>> from graphql import parse_type, parse_value
+    >>> from graphql.utilities import ast_to_dict
+    >>> ast_to_dict(parse_type('[String]'))
+    {'kind': 'list_type',
+     'type': {'kind': 'named_type', 'name': {'kind': 'name', 'value': 'String'}}}
+    >>> ast_to_dict(parse_value('42'), locations=True)
+    {'kind': 'int_value', 'value': '42', 'loc': {'start': 0, 'end': 2}}
     """
     if isinstance(node, Node):
         if cache is None:

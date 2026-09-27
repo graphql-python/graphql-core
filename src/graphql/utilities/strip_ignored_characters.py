@@ -26,7 +26,7 @@ def strip_ignored_characters(source: str | Source) -> str:
         - BlockString indentation
 
     Note: It is required to have a delimiter character between neighboring
-    non-punctuator tokes and this function always uses single space as delimiter.
+    non-punctuator tokens and this function always uses single space as delimiter.
 
     It is guaranteed that both input and output documents if parsed would result
     in the exact same AST except for nodes location.
@@ -66,6 +66,14 @@ def strip_ignored_characters(source: str | Source) -> str:
     Becomes::
 
         """Type description""" type Foo{"""Field description""" bar:String}
+
+    :param source: The GraphQL source text or source object.
+    :returns: A semantically equivalent GraphQL source string without ignored
+        characters.
+
+    >>> from graphql import strip_ignored_characters
+    >>> strip_ignored_characters('query Example { name }')
+    'query Example{name}'
     '''
     if not is_source(source):
         source = Source(cast("str", source))

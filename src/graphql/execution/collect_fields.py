@@ -407,7 +407,10 @@ def does_fragment_condition_match(
     fragment: FragmentDefinitionNode | InlineFragmentNode,
     type_: GraphQLObjectType,
 ) -> bool:
-    """Determine if a fragment is applicable to the given type."""
+    """Determine if a fragment is applicable to the given type.
+
+    :meta private:
+    """
     type_condition_node = fragment.type_condition
     if not type_condition_node:
         return True
@@ -420,5 +423,8 @@ def does_fragment_condition_match(
 
 
 def get_field_entry_key(node: FieldNode) -> str:
-    """Implement the logic to compute the key of a given field's entry"""
+    """Implement the logic to compute the key of a given field's entry.
+
+    :meta private:
+    """
     return node.alias.value if node.alias else node.name.value

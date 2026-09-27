@@ -25,39 +25,61 @@ __all__ = [
 ]
 
 
-# Custom extensions
 GraphQLErrorExtensions: TypeAlias = dict[str, Any]
-# Use a unique identifier name for your extension, for example the name of
-# your library or project. Do not use a shortened identifier as this increases
-# the risk of conflicts. We recommend you add at most one extension key,
-# a dictionary which can contain all the values you need.
+"""Custom extensions
+
+Use a unique identifier name for your extension, for example the name of
+your library or project. Do not use a shortened identifier as this increases
+the risk of conflicts. We recommend you add at most one extension key,
+a dictionary which can contain all the values you need.
+"""
 
 
-# Custom formatted extensions
 GraphQLFormattedErrorExtensions: TypeAlias = dict[str, Any]
-# Use a unique identifier name for your extension, for example the name of
-# your library or project. Do not use a shortened identifier as this increases
-# the risk of conflicts. We recommend you add at most one extension key,
-# a dictionary which can contain all the values you need.
+"""Custom formatted extensions
+
+Use a unique identifier name for your extension, for example the name of
+your library or project. Do not use a shortened identifier as this increases
+the risk of conflicts. We recommend you add at most one extension key,
+a dictionary which can contain all the values you need.
+"""
 
 
 class GraphQLFormattedError(TypedDict, total=False):
-    """Formatted GraphQL error"""
+    """Formatted GraphQL error
 
-    # A short, human-readable summary of the problem that **SHOULD NOT** change
-    # from occurrence to occurrence of the problem, except for purposes of localization.
+    See: https://spec.graphql.org/draft/#sec-Errors
+    """
+
     message: str
-    # If an error can be associated to a particular point in the requested
-    # GraphQL document, it should contain a list of locations.
+    """A short, human-readable summary of the problem.
+
+    The message **SHOULD NOT** change from occurrence to occurrence of the problem,
+    except for purposes of localization.
+    """
+
     locations: list[FormattedSourceLocation]
-    # If an error can be associated to a particular field in the GraphQL result,
-    # it _must_ contain an entry with the key `path` that details the path of
-    # the response field which experienced the error. This allows clients to
-    # identify whether a null result is intentional or caused by a runtime error.
+    """Locations in the requested GraphQL document.
+
+    If an error can be associated to a particular point in the requested GraphQL
+    document, it should contain a list of locations.
+    """
+
     path: list[str | int]
-    # Reserved for implementors to extend the protocol however they see fit,
-    # and hence there are no additional restrictions on its contents.
+    """Path of the response field which experienced the error.
+
+    If an error can be associated to a particular field in the GraphQL result, it
+    *must* contain an entry with the key ``path`` that details the path of the response
+    field which experienced the error. This allows clients to identify whether a null
+    result is intentional or caused by a runtime error.
+    """
+
     extensions: GraphQLFormattedErrorExtensions
+    """Custom extensions.
+
+    Reserved for implementors to extend the protocol however they see fit, and hence
+    there are no additional restrictions on its contents.
+    """
 
 
 class GraphQLError(Exception):
@@ -67,6 +89,82 @@ class GraphQLError(Exception):
     phases of performing a GraphQL operation. In addition to a message, it also includes
     information about the locations in a GraphQL document and/or execution result that
     correspond to the Error.
+
+    :param message: Human-readable error message.
+    :param nodes: AST node or nodes associated with this error.
+    :param source: Source document used to derive error locations.
+    :param positions: Character offsets in the source document associated with this
+        error.
+    :param path: Response path where this error occurred during execution.
+    :param original_error: Original error that caused this GraphQLError, if one
+        exists (deprecated, use ``cause`` instead).
+    :param extensions: Extension fields to include in the formatted error.
+    :param cause: The cause of this error, if one exists. It is also exposed as the
+        standard exception :attr:`~BaseException.__cause__` when it is an exception.
+        Defaults to the ``original_error``.
+
+    Create an error from AST nodes and response metadata:
+
+    >>> from graphql import GraphQLError, parse
+    >>> document = parse('{ greeting }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> error = GraphQLError(
+    ...     'Cannot query this field.',
+    ...     nodes=field_node,
+    ...     path=['greeting'],
+    ...     extensions={'code': 'FORBIDDEN'},
+    ... )
+    >>> error.message
+    'Cannot query this field.'
+    >>> error.locations
+    [SourceLocation(line=1, column=3)]
+    >>> error.path
+    ['greeting']
+    >>> error.extensions
+    {'code': 'FORBIDDEN'}
+
+    This variant derives locations from source positions and preserves the original
+    error:
+
+    >>> from graphql import Source
+    >>> source = Source('{ greeting }')
+    >>> original_error = RuntimeError('Database unavailable.')
+    >>> error = GraphQLError(
+    ...     'Resolver failed.',
+    ...     source=source,
+    ...     positions=[2],
+    ...     path=['greeting'],
+    ...     original_error=original_error,
+    ... )
+    >>> error.locations
+    [SourceLocation(line=1, column=3)]
+    >>> error.path
+    ['greeting']
+    >>> error.original_error is original_error
+    True
+
+    The cause can also be passed with the ``cause`` argument; an exception cause is
+    exposed as the standard exception cause and as the original error:
+
+    >>> error = GraphQLError('Resolver failed.', cause=original_error)
+    >>> error.cause is error.__cause__ is error.original_error is original_error
+    True
+
+    All arguments can also be passed positionally:
+
+    >>> error = GraphQLError(
+    ...     'Resolver failed.',
+    ...     None,
+    ...     source,
+    ...     [2],
+    ...     ['greeting'],
+    ...     original_error,
+    ...     {'code': 'INTERNAL'},
+    ... )
+    >>> error.locations
+    [SourceLocation(line=1, column=3)]
+    >>> error.extensions
+    {'code': 'INTERNAL'}
     """
 
     message: str
@@ -84,7 +182,7 @@ class GraphQLError(Exception):
     """
 
     path: list[str | int] | None
-    """
+    """Response path
 
     A list of field names and array indexes describing the JSON-path into the execution
     response which corresponds to this error.
@@ -222,6 +320,21 @@ class GraphQLError(Exception):
             self.__traceback__ = exc_info()[2]
 
     def __str__(self) -> str:
+        """Get this error as a human-readable message with source locations.
+
+        >>> from graphql import GraphQLError, Source
+        >>> error = GraphQLError(
+        ...     'Cannot query field "name".',
+        ...     source=Source('{ name }'),
+        ...     positions=[2],
+        ... )
+        >>> print(error)
+        Cannot query field "name".
+        <BLANKLINE>
+        GraphQL request:1:3
+        1 | { name }
+          |   ^
+        """
         # Lazy import to avoid a cyclic dependency between error and language
         from ..language.print_location import print_location, print_source_location
 
@@ -275,6 +388,16 @@ class GraphQLError(Exception):
 
         Given a GraphQLError, format it according to the rules described by the
         "Response Format, Errors" section of the GraphQL Specification.
+
+        >>> from graphql import GraphQLError
+        >>> error = GraphQLError(
+        ...     'Resolver failed.',
+        ...     path=['viewer', 'name'],
+        ...     extensions={'code': 'INTERNAL'},
+        ... )
+        >>> error.formatted
+        {'message': 'Resolver failed.', 'path': ['viewer', 'name'],
+         'extensions': {'code': 'INTERNAL'}}
         """
         formatted: GraphQLFormattedError = {
             "message": self.message or "An unknown error occurred.",

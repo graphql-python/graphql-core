@@ -68,10 +68,21 @@ class VariableValueSource(NamedTuple):
 
 
 class VariableValues(NamedTuple):
-    """The coerced values of the variables and their original sources."""
+    """The coerced values of the variables and their original sources.
+
+    Coerced variable values prepared for execution.
+
+    The ``coerced`` dict contains runtime values keyed by variable name. The
+    ``sources`` dict records whether each value came from request input, an
+    operation default, or a fragment-variable default so utilities can preserve
+    defaults when replacing variables in literals.
+    """
 
     sources: dict[str, VariableValueSource]
+    """Source metadata for each variable value keyed by variable name."""
+
     coerced: dict[str, Any]
+    """Coerced runtime variable values keyed by variable name."""
 
 
 class FragmentVariableValueSource(NamedTuple):
@@ -101,9 +112,67 @@ def get_variable_values(
 ) -> VariableValuesOrErrors:
     """Get coerced variable values based on provided definitions.
 
-    Prepares an object map of variable values of the correct type based on the
-    provided variable definitions and arbitrary input. If the input cannot be parsed
-    to match the variable definitions, a GraphQLError will be raised.
+    Prepares a dict of variable values of the correct type based on the provided
+    variable definitions and arbitrary input. If the input cannot be parsed to match
+    the variable definitions, a list of GraphQLErrors will be returned instead.
+
+    :param schema: GraphQL schema to use.
+    :param var_def_nodes: The variable definition AST nodes to coerce.
+    :param inputs: The runtime variable values keyed by variable name.
+    :param max_errors: Maximum number of coercion errors to report (unlimited by
+        default). When the limit is exceeded, an additional error is added and
+        coercion is aborted.
+    :param hide_suggestions: Whether suggestion text should be omitted from errors.
+    :returns: Coerced variable values with source metadata, or request errors.
+
+    Coerce provided variables and apply operation defaults:
+
+    >>> from graphql import build_schema, get_variable_values, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       reviews(stars: Int!, limit: Int = 10): [String]
+    ...     }
+    ... ''')
+    >>> document = parse('''
+    ...     query ($stars: Int!, $limit: Int = 10) {
+    ...       reviews(stars: $stars, limit: $limit)
+    ...     }
+    ... ''')
+    >>> operation = document.definitions[0]
+    >>> result = get_variable_values(
+    ...     schema, operation.variable_definitions, {'stars': 5}
+    ... )
+    >>> result.coerced
+    {'stars': 5, 'limit': 10}
+
+    This variant uses ``max_errors`` to cap reported coercion errors:
+
+    >>> schema = build_schema('''
+    ...     input ReviewInput {
+    ...       stars: Int!
+    ...     }
+    ...
+    ...     type Query {
+    ...       review(input: ReviewInput!): String
+    ...     }
+    ... ''')
+    >>> document = parse('''
+    ...     query ($first: ReviewInput!, $second: ReviewInput!) {
+    ...       first: review(input: $first)
+    ...       second: review(input: $second)
+    ...     }
+    ... ''')
+    >>> operation = document.definitions[0]
+    >>> errors = get_variable_values(
+    ...     schema,
+    ...     operation.variable_definitions,
+    ...     {'first': {'stars': 'bad'}, 'second': {'stars': 'also bad'}},
+    ...     max_errors=1,
+    ... )
+    >>> len(errors)
+    2
+    >>> errors[1].message
+    'Too many errors processing variables, error limit reached. Execution aborted.'
     """
     errors: list[GraphQLError] = []
 
@@ -135,6 +204,10 @@ def coerce_variable_values(
     on_error: Callable[[GraphQLError], None],
     hide_suggestions: bool = False,
 ) -> VariableValues:
+    """Coerce the variable values, reporting errors via the given callback.
+
+    :meta private:
+    """
     sources: dict[str, VariableValueSource] = {}
     coerced: dict[str, Any] = {}
     for var_def_node in var_def_nodes:
@@ -258,6 +331,8 @@ def get_fragment_variable_values(
 
     Prepares the variable values for a fragment spread, preserving the original
     sources of the variable values alongside the coerced values.
+
+    :meta private:
     """
     arg_node_map = {arg.name.value: arg for arg in fragment_spread_node.arguments or []}
     sources: dict[str, FragmentVariableValueSource] = {}
@@ -296,6 +371,52 @@ def get_argument_values(
 
     Prepares a dict of argument values given a list of argument definitions and list
     of argument AST nodes.
+
+    :param type_def: Field or directive definition that declares the arguments.
+    :param node: Field or directive AST node supplying argument literals.
+    :param variable_values: Operation variable values returned by
+        :func:`get_variable_values`.
+    :param fragment_variable_values: Fragment variable values for the current
+        fragment scope.
+    :param hide_suggestions: Whether suggestion text should be omitted from errors.
+    :returns: A dict of coerced argument values.
+
+    Read literal argument values and defaults:
+
+    >>> from graphql import build_schema, get_argument_values, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       reviews(stars: Int!, limit: Int = 10): [String]
+    ...     }
+    ... ''')
+    >>> field_def = schema.query_type.fields['reviews']
+    >>> document = parse('{ reviews(stars: 5) }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> get_argument_values(field_def, field_node)
+    {'stars': 5, 'limit': 10}
+
+    This variant resolves argument values from operation variables:
+
+    >>> from graphql import get_variable_values
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       reviews(stars: Int!): [String]
+    ...     }
+    ... ''')
+    >>> field_def = schema.query_type.fields['reviews']
+    >>> document = parse('query ($stars: Int!) { reviews(stars: $stars) }')
+    >>> operation = document.definitions[0]
+    >>> field_node = operation.selection_set.selections[0]
+    >>> variables = get_variable_values(
+    ...     schema, operation.variable_definitions, {'stars': 5}
+    ... )
+    >>> get_argument_values(field_def, field_node, variables)
+    {'stars': 5}
+    >>> get_argument_values(field_def, field_node)
+    Traceback (most recent call last):
+    ...
+    graphql.error.graphql_error.GraphQLError: Invalid argument
+    ...
     """
     coerced_values: dict[str, Any] = {}
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}
@@ -450,9 +571,45 @@ def get_directive_values(
     """Get coerced argument values based on provided nodes.
 
     Prepares a dict of argument values given a directive definition and an AST node
-    which may contain directives. Optionally also accepts a dict of variable values.
+    which may contain directives. Optionally also accepts the variable values.
 
     If the directive does not exist on the node, returns None.
+
+    :param directive_def: Directive definition to read argument definitions from.
+    :param node: AST node that may contain directives.
+    :param variable_values: Operation variable values returned by
+        :func:`get_variable_values`.
+    :param fragment_variable_values: Fragment variable values for the current
+        fragment scope.
+    :param hide_suggestions: Whether suggestion text should be omitted from errors.
+    :returns: A dict of coerced directive argument values, or None when absent.
+
+    Read literal directive arguments from a node:
+
+    >>> from graphql import GraphQLSkipDirective, get_directive_values, parse
+    >>> document = parse('{ name @skip(if: true) }')
+    >>> field_node = document.definitions[0].selection_set.selections[0]
+    >>> get_directive_values(GraphQLSkipDirective, field_node)
+    {'if': True}
+
+    This variant resolves directive arguments from variables and handles absent
+    directives:
+
+    >>> from graphql import GraphQLIncludeDirective, build_schema, get_variable_values
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse(
+    ...     'query ($includeName: Boolean!) { name @include(if: $includeName) }'
+    ... )
+    >>> operation = document.definitions[0]
+    >>> field_node = operation.selection_set.selections[0]
+    >>> variables = get_variable_values(
+    ...     schema, operation.variable_definitions, {'includeName': False}
+    ... )
+    >>> get_directive_values(GraphQLIncludeDirective, field_node, variables)
+    {'if': False}
+    >>> field_node = parse('{ name }').definitions[0].selection_set.selections[0]
+    >>> get_directive_values(GraphQLIncludeDirective, field_node) is None
+    True
     """
     directives = node.directives
     if directives:

@@ -17,6 +17,21 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
     """Unique enum value names
 
     A GraphQL enum type is only valid if all its values are uniquely named.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema
+    >>> from graphql.validation import UniqueEnumValueNamesRule
+    >>> from graphql.validation.specified_rules import specified_sdl_rules
+    >>> UniqueEnumValueNamesRule in specified_sdl_rules
+    True
+    >>> sdl = 'enum Status { ACTIVE ACTIVE } type Query { status: Status }'
+    >>> build_schema(sdl)
+    Traceback (most recent call last):
+    ...
+    TypeError: Enum value 'Status.ACTIVE' can only be defined once.
+    >>> sdl = 'enum Status { ACTIVE INACTIVE } type Query { status: Status }'
+    >>> schema = build_schema(sdl)
     """
 
     def __init__(self, context: SDLValidationContext) -> None:
@@ -28,6 +43,10 @@ class UniqueEnumValueNamesRule(SDLValidationRule):
     def check_value_uniqueness(
         self, node: EnumTypeDefinitionNode, *_args: Any
     ) -> VisitorAction:
+        """Report enum values with the same name.
+
+        :meta private:
+        """
         existing_type_map = self.existing_type_map
         type_name = node.name.value
         value_names = self.known_value_names[type_name]

@@ -44,14 +44,45 @@ __all__ = [
 class ExecutionResult:  # noqa: PLW1641
     """The result of GraphQL execution.
 
+    Represents the response produced by executing a GraphQL operation.
+
     - ``data`` is the result of a successful execution of the query.
     - ``errors`` is included when any errors occurred as a non-empty list.
     - ``extensions`` is reserved for adding non-standard properties.
+
+    :param data: Data returned by execution, or None when execution could not produce
+        data.
+    :param errors: Errors raised while parsing, validating, or executing the operation.
+    :param extensions: Extension fields to include in the formatted result.
+
+    >>> from graphql import ExecutionResult, GraphQLError
+    >>> result = ExecutionResult(
+    ...     data={'greeting': None},
+    ...     errors=[GraphQLError('Resolver failed.', path=['greeting'])],
+    ...     extensions={'cost': 1},
+    ... )
+    >>> result.data
+    {'greeting': None}
+    >>> result.formatted
+    {'data': {'greeting': None},
+     'errors': [{'message': 'Resolver failed.', 'path': ['greeting']}],
+     'extensions': {'cost': 1}}
+
+    For backward compatibility, the result can also be unpacked as a tuple:
+
+    >>> data, errors = result
+    >>> errors[0].message
+    'Resolver failed.'
     """
 
     data: dict[str, Any] | None
+    """Data returned by execution, or None when execution could not produce data."""
+
     errors: list[GraphQLError] | None
+    """Errors raised while parsing, validating, or executing the operation."""
+
     extensions: dict[str, Any] | None
+    """Extension fields to include in the formatted result."""
 
     __slots__ = "data", "errors", "extensions"
 
@@ -106,28 +137,73 @@ class ExecutionResult:  # noqa: PLW1641
 
 
 class FormattedExecutionResult(TypedDict, total=False):
-    """Formatted execution result"""
+    """Formatted execution result
+
+    A JSON-serializable GraphQL execution result.
+    """
 
     data: dict[str, Any] | None
+    """Data returned by execution, or None when execution could not produce data."""
+
     errors: list[GraphQLFormattedError]
+    """Errors raised while parsing, validating, or executing the operation."""
+
     extensions: dict[str, Any]
+    """Extension fields to include in the formatted result."""
 
 
 class ExperimentalIncrementalExecutionResults(NamedTuple):
-    """Execution results when retrieved incrementally."""
+    """Execution results when retrieved incrementally.
+
+    Results for an operation that produced incremental payloads.
+    """
 
     initial_result: InitialIncrementalExecutionResult
+    """Initial execution result delivered before subsequent incremental payloads."""
+
     subsequent_results: AsyncGenerator[SubsequentIncrementalExecutionResult, None]
+    """Async stream of incremental payloads delivered after the initial result."""
 
 
 class InitialIncrementalExecutionResult:  # noqa: PLW1641
-    """Initial incremental execution result."""
+    """Initial incremental execution result.
+
+    Initial execution result for an operation that produced incremental payloads.
+
+    :param data: Data produced by the initial execution payload.
+    :param errors: Errors raised while parsing, validating, or executing the operation.
+    :param pending: Incremental payloads that are still pending after the initial
+        result.
+    :param has_next: Indicates that subsequent incremental payloads will follow.
+    :param extensions: Additional non-standard metadata included in the initial
+        result.
+
+    >>> from graphql import InitialIncrementalExecutionResult
+    >>> from graphql.execution import PendingResult
+    >>> result = InitialIncrementalExecutionResult(
+    ...     data={'greeting': 'Hello'},
+    ...     pending=[PendingResult(id='0', path=[])],
+    ...     has_next=True,
+    ... )
+    >>> result.formatted
+    {'data': {'greeting': 'Hello'}, 'pending': [{'id': '0', 'path': []}],
+     'hasNext': True}
+    """
 
     data: dict[str, Any] | None
+    """Data produced by the initial execution payload."""
+
     errors: list[GraphQLError] | None
+    """Errors raised while parsing, validating, or executing the operation."""
+
     pending: list[PendingResult]
+    """Incremental payloads that are still pending after the initial result."""
+
     has_next: bool
+    """Indicates that subsequent incremental payloads will follow."""
+
     extensions: dict[str, Any] | None
+    """Additional non-standard metadata included in the initial result."""
 
     __slots__ = "data", "errors", "extensions", "has_next", "pending"
 
@@ -206,23 +282,64 @@ class InitialIncrementalExecutionResult:  # noqa: PLW1641
 
 
 class FormattedIncrementalDeferResult(TypedDict):
-    """Formatted incremental deferred execution result"""
+    """Formatted incremental deferred execution result
+
+    JSON-serializable form of a deferred fragment payload.
+    """
 
     errors: NotRequired[list[GraphQLFormattedError]]
+    """Formatted errors raised while executing the deferred fragment."""
+
     data: dict[str, Any]
+    """Formatted data produced by the deferred fragment."""
+
     id: str
+    """Identifier matching this payload to a pending deferred fragment."""
+
     subPath: NotRequired[list[str | int]]
+    """Path from the deferred fragment location to this payload."""
+
     extensions: NotRequired[dict[str, Any]]
+    """Additional non-standard metadata included in this formatted payload."""
 
 
 class SubsequentIncrementalExecutionResult:  # noqa: PLW1641
-    """Subsequent incremental execution result."""
+    """Subsequent incremental execution result.
+
+    Subsequent payload produced by incremental execution.
+
+    :param has_next: Indicates whether more incremental payloads will follow.
+    :param pending: Incremental payloads that became pending with this response.
+    :param incremental: Deferred or streamed payloads delivered by this response.
+    :param completed: Incremental payloads that completed with this response.
+    :param extensions: Additional non-standard metadata included in this payload.
+
+    >>> from graphql import IncrementalDeferResult, SubsequentIncrementalExecutionResult
+    >>> from graphql.execution import CompletedResult
+    >>> result = SubsequentIncrementalExecutionResult(
+    ...     has_next=False,
+    ...     incremental=[IncrementalDeferResult(data={'name': 'Ada'}, id='0')],
+    ...     completed=[CompletedResult(id='0')],
+    ... )
+    >>> result.formatted
+    {'hasNext': False, 'incremental': [{'data': {'name': 'Ada'}, 'id': '0'}],
+     'completed': [{'id': '0'}]}
+    """
 
     pending: list[PendingResult] | None
+    """Incremental payloads that became pending with this response."""
+
     incremental: list[IncrementalResult] | None
+    """Deferred or streamed payloads delivered by this response."""
+
     completed: list[CompletedResult] | None
+    """Incremental payloads that completed with this response."""
+
     has_next: bool
+    """Indicates whether more incremental payloads will follow."""
+
     extensions: dict[str, Any] | None
+    """Additional non-standard metadata included in this payload."""
 
     __slots__ = "completed", "extensions", "has_next", "incremental", "pending"
 
@@ -307,31 +424,76 @@ class SubsequentIncrementalExecutionResult:  # noqa: PLW1641
 
 
 class FormattedPendingResult(TypedDict):
-    """Formatted pending execution result"""
+    """Formatted pending execution result
+
+    JSON-serializable form of a pending incremental payload.
+    """
 
     id: str
+    """Identifier of the pending deferred fragment or stream."""
+
     path: list[str | int]
+    """Path to the location of the deferred fragment or streamed list field."""
+
     label: NotRequired[str]
+    """Label of the ``@defer`` or ``@stream`` directive, if one was supplied."""
 
 
 class FormattedSubsequentIncrementalExecutionResult(TypedDict):
-    """Formatted subsequent incremental execution result"""
+    """Formatted subsequent incremental execution result
+
+    JSON-serializable form of a subsequent incremental execution payload.
+    """
 
     pending: NotRequired[list[FormattedPendingResult]]
+    """Formatted incremental payloads that became pending with this response."""
+
     incremental: NotRequired[list[FormattedIncrementalResult]]
+    """Formatted deferred or streamed payloads delivered by this response."""
+
     completed: NotRequired[list[FormattedCompletedResult]]
+    """Formatted incremental payloads that completed with this response."""
+
     hasNext: bool
+    """Indicates whether more incremental payloads will follow."""
+
     extensions: NotRequired[dict[str, Any]]
+    """Additional non-standard metadata included in this formatted payload."""
 
 
 class IncrementalDeferResult:  # noqa: PLW1641
-    """Incremental deferred execution result"""
+    """Incremental deferred execution result
+
+    Incremental payload produced by a deferred fragment.
+
+    :param data: Data produced by the deferred fragment.
+    :param id: Identifier matching this payload to a pending deferred fragment.
+    :param sub_path: Path from the deferred fragment location to this payload.
+    :param errors: Errors raised while executing the deferred fragment.
+    :param extensions: Additional non-standard metadata included in this payload.
+
+    >>> from graphql import IncrementalDeferResult
+    >>> result = IncrementalDeferResult(
+    ...     data={'name': 'Ada'}, id='0', sub_path=['viewer']
+    ... )
+    >>> result.formatted
+    {'data': {'name': 'Ada'}, 'id': '0', 'subPath': ['viewer']}
+    """
 
     data: dict[str, Any]
+    """Data produced by the deferred fragment."""
+
     id: str
+    """Identifier matching this payload to a pending deferred fragment."""
+
     sub_path: list[str | int] | None
+    """Path from the deferred fragment location to this payload."""
+
     errors: list[GraphQLError] | None
+    """Errors raised while executing the deferred fragment."""
+
     extensions: dict[str, Any] | None
+    """Additional non-standard metadata included in this payload."""
 
     __slots__ = "data", "errors", "extensions", "id", "sub_path"
 
@@ -407,24 +569,61 @@ class IncrementalDeferResult:  # noqa: PLW1641
 
 
 class FormattedInitialIncrementalExecutionResult(TypedDict):
-    """Formatted initial incremental execution result"""
+    """Formatted initial incremental execution result
+
+    JSON-serializable form of an initial incremental execution result.
+    """
 
     data: NotRequired[dict[str, Any] | None]
+    """Formatted data produced by the initial execution payload."""
+
     errors: NotRequired[list[GraphQLFormattedError]]
+    """Errors raised while parsing, validating, or executing the operation."""
+
     pending: list[FormattedPendingResult]
+    """Formatted list of incremental payloads still pending after the initial result."""
+
     hasNext: bool
+    """Indicates whether subsequent incremental payloads will follow."""
+
     incremental: list[FormattedIncrementalResult]
+    """Formatted deferred or streamed payloads delivered with the initial result."""
+
     extensions: NotRequired[dict[str, Any]]
+    """Additional non-standard metadata included in the formatted initial result."""
 
 
 class IncrementalStreamResult:
-    """Incremental streamed execution result"""
+    """Incremental streamed execution result
+
+    Incremental payload produced by a streamed list field.
+
+    :param items: Streamed list items delivered by this payload.
+    :param id: Identifier matching this payload to a pending stream.
+    :param sub_path: Path from the streamed field location to these items.
+    :param errors: Errors raised while producing streamed items.
+    :param extensions: Additional non-standard metadata included in this payload.
+
+    >>> from graphql import IncrementalStreamResult
+    >>> result = IncrementalStreamResult(items=['b', 'c'], id='0')
+    >>> result.formatted
+    {'items': ['b', 'c'], 'id': '0'}
+    """
 
     items: list[Any]
+    """Streamed list items delivered by this payload."""
+
     id: str
+    """Identifier matching this payload to a pending stream."""
+
     sub_path: list[str | int] | None
+    """Path from the streamed field location to these items."""
+
     errors: list[GraphQLError] | None
+    """Errors raised while producing streamed items."""
+
     extensions: dict[str, Any] | None
+    """Additional non-standard metadata included in this payload."""
 
     __slots__ = "errors", "extensions", "id", "items", "sub_path"
 
@@ -514,13 +713,25 @@ class IncrementalStreamResult:
 
 
 class FormattedIncrementalStreamResult(TypedDict):
-    """Formatted incremental stream execution result"""
+    """Formatted incremental stream execution result
+
+    JSON-serializable form of a streamed list payload.
+    """
 
     errors: NotRequired[list[GraphQLFormattedError]]
+    """Formatted errors raised while producing streamed items."""
+
     items: list[Any]
+    """Formatted streamed list items delivered by this payload."""
+
     id: str
+    """Identifier matching this payload to a pending stream."""
+
     subPath: NotRequired[list[str | int]]
+    """Path from the streamed field location to these items."""
+
     extensions: NotRequired[dict[str, Any]]
+    """Additional non-standard metadata included in this formatted payload."""
 
 
 IncrementalResult: TypeAlias = IncrementalDeferResult | IncrementalStreamResult
@@ -531,11 +742,31 @@ FormattedIncrementalResult: TypeAlias = (
 
 
 class PendingResult:  # noqa: PLW1641
-    """Pending execution result"""
+    """Pending execution result
+
+    A deferred fragment or stream that became pending, announced in the
+    ``pending`` list of an initial or subsequent incremental execution result.
+
+    :param id: Identifier of the pending deferred fragment or stream.
+    :param path: Path to the location of the deferred fragment or streamed list
+        field.
+    :param label: Label of the ``@defer`` or ``@stream`` directive, if one was
+        supplied.
+
+    >>> from graphql.execution import PendingResult
+    >>> result = PendingResult(id='0', path=['names'], label='NamesStream')
+    >>> result.formatted
+    {'id': '0', 'path': ['names'], 'label': 'NamesStream'}
+    """
 
     id: str
+    """Identifier of the pending deferred fragment or stream."""
+
     path: list[str | int]
+    """Path to the location of the deferred fragment or streamed list field."""
+
     label: str | None
+    """Label of the ``@defer`` or ``@stream`` directive, if one was supplied."""
 
     __slots__ = "id", "label", "path"
 
@@ -587,10 +818,28 @@ class PendingResult:  # noqa: PLW1641
 
 
 class CompletedResult:  # noqa: PLW1641
-    """Completed execution result"""
+    """Completed execution result
+
+    A deferred fragment or stream that completed, announced in the ``completed``
+    list of a subsequent incremental execution result.
+
+    :param id: Identifier matching this result to a pending deferred fragment or
+        stream.
+    :param errors: Errors that caused the deferred fragment or stream to fail, if
+        any.
+
+    >>> from graphql import GraphQLError
+    >>> from graphql.execution import CompletedResult
+    >>> result = CompletedResult(id='0', errors=[GraphQLError('Stream failed.')])
+    >>> result.formatted
+    {'id': '0', 'errors': [{'message': 'Stream failed.'}]}
+    """
 
     id: str
+    """Identifier matching this result to a pending deferred fragment or stream."""
+
     errors: list[GraphQLError] | None
+    """Errors that caused the deferred fragment or stream to fail, if any."""
 
     __slots__ = "errors", "id"
 
@@ -636,7 +885,13 @@ class CompletedResult:  # noqa: PLW1641
 
 
 class FormattedCompletedResult(TypedDict):
-    """Formatted completed execution result"""
+    """Formatted completed execution result
+
+    JSON-serializable form of a completed incremental payload.
+    """
 
     id: str
+    """Identifier matching this result to a pending deferred fragment or stream."""
+
     errors: NotRequired[list[GraphQLFormattedError]]
+    """Formatted errors that caused the deferred fragment or stream to fail."""

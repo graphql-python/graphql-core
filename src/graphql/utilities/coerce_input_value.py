@@ -39,7 +39,35 @@ def coerce_input_value(input_value: Any, type_: GraphQLInputType) -> Any:
     """Coerce a Python value given a GraphQL Input Type.
 
     Returns ``Undefined`` when the value could not be validly coerced according
-    to the provided type.
+    to the provided type. Use :func:`~graphql.utilities.validate_input_value` when
+    coercion diagnostics are needed.
+
+    :param input_value: Python value to coerce.
+    :param type_: GraphQL input type to coerce the value against.
+    :returns: Coerced value, or ``Undefined`` if coercion fails.
+
+    Coerce runtime input values, returning ``Undefined`` when coercion fails:
+
+    >>> from graphql import (
+    ...     GraphQLInputField,
+    ...     GraphQLInputObjectType,
+    ...     GraphQLInt,
+    ...     GraphQLList,
+    ...     GraphQLNonNull,
+    ...     GraphQLString,
+    ... )
+    >>> from graphql.utilities import coerce_input_value
+    >>> review_input = GraphQLInputObjectType(
+    ...     'ReviewInput',
+    ...     {
+    ...         'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...         'tags': GraphQLInputField(GraphQLList(GraphQLString)),
+    ...     },
+    ... )
+    >>> coerce_input_value({'stars': 5, 'tags': ['featured']}, review_input)
+    {'stars': 5, 'tags': ['featured']}
+    >>> coerce_input_value({'stars': 'bad'}, review_input)
+    Undefined
     """
     if is_non_null_type(type_):
         if input_value is None or input_value is Undefined:
@@ -126,6 +154,57 @@ def coerce_input_literal(
 
     Unlike :func:`~graphql.utilities.value_from_ast`, this properly supports
     fragment variables in addition to operation variables.
+
+    :param value_node: GraphQL value AST node to coerce.
+    :param type_: GraphQL input type to coerce the literal against.
+    :param variable_values: Operation variable values returned by
+        :func:`~graphql.execution.get_variable_values`.
+    :param fragment_variable_values: Fragment variable values for the current
+        fragment scope.
+    :returns: Coerced value, or ``Undefined`` if coercion fails.
+
+    Coerce literal input values without variables:
+
+    >>> from graphql import (
+    ...     GraphQLInputField,
+    ...     GraphQLInputObjectType,
+    ...     GraphQLInt,
+    ...     GraphQLNonNull,
+    ...     GraphQLString,
+    ...     parse_value,
+    ... )
+    >>> from graphql.utilities import coerce_input_literal
+    >>> review_input = GraphQLInputObjectType(
+    ...     'ReviewInput',
+    ...     {
+    ...         'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...         'comment': GraphQLInputField(GraphQLString),
+    ...     },
+    ... )
+    >>> coerce_input_literal(
+    ...     parse_value('{ stars: 5, comment: "Loved it" }'), review_input
+    ... )
+    {'stars': 5, 'comment': 'Loved it'}
+    >>> coerce_input_literal(parse_value('{ comment: "Missing" }'), review_input)
+    Undefined
+
+    This variant resolves variable references using the variable values returned by
+    :func:`~graphql.execution.get_variable_values`:
+
+    >>> from graphql import build_schema, parse
+    >>> from graphql.execution import get_variable_values
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     review(stars: Int): String
+    ...   }
+    ... ''')
+    >>> document = parse('query ($stars: Int = 5) { review(stars: $stars) }')
+    >>> operation = document.definitions[0]
+    >>> variable_values = get_variable_values(
+    ...     schema, operation.variable_definitions, {'stars': 4}
+    ... )
+    >>> coerce_input_literal(parse_value('$stars'), GraphQLInt, variable_values)
+    4
     """
     if isinstance(value_node, VariableNode):
         variable_value = get_coerced_variable_value(
@@ -264,7 +343,7 @@ def coerce_default_value(
     values should be caught during validation, however, so this function assumes
     that the default value is valid.
 
-    .. internal::
+    :meta private:
     """
     # The external default value is coerced; the result is memoized in a hidden
     # field on the GraphQLDefaultInput object. (Contrary to GraphQL.js, which
@@ -302,7 +381,10 @@ def get_coerced_variable_value(
     variable_values: VariableValues | None,
     fragment_variable_values: FragmentVariableValues | None,
 ) -> Any:
-    """Retrieve the coerced variable value for the given variable node."""
+    """Retrieve the coerced variable value for the given variable node.
+
+    :meta private:
+    """
     var_name = variable_node.name.value
     if fragment_variable_values and var_name in fragment_variable_values.sources:
         return fragment_variable_values.coerced.get(var_name, Undefined)

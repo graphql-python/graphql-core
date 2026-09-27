@@ -31,9 +31,23 @@ class KnownTypeNamesRule(ASTValidationRule):
     definitions and fragment conditions) are defined by the type schema.
 
     See https://spec.graphql.org/draft/#sec-Fragment-Spread-Type-Existence
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import KnownTypeNamesRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse('fragment Bad on Missing { name }')
+    >>> errors = validate(schema, document, [KnownTypeNamesRule])
+    >>> print(errors[0].message)
+    Unknown type 'Missing'.
+    >>> document = parse('fragment Good on Query { name }')
+    >>> validate(schema, document, [KnownTypeNamesRule])
+    []
     """
 
     context: ValidationContext | SDLValidationContext
+    """The validation context used while checking the document."""
 
     def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
@@ -57,6 +71,10 @@ class KnownTypeNamesRule(ASTValidationRule):
         _path: Any,
         ancestors: list[Node],
     ) -> None:
+        """Called when entering a named type node.
+
+        :meta private:
+        """
         type_name = node.name.value
         if (
             type_name not in self.existing_types_map

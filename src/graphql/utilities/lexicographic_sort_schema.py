@@ -22,6 +22,36 @@ def lexicographic_sort_schema(schema: GraphQLSchema) -> GraphQLSchema:
     """Sort GraphQLSchema.
 
     This function returns a sorted copy of the given GraphQLSchema.
+
+    :param schema: The GraphQL schema to sort.
+    :returns: A copy of the schema with types, fields, arguments, and values sorted
+        lexicographically.
+
+    >>> from graphql import build_schema, lexicographic_sort_schema, print_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       zebra: String
+    ...       apple: String
+    ...     }
+    ...
+    ...     enum Episode {
+    ...       JEDI
+    ...       NEW_HOPE
+    ...       EMPIRE
+    ...     }
+    ... ''')
+    >>> sorted_schema = lexicographic_sort_schema(schema)
+    >>> print(print_schema(sorted_schema))
+    enum Episode {
+      EMPIRE
+      JEDI
+      NEW_HOPE
+    }
+    <BLANKLINE>
+    type Query {
+      apple: String
+      zebra: String
+    }
     """
 
     def config_mapper_map_fn(_context: MappedSchemaContext) -> ConfigMapperMap:

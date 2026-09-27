@@ -19,6 +19,21 @@ class NoFragmentCyclesRule(ASTValidationRule):
     the underlying data.
 
     See https://spec.graphql.org/draft/#sec-Fragment-spreads-must-not-form-cycles
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import NoFragmentCyclesRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse(
+    ...     'fragment A on Query { ...B } fragment B on Query { ...A } query { ...A }'
+    ... )
+    >>> errors = validate(schema, document, [NoFragmentCyclesRule])
+    >>> print(errors[0].message)
+    Cannot spread fragment 'A' within itself via 'B'.
+    >>> document = parse('fragment A on Query { name } query { ...A }')
+    >>> validate(schema, document, [NoFragmentCyclesRule])
+    []
     """
 
     def __init__(self, context: ASTValidationContext) -> None:
@@ -38,6 +53,10 @@ class NoFragmentCyclesRule(ASTValidationRule):
     def enter_fragment_definition(
         self, node: FragmentDefinitionNode, *_args: Any
     ) -> VisitorAction:
+        """Called when entering a fragment definition node.
+
+        :meta private:
+        """
         self.detect_cycle_recursive(node)
         return SKIP
 
@@ -45,6 +64,10 @@ class NoFragmentCyclesRule(ASTValidationRule):
         # This does a straight-forward DFS to find cycles.
         # It does not terminate when a cycle was found but continues to explore
         # the graph to find all possible cycles.
+        """Detect fragment spread cycles starting at the given fragment.
+
+        :meta private:
+        """
         if fragment.name.value in self.visited_frags:
             return
 

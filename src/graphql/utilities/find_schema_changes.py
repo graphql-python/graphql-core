@@ -53,7 +53,10 @@ __all__ = [
 
 
 class BreakingChangeType(Enum):
-    """Types of breaking changes"""
+    """Types of breaking changes
+
+    Categories of schema changes that may break existing operations.
+    """
 
     TYPE_REMOVED = 10
     TYPE_CHANGED_KIND = 11
@@ -74,7 +77,10 @@ class BreakingChangeType(Enum):
 
 
 class DangerousChangeType(Enum):
-    """Types of dangerous changes"""
+    """Types of dangerous changes
+
+    Categories of schema changes that may be dangerous for existing operations.
+    """
 
     VALUE_ADDED_TO_ENUM = 60
     TYPE_ADDED_TO_UNION = 61
@@ -85,7 +91,10 @@ class DangerousChangeType(Enum):
 
 
 class SafeChangeType(Enum):
-    """Types of safe changes"""
+    """Types of safe changes
+
+    Categories of schema changes that are considered safe for existing operations.
+    """
 
     TYPE_ADDED = 70
     OPTIONAL_INPUT_FIELD_ADDED = 71
@@ -102,27 +111,43 @@ class SafeChangeType(Enum):
 
 
 class BreakingChange(NamedTuple):
-    """Type and description of a breaking change"""
+    """Type and description of a breaking change
+
+    Description of a schema change that may break existing operations.
+    """
 
     type: BreakingChangeType
+    """Specific kind of breaking schema change."""
     description: str
+    """Human-readable description of the breaking schema change."""
 
 
 class DangerousChange(NamedTuple):
-    """Type and description of a dangerous change"""
+    """Type and description of a dangerous change
+
+    Description of a schema change that may be dangerous for existing operations.
+    """
 
     type: DangerousChangeType
+    """Specific kind of dangerous schema change."""
     description: str
+    """Human-readable description of the dangerous schema change."""
 
 
 class SafeChange(NamedTuple):
-    """Type and description of a safe change"""
+    """Type and description of a safe change
+
+    Description of a schema change that is considered safe for existing operations.
+    """
 
     type: SafeChangeType
+    """Specific kind of safe schema change."""
     description: str
+    """Human-readable description of the safe schema change."""
 
 
 SchemaChange: TypeAlias = SafeChange | DangerousChange | BreakingChange
+"""Any schema change detected between two schemas."""
 
 
 def find_breaking_changes(
@@ -133,8 +158,29 @@ def find_breaking_changes(
     Given two schemas, returns a list containing descriptions of all the types of
     breaking changes covered by the other functions down below.
 
+    :param old_schema: Schema before the change.
+    :param new_schema: Schema after the change.
+    :returns: Breaking changes between the two schemas.
+
+    >>> from graphql import build_schema
+    >>> from graphql.utilities import find_breaking_changes
+    >>> old_schema = build_schema('''
+    ...   type Query {
+    ...     greeting: String
+    ...   }
+    ... ''')
+    >>> new_schema = build_schema('''
+    ...   type Query {
+    ...     hello: String
+    ...   }
+    ... ''')
+    >>> changes = find_breaking_changes(old_schema, new_schema)
+    >>> [change.type.name for change in changes]
+    ['FIELD_REMOVED']
+
     .. deprecated:: 3.3
-       Please use ``find_schema_changes`` instead. Will be removed in v18.
+       Please use ``find_schema_changes`` instead and filter for breaking changes.
+       Will be removed in a future version.
     """
     return [
         change
@@ -151,8 +197,38 @@ def find_dangerous_changes(
     Given two schemas, returns a list containing descriptions of all the types of
     potentially dangerous changes covered by the other functions down below.
 
+    :param old_schema: Schema before the change.
+    :param new_schema: Schema after the change.
+    :returns: Dangerous changes between the two schemas.
+
+    >>> from graphql import build_schema
+    >>> from graphql.utilities import find_dangerous_changes
+    >>> old_schema = build_schema('''
+    ...   enum Episode {
+    ...     NEW_HOPE
+    ...   }
+    ...
+    ...   type Query {
+    ...     episode: Episode
+    ...   }
+    ... ''')
+    >>> new_schema = build_schema('''
+    ...   enum Episode {
+    ...     NEW_HOPE
+    ...     EMPIRE
+    ...   }
+    ...
+    ...   type Query {
+    ...     episode: Episode
+    ...   }
+    ... ''')
+    >>> changes = find_dangerous_changes(old_schema, new_schema)
+    >>> [change.type.name for change in changes]
+    ['VALUE_ADDED_TO_ENUM']
+
     .. deprecated:: 3.3
-       Please use ``find_schema_changes`` instead. Will be removed in v18.
+       Please use ``find_schema_changes`` instead and filter for dangerous changes.
+       Will be removed in a future version.
     """
     return [
         change
@@ -166,8 +242,28 @@ def find_schema_changes(
 ) -> list[SchemaChange]:
     """Find schema changes.
 
-    Given two schemas, returns a list containing descriptions of all the types of
-    changes covered by the other functions down below.
+    Finds all schema changes between two schemas.
+
+    :param old_schema: Schema before the change.
+    :param new_schema: Schema after the change.
+    :returns: Safe, dangerous, and breaking changes between the two schemas.
+
+    >>> from graphql import build_schema
+    >>> from graphql.utilities import find_schema_changes
+    >>> old_schema = build_schema('''
+    ...   type Query {
+    ...     greeting: String
+    ...   }
+    ... ''')
+    >>> new_schema = build_schema('''
+    ...   type Query {
+    ...     greeting(name: String): String
+    ...     farewell: String
+    ...   }
+    ... ''')
+    >>> changes = find_schema_changes(old_schema, new_schema)
+    >>> [change.type.name for change in changes]
+    ['FIELD_ADDED', 'OPTIONAL_ARG_ADDED']
     """
     return find_type_changes(old_schema, new_schema) + find_directive_changes(
         old_schema, new_schema

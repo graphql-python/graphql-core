@@ -54,9 +54,17 @@ class PrintedNode:
 
 
 def print_ast(ast: Node) -> str:
-    """Convert an AST into a string.
+    r"""Convert an AST into a string.
 
     The conversion is done using a set of reasonable formatting rules.
+
+    :param ast: The GraphQL AST node to print.
+    :returns: A stable string representation of the AST.
+
+    >>> from graphql import parse, print_ast
+    >>> ast = parse('{ hero { name } }')
+    >>> print_ast(ast)
+    '{\n  hero {\n    name\n  }\n}'
     """
     return visit(ast, PrintAstVisitor())
 

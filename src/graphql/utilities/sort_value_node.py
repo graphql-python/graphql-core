@@ -11,7 +11,7 @@ __all__ = ["sort_value_node"]
 def sort_value_node(value_node: ValueNode) -> ValueNode:
     """Sort ValueNode.
 
-    This function returns a sorted copy of the given ValueNode
+    This function returns a sorted copy of the given ValueNode.
 
     For internal use only.
     """

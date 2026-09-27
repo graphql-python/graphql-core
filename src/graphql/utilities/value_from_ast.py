@@ -37,10 +37,6 @@ def value_from_ast(
     Returns ``Undefined`` when the value could not be validly coerced according
     to the provided type.
 
-    .. deprecated:: 3.3
-        Use :func:`~graphql.utilities.coerce_input_literal` instead.
-        Will be removed in a future version.
-
     =================== ============== ================
        GraphQL Value      JSON Value     Python Value
     =================== ============== ================
@@ -53,6 +49,36 @@ def value_from_ast(
        NullValue          null           None
     =================== ============== ================
 
+    :param value_node: GraphQL value AST node to convert.
+    :param type_: The GraphQL input type used to interpret the value.
+    :param variables: Optional runtime variable values keyed by variable name.
+    :returns: The coerced Python value, or ``Undefined`` if the AST value cannot be
+        coerced to the type.
+
+    Coerce literal values without variables:
+
+    >>> from graphql import (
+    ...     GraphQLInputField, GraphQLInputObjectType, GraphQLInt, GraphQLList,
+    ...     GraphQLNonNull, GraphQLString, parse_value, value_from_ast)
+    >>> ReviewInput = GraphQLInputObjectType('ReviewInput', {
+    ...     'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...     'tags': GraphQLInputField(GraphQLList(GraphQLString)),
+    ... })
+    >>> value_from_ast(parse_value('{ stars: 5, tags: ["featured"] }'), ReviewInput)
+    {'stars': 5, 'tags': ['featured']}
+    >>> value_from_ast(parse_value('{ stars: "bad" }'), ReviewInput)
+    Undefined
+
+    This variant resolves variable references from runtime values:
+
+    >>> value_from_ast(parse_value('$stars'), GraphQLInt, {'stars': 5})
+    5
+    >>> value_from_ast(parse_value('$stars'), GraphQLInt, {})
+    Undefined
+
+    .. deprecated:: 3.3
+        Use :func:`~graphql.utilities.coerce_input_literal` instead.
+        ``value_from_ast`` will be removed in a future version.
     """
     if not value_node:
         # When there is no node, then there is also no value.

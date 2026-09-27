@@ -18,6 +18,19 @@ class StreamDirectiveOnListField(ASTValidationRule):
     """Stream directives are used on list fields
 
     A GraphQL document is only valid if stream directives are used on list fields.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import StreamDirectiveOnListField
+    >>> schema = build_schema('type Query { name: String friends: [String] }')
+    >>> document = parse('{ name @stream(initialCount: 0) }')
+    >>> errors = validate(schema, document, [StreamDirectiveOnListField])
+    >>> print(errors[0].message)
+    Stream directive cannot be used on non-list field 'name' on type 'Query'.
+    >>> document = parse('{ friends @stream(initialCount: 0) }')
+    >>> validate(schema, document, [StreamDirectiveOnListField])
+    []
     """
 
     def enter_directive(
@@ -28,6 +41,10 @@ class StreamDirectiveOnListField(ASTValidationRule):
         _path: Any,
         _ancestors: list[Node],
     ) -> None:
+        """Called when entering a directive node.
+
+        :meta private:
+        """
         context = cast("ValidationContext", self.context)
         field_def = context.get_field_def()
         parent_type = context.get_parent_type()

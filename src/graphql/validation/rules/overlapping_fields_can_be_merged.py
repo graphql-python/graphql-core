@@ -80,6 +80,21 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     either correspond to distinct response names or can be merged without ambiguity.
 
     See https://spec.graphql.org/draft/#sec-Field-Selection-Merging
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import OverlappingFieldsCanBeMergedRule
+    >>> sdl = 'type Query { dog: Dog } type Dog { name: String barkVolume: Int }'
+    >>> schema = build_schema(sdl)
+    >>> document = parse('{ dog { value: barkVolume value: name } }')
+    >>> errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+    >>> print(errors[0].message)
+    Fields 'value' conflict because 'barkVolume' and 'name' are different fields.
+    Use different aliases on the fields to fetch both if this was intentional.
+    >>> document = parse('{ dog { barkVolume name } }')
+    >>> validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+    []
     """
 
     def __init__(self, context: ValidationContext) -> None:
@@ -100,6 +115,10 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         self._budget_exceeded = False
 
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
+        """Called when entering a selection set node.
+
+        :meta private:
+        """
         if self._budget_exceeded:
             return
         try:

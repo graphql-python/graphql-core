@@ -54,6 +54,52 @@ def validate_input_value(
     """Validate that the provided input value is allowed for this type.
 
     All errors are collected via a callback function.
+
+    :param input_value: Python value to validate.
+    :param type_: GraphQL input type to validate the value against.
+    :param on_error: Callback invoked for each validation error and path.
+    :param hide_suggestions: Whether suggestion text should be omitted from errors.
+
+    Collect validation errors with their input paths:
+
+    >>> from graphql import (
+    ...     GraphQLInputField,
+    ...     GraphQLInputObjectType,
+    ...     GraphQLInt,
+    ...     GraphQLNonNull,
+    ... )
+    >>> from graphql.utilities import validate_input_value
+    >>> review_input = GraphQLInputObjectType(
+    ...     'ReviewInput',
+    ...     {'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt))},
+    ... )
+    >>> errors = []
+    >>> validate_input_value(
+    ...     {'stars': 'bad'},
+    ...     review_input,
+    ...     lambda error, path: errors.append(
+    ...         {'message': error.message, 'path': path}
+    ...     ),
+    ... )
+    >>> errors
+    [{'message': "Int cannot represent non-integer value: 'bad'", 'path': ['stars']}]
+
+    This variant hides suggestion text for unknown input fields:
+
+    >>> from graphql import GraphQLString
+    >>> review_input = GraphQLInputObjectType(
+    ...     'ReviewInput', {'comment': GraphQLInputField(GraphQLString)}
+    ... )
+    >>> errors = []
+    >>> validate_input_value(
+    ...     {'rating': 'extra field'},
+    ...     review_input,
+    ...     lambda error, _path: errors.append(error.message),
+    ...     True,
+    ... )
+    >>> errors
+    ["Expected value of type 'ReviewInput' not to include unknown field 'rating',
+     found: {'rating': 'extra field'}."]
     """
     validate_input_value_impl(input_value, type_, on_error, hide_suggestions, None)
 
@@ -236,6 +282,67 @@ def validate_input_literal(
 
     If variable values are not provided, the literal is validated statically (not
     assuming that those variables are missing runtime values).
+
+    :param value_node: GraphQL value AST node to validate.
+    :param type_: GraphQL input type to validate the literal against.
+    :param on_error: Callback invoked for each validation error and path.
+    :param variables: Operation variable values returned by
+        :func:`~graphql.execution.get_variable_values`.
+    :param fragment_variable_values: Fragment variable values for the current
+        fragment scope.
+    :param hide_suggestions: Whether suggestion text should be omitted from errors.
+
+    Validate literal input values and collect literal paths:
+
+    >>> from graphql import (
+    ...     GraphQLInputField,
+    ...     GraphQLInputObjectType,
+    ...     GraphQLInt,
+    ...     GraphQLNonNull,
+    ...     parse_value,
+    ... )
+    >>> from graphql.utilities import validate_input_literal
+    >>> review_input = GraphQLInputObjectType(
+    ...     'ReviewInput',
+    ...     {'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt))},
+    ... )
+    >>> errors = []
+    >>> validate_input_literal(
+    ...     parse_value('{ stars: "bad" }'),
+    ...     review_input,
+    ...     lambda error, path: errors.append(
+    ...         {'message': error.message, 'path': path}
+    ...     ),
+    ... )
+    >>> errors
+    [{'message': 'Int cannot represent non-integer value: "bad"', 'path': ['stars']}]
+
+    This variant resolves variable references using the variable values returned by
+    :func:`~graphql.execution.get_variable_values`:
+
+    >>> from graphql import build_schema, parse
+    >>> from graphql.execution import get_variable_values
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     review(stars: Int): String
+    ...   }
+    ... ''')
+    >>> document = parse('query ($stars: Int = 5) { review(stars: $stars) }')
+    >>> operation = document.definitions[0]
+    >>> variable_values = get_variable_values(
+    ...     schema, operation.variable_definitions, {'stars': 4}
+    ... )
+    >>> errors = []
+    >>> validate_input_literal(
+    ...     parse_value('$stars'),
+    ...     GraphQLInt,
+    ...     lambda error, _path: errors.append(error.message),
+    ...     variable_values,
+    ...     None,
+    ...     True,
+    ... )
+    >>> errors
+    []
     """
     context = ValidationContext(
         static=not variables and not fragment_variable_values,
@@ -492,7 +599,10 @@ def validate_input_literal_impl(
 def get_scoped_variable_values(
     context: ValidationContext, value_node: VariableNode
 ) -> VariableValues | FragmentVariableValues | None:
-    """Select the variable values that provide the given variable node."""
+    """Select the variable values that provide the given variable node.
+
+    :meta private:
+    """
     variable_name = value_node.name.value
     fragment_variable_values = context.fragment_variable_values
     if fragment_variable_values and variable_name in fragment_variable_values.sources:

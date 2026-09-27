@@ -21,6 +21,37 @@ def get_default_value_ast(
     """Get the AST of the default value of an argument or input field.
 
     Returns ``None`` if no default value is provided.
+
+    Both external defaults (``default``, given as a runtime value or as a literal)
+    and deprecated internal defaults (``default_value``) are supported.
+
+    :param arg_or_input_field: The argument or input field to inspect.
+    :returns: The default value as a constant value AST node, or ``None``.
+
+    >>> from graphql import (
+    ...     GraphQLArgument,
+    ...     GraphQLDefaultInput,
+    ...     GraphQLInt,
+    ...     GraphQLList,
+    ...     build_schema,
+    ...     print_ast,
+    ... )
+    >>> from graphql.utilities import get_default_value_ast
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     greet(name: String = "Ada", times: Int): String
+    ...   }
+    ... ''')
+    >>> args = schema.query_type.fields['greet'].args
+    >>> print_ast(get_default_value_ast(args['name']))
+    '"Ada"'
+    >>> get_default_value_ast(args['times']) is None
+    True
+    >>> argument = GraphQLArgument(
+    ...     GraphQLList(GraphQLInt), default=GraphQLDefaultInput([1, 2])
+    ... )
+    >>> print_ast(get_default_value_ast(argument))
+    '[1, 2]'
     """
     type_ = arg_or_input_field.type
     default_input = arg_or_input_field.default

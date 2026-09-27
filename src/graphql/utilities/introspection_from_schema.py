@@ -31,6 +31,63 @@ def introspection_from_schema(
 
     This is the inverse of build_client_schema. The primary use case is outside of the
     server context, for instance when doing schema comparisons.
+
+    :param schema: The GraphQL schema to introspect.
+    :param descriptions: Whether to include descriptions in the introspection result.
+    :param specified_by_url: Whether to include ``specifiedByURL`` in the
+        introspection result.
+    :param directive_is_repeatable: Whether to include the ``isRepeatable`` flag on
+        directives.
+    :param schema_description: Whether to include the ``description`` field on the
+        schema.
+    :param input_value_deprecation: Whether to include deprecation information of
+        input values.
+    :param experimental_directive_deprecation: Whether to include deprecation
+        information of directives.
+    :param one_of: Whether to include the ``isOneOf`` flag on input objects.
+    :returns: Introspection result data for the schema.
+
+    Include schema metadata using the default introspection options:
+
+    >>> from graphql import build_schema, introspection_from_schema
+    >>> schema = build_schema('''
+    ...     scalar Url @specifiedBy(url: "https://url.spec.whatwg.org/")
+    ...
+    ...     type Query {
+    ...       homepage: Url
+    ...     }
+    ... ''')
+    >>> introspection = introspection_from_schema(schema)
+    >>> url_type = next(type_ for type_ in introspection['__schema']['types']
+    ...                 if type_['name'] == 'Url')
+    >>> url_type['specifiedByURL']
+    'https://url.spec.whatwg.org/'
+
+    This variant disables optional introspection metadata:
+
+    >>> introspection = introspection_from_schema(
+    ...     schema,
+    ...     descriptions=False,
+    ...     specified_by_url=False,
+    ...     directive_is_repeatable=False,
+    ...     schema_description=False,
+    ...     input_value_deprecation=False,
+    ...     experimental_directive_deprecation=False,
+    ...     one_of=False,
+    ... )
+    >>> url_type = next(type_ for type_ in introspection['__schema']['types']
+    ...                 if type_['name'] == 'Url')
+    >>> deprecated_directive = next(
+    ...     directive for directive in introspection['__schema']['directives']
+    ...     if directive['name'] == 'deprecated')
+    >>> 'specifiedByURL' in url_type
+    False
+    >>> 'description' in url_type
+    False
+    >>> 'description' in introspection['__schema']
+    False
+    >>> 'isRepeatable' in deprecated_directive
+    False
     """
     document = parse(
         get_introspection_query(

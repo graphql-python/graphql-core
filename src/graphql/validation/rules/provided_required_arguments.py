@@ -43,6 +43,7 @@ class ProvidedRequiredArgumentsOnDirectivesRule(ASTValidationRule):
     """
 
     context: ValidationContext | SDLValidationContext
+    """The validation context used while checking the document."""
 
     def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
@@ -99,15 +100,34 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
 
     A field or directive is only valid if all required (non-null without a default
     value) field arguments have been provided.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import ProvidedRequiredArgumentsRule
+    >>> schema = build_schema('type Query { field(required: String!): String }')
+    >>> document = parse('{ field }')
+    >>> errors = validate(schema, document, [ProvidedRequiredArgumentsRule])
+    >>> print(errors[0].message)
+    Argument 'Query.field(required:)' of type 'String!' is required, but it was not
+    provided.
+    >>> document = parse('{ field(required: "x") }')
+    >>> validate(schema, document, [ProvidedRequiredArgumentsRule])
+    []
     """
 
     context: ValidationContext
+    """The validation context used while checking the document."""
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
 
     def leave_field(self, field_node: FieldNode, *_args: Any) -> VisitorAction:
         # Validate on leave to allow for deeper errors to appear first.
+        """Called when leaving a field node.
+
+        :meta private:
+        """
         field_def = self.context.get_field_def()
         if not field_def:
             return SKIP
@@ -137,6 +157,10 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
     def leave_fragment_spread(
         self, spread_node: FragmentSpreadNode, *_args: Any
     ) -> VisitorAction:
+        """Called when leaving a fragment spread node.
+
+        :meta private:
+        """
         # Validate on leave to allow for deeper errors to appear first.
         fragment_signature = self.context.get_fragment_signature()
         if not fragment_signature:

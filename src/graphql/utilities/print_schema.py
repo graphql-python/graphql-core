@@ -40,14 +40,51 @@ __all__ = [
 
 
 def print_schema(schema: GraphQLSchema) -> str:
-    """Print the given GraphQL schema in SDL format."""
+    """Print the schema.
+
+    :param schema: The GraphQL schema to print.
+    :returns: The printed string representation in SDL.
+
+    >>> from graphql import build_schema, print_schema
+    >>> schema = build_schema('''
+    ...     directive @upper on FIELD_DEFINITION
+    ...
+    ...     type Query {
+    ...       greeting: String @upper
+    ...     }
+    ... ''')
+    >>> print(print_schema(schema))
+    directive @upper on FIELD_DEFINITION
+    <BLANKLINE>
+    type Query {
+      greeting: String
+    }
+    """
     return print_filtered_schema(
         schema, lambda n: not is_specified_directive(n), is_defined_type
     )
 
 
 def print_introspection_schema(schema: GraphQLSchema) -> str:
-    """Print the built-in introspection schema in SDL format."""
+    """Print the introspection schema.
+
+    :param schema: The GraphQL schema whose introspection types are printed.
+    :returns: The printed string representation in SDL.
+
+    >>> from graphql import build_schema, print_introspection_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> printed = print_introspection_schema(schema)
+    >>> 'type __Schema' in printed
+    True
+    >>> 'enum __TypeKind' in printed
+    True
+    >>> 'type Query' in printed
+    False
+    """
     return print_filtered_schema(schema, is_specified_directive, is_introspection_type)
 
 
@@ -119,6 +156,8 @@ def has_default_root_operation_types(schema: GraphQLSchema) -> bool:
     Note however that if any of these default names are used elsewhere in the
     schema but not as a root operation type, the schema definition must still
     be printed to avoid ambiguity.
+
+    :meta private:
     """
     return (
         schema.query_type is schema.get_type("Query")
@@ -128,7 +167,28 @@ def has_default_root_operation_types(schema: GraphQLSchema) -> bool:
 
 
 def print_type(type_: GraphQLNamedType) -> str:
-    """Print a named GraphQL type."""
+    """Print the type.
+
+    :param type_: The GraphQL named type to print.
+    :returns: The printed string representation in SDL.
+
+    >>> from graphql import build_schema, print_type
+    >>> schema = build_schema('''
+    ...     type User {
+    ...       id: ID!
+    ...       name: String
+    ...     }
+    ...
+    ...     type Query {
+    ...       viewer: User
+    ...     }
+    ... ''')
+    >>> print(print_type(schema.get_type('User')))
+    type User {
+      id: ID!
+      name: String
+    }
+    """
     match type_:
         case GraphQLScalarType():
             return print_scalar(type_)
@@ -266,7 +326,30 @@ def print_input_value(name: str, arg: GraphQLArgument) -> str:
 
 
 def print_directive(directive: GraphQLDirective) -> str:
-    """Print a GraphQL directive."""
+    """Print a GraphQL directive.
+
+    Prints a directive definition in GraphQL SDL.
+
+    :param directive: Directive to print.
+    :returns: SDL string for the directive definition.
+
+    >>> from graphql import (
+    ...     DirectiveLocation,
+    ...     GraphQLArgument,
+    ...     GraphQLDirective,
+    ...     GraphQLString,
+    ... )
+    >>> from graphql.utilities import print_directive
+    >>> auth_directive = GraphQLDirective(
+    ...     name='auth',
+    ...     description='Requires authorization.',
+    ...     locations=[DirectiveLocation.FIELD_DEFINITION],
+    ...     args={'scope': GraphQLArgument(GraphQLString)},
+    ... )
+    >>> print(print_directive(auth_directive))
+    \"\"\"Requires authorization.\"\"\"
+    directive @auth(scope: String) on FIELD_DEFINITION
+    """
     return (
         print_description(directive)
         + f"directive {directive}"
@@ -322,5 +405,18 @@ def print_description(
 
 
 def print_value(value: Any, type_: GraphQLInputType) -> str:
-    """@deprecated: Convenience function for printing a Python value"""
+    """Print a Python value as a GraphQL value literal.
+
+    This is a deprecated convenience function; use
+    ``print_ast(ast_from_value(value, type_))`` instead.
+
+    :param value: The Python value to print.
+    :param type_: The GraphQL input type used to interpret the value.
+    :returns: The printed GraphQL value literal.
+
+    >>> from graphql import GraphQLList, GraphQLString
+    >>> from graphql.utilities import print_value
+    >>> print(print_value(['a', 'b'], GraphQLList(GraphQLString)))
+    ["a", "b"]
+    """
     return print_ast(ast_from_value(value, type_))  # type: ignore

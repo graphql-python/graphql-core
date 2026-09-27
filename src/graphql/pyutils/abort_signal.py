@@ -27,10 +27,17 @@ class AbortSignal:
     running operation immediately instead of only at the next field boundary.
 
     The signal is created and controlled through an :class:`AbortController`.
+
+    >>> from graphql.pyutils import AbortController
+    >>> signal = AbortController().signal
+    >>> signal.aborted, signal.reason
+    (False, None)
     """
 
     aborted: bool
+    """Whether the operation has been aborted."""
     reason: Any
+    """The reason given when aborting, or None if not aborted yet."""
 
     def __init__(self) -> None:
         self.aborted = False
@@ -38,7 +45,19 @@ class AbortSignal:
         self._event = Event()
 
     async def wait(self) -> Any:
-        """Wait until the signal is aborted and return the abort reason."""
+        """Wait until the signal is aborted and return the abort reason.
+
+        :returns: the abort reason
+
+        >>> import asyncio
+        >>> from graphql.pyutils import AbortController
+        >>> async def main():
+        ...     controller = AbortController()
+        ...     asyncio.get_running_loop().call_soon(controller.abort, 'timeout')
+        ...     return await controller.signal.wait()
+        >>> asyncio.run(main())
+        'timeout'
+        """
         await self._event.wait()
         return self.reason
 
@@ -49,9 +68,20 @@ class AbortController:
     This mirrors the JavaScript ``AbortController`` Web API. Pass its
     :attr:`signal` as the ``abort_signal`` argument to ``execute`` (and related
     functions) and call :meth:`abort` to cancel the execution.
+
+    >>> from graphql.pyutils import AbortController
+    >>> controller = AbortController()
+    >>> controller.signal.aborted
+    False
+    >>> controller.abort()
+    >>> controller.signal.aborted
+    True
+    >>> controller.signal.reason
+    AbortError('This operation was aborted')
     """
 
     signal: AbortSignal
+    """The signal controlled by this controller."""
 
     def __init__(self) -> None:
         self.signal = AbortSignal()
@@ -63,6 +93,15 @@ class AbortController:
         original error, while any other value is wrapped by ``located_error`` as an
         "Unexpected error value". If no reason is given, an :class:`AbortError` with
         a generic message is used. Aborting more than once has no further effect.
+
+        :param reason: the reason for aborting, by default an :class:`AbortError`
+
+        >>> from graphql.pyutils import AbortController
+        >>> controller = AbortController()
+        >>> controller.abort(RuntimeError('Cancelled by user'))
+        >>> controller.abort(RuntimeError('Ignored'))
+        >>> controller.signal.reason
+        RuntimeError('Cancelled by user')
         """
         signal = self.signal
         if signal.aborted:

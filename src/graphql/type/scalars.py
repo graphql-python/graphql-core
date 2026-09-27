@@ -106,6 +106,7 @@ GraphQLInt = GraphQLScalarType(
     coerce_input_literal=parse_int_literal,
     value_to_literal=int_value_to_literal,
 )
+"""The built-in ``Int`` scalar type."""
 
 
 def serialize_float(output_value: Any) -> float:
@@ -159,6 +160,7 @@ GraphQLFloat = GraphQLScalarType(
     coerce_input_literal=parse_float_literal,
     value_to_literal=float_value_to_literal,
 )
+"""The built-in ``Float`` scalar type."""
 
 
 def serialize_string(output_value: Any) -> str:
@@ -216,6 +218,7 @@ GraphQLString = GraphQLScalarType(
     coerce_input_literal=parse_string_literal,
     value_to_literal=string_value_to_literal,
 )
+"""The built-in ``String`` scalar type."""
 
 
 def serialize_boolean(output_value: Any) -> bool:
@@ -266,6 +269,7 @@ GraphQLBoolean = GraphQLScalarType(
     coerce_input_literal=parse_boolean_literal,
     value_to_literal=boolean_value_to_literal,
 )
+"""The built-in ``Boolean`` scalar type."""
 
 
 def serialize_id(output_value: Any) -> str:
@@ -327,6 +331,7 @@ GraphQLID = GraphQLScalarType(
     coerce_input_literal=parse_id_literal,
     value_to_literal=id_value_to_literal,
 )
+"""The built-in ``ID`` scalar type."""
 
 
 def coerce_int_from_number(value: float) -> int:
@@ -427,10 +432,22 @@ specified_scalar_types: Mapping[str, GraphQLScalarType] = {
         GraphQLID,
     )
 }  # pyright: ignore
+"""All built-in scalar types defined by the GraphQL specification by name"""
 
 
 def is_specified_scalar_type(type_: GraphQLNamedType) -> TypeGuard[GraphQLScalarType]:
-    """Check whether the given named GraphQL type is a specified scalar type."""
+    """Check whether the given named GraphQL type is a specified scalar type.
+
+    :param type_: the GraphQL type to inspect
+    :returns: whether the type is one of the scalars specified by GraphQL
+
+    >>> from graphql import GraphQLScalarType, GraphQLString, is_specified_scalar_type
+    >>> DateTime = GraphQLScalarType('DateTime')
+    >>> is_specified_scalar_type(GraphQLString)
+    True
+    >>> is_specified_scalar_type(DateTime)
+    False
+    """
     return type_.name in specified_scalar_types
 
 

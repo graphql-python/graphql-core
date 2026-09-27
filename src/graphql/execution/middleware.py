@@ -22,6 +22,34 @@ class MiddlewareManager:
 
     Note that since resolvers return "AwaitableOrValue"s, all middleware functions
     must be aware of this and check whether values are awaitable before awaiting them.
+
+    Uppercase all string results with a middleware function:
+
+    >>> from graphql import MiddlewareManager, build_schema, graphql_sync
+    >>> def upper_middleware(next_, root, info, **args):
+    ...     result = next_(root, info, **args)
+    ...     return result.upper() if isinstance(result, str) else result
+    >>> schema = build_schema('type Query { greeting: String }')
+    >>> graphql_sync(
+    ...     schema,
+    ...     '{ greeting }',
+    ...     root_value={'greeting': 'Hello'},
+    ...     middleware=MiddlewareManager(upper_middleware),
+    ... )
+    ExecutionResult(data={'greeting': 'HELLO'}, errors=None)
+
+    Middleware can also be provided as objects with a ``resolve`` method:
+
+    >>> class ExclaimMiddleware:
+    ...     def resolve(self, next_, root, info, **args):
+    ...         return next_(root, info, **args) + '!'
+    >>> graphql_sync(
+    ...     schema,
+    ...     '{ greeting }',
+    ...     root_value={'greeting': 'Hello'},
+    ...     middleware=MiddlewareManager(ExclaimMiddleware(), upper_middleware),
+    ... )
+    ExecutionResult(data={'greeting': 'HELLO!'}, errors=None)
     """
 
     # allow custom attributes (not used internally)
@@ -44,6 +72,18 @@ class MiddlewareManager:
 
         Returns a function that chains the middleware functions with the provided
         resolver function.
+
+        :param field_resolver: The resolver function that shall be wrapped.
+        :returns: The resolver function wrapped with the middleware.
+
+        >>> from graphql import MiddlewareManager
+        >>> def double(next_, root, info, **args):
+        ...     return 2 * next_(root, info, **args)
+        >>> resolver = MiddlewareManager(double).get_field_resolver(
+        ...     lambda root, info: root
+        ... )
+        >>> resolver(21, None)
+        42
         """
         if self._middleware_resolvers is None:
             return field_resolver
@@ -57,7 +97,10 @@ class MiddlewareManager:
 
 
 def get_middleware_resolvers(middlewares: tuple[Any, ...]) -> Iterator[Callable]:
-    """Get a list of resolver functions from a list of classes or functions."""
+    """Get a list of resolver functions from a list of classes or functions.
+
+    :meta private:
+    """
     for middleware in middlewares:
         if isfunction(middleware):
             yield middleware

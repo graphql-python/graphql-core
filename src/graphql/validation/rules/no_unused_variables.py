@@ -20,11 +20,28 @@ class NoUnusedVariablesRule(ValidationRule):
     either directly or within a spread fragment.
 
     See https://spec.graphql.org/draft/#sec-All-Variables-Used
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import NoUnusedVariablesRule
+    >>> schema = build_schema('type Query { field(arg: ID): String name: String }')
+    >>> document = parse('query ($id: ID) { name }')
+    >>> errors = validate(schema, document, [NoUnusedVariablesRule])
+    >>> print(errors[0].message)
+    Variable '$id' is never used.
+    >>> document = parse('query ($id: ID) { field(arg: $id) }')
+    >>> validate(schema, document, [NoUnusedVariablesRule])
+    []
     """
 
     def leave_fragment_definition(
         self, fragment: FragmentDefinitionNode, *_args: Any
     ) -> None:
+        """Called when leaving a fragment definition node.
+
+        :meta private:
+        """
         usages = self.context.get_variable_usages(fragment)
         argument_name_used = {usage.node.name.value for usage in usages}
         for var_def in fragment.variable_definitions or ():
@@ -41,6 +58,10 @@ class NoUnusedVariablesRule(ValidationRule):
     def leave_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when leaving an operation definition node.
+
+        :meta private:
+        """
         operation_variable_name_used: set[str] = set()
         usages = self.context.get_recursive_variable_usages(operation)
 

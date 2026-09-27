@@ -143,13 +143,17 @@ class StreamUsage(NamedTuple):
 
 
 class AsyncWorkFinishedInfo(NamedTuple):
-    """Information passed to the ``async_work_finished`` execution hook."""
+    """Information passed to hooks after asynchronous execution work has finished.
+
+    This is passed to the ``async_work_finished`` execution hook.
+    """
 
     executor: Executor
+    """Executor for the operation that finished async work."""
 
 
 class ExecutionHooks(NamedTuple):
-    """Hooks for observing the execution of a GraphQL operation.
+    """Optional hooks invoked during GraphQL execution.
 
     The ``async_work_finished`` hook is run when all asynchronous work tracked
     by the execution has finished. Cancelled asynchronous work may still be
@@ -159,6 +163,7 @@ class ExecutionHooks(NamedTuple):
     """
 
     async_work_finished: Callable[[AsyncWorkFinishedInfo], None] | None = None
+    """Called after all tracked asynchronous execution work has settled."""
 
 
 class CollectedErrors:
@@ -216,39 +221,132 @@ class Executor(Generic[TContext]):
     This base executor implements plain execution without incremental
     delivery: any ``@defer`` and ``@stream`` directives in the operation
     are ignored.
+
+    The executor is normally created with the :meth:`build` class method from the
+    arguments passed to :func:`~graphql.execution.execute`. You can pass a subclass
+    as ``executor_class`` to :func:`~graphql.execution.execute` in order to customize
+    the execution; the methods used internally for executing and completing fields
+    are not part of the public API, though.
+
+    :param schema: Schema used for execution.
+    :param fragment_definitions: Fragment definitions keyed by fragment name.
+    :param fragments: Fragment details keyed by fragment name.
+    :param root_value: Root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param operation: Operation definition selected for execution.
+    :param variable_values: Operation variable values with source metadata and
+        coerced runtime values.
+    :param field_resolver: Resolver used for fields without an explicit resolver.
+    :param type_resolver: Resolver used for abstract types without an explicit type
+        resolver.
+    :param subscribe_field_resolver: Resolver used for subscription fields without an
+        explicit subscribe resolver.
+    :param enable_early_execution: Whether incremental execution may begin eligible
+        work early.
+    :param middleware_manager: The manager for the middleware that wraps the field
+        resolvers, if any.
+    :param is_awaitable: The predicate to be used for checking whether values are
+        awaitable. If not provided, the default predicate is used.
+    :param is_async_iterable: The predicate to be used for checking whether values
+        are async iterables. If not provided, the default predicate is used.
+    :param hide_suggestions: Whether suggestion text should be omitted from execution
+        errors.
+    :param abort_signal: External signal that may abort execution.
+    :param hooks: Execution hooks supplied by the caller.
+
+    >>> from graphql import Executor, build_schema, parse
+    >>> schema = build_schema('type Query { greeting: String }')
+    >>> executor = Executor.build(
+    ...     schema, parse('query Greeting { greeting }'), {'greeting': 'Hello'}
+    ... )
+    >>> executor.operation.name.value
+    'Greeting'
+    >>> executor.root_value
+    {'greeting': 'Hello'}
+    >>> executor.execute_operation()
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+    If the executor cannot be built, a list of errors is returned instead:
+
+    >>> Executor.build(schema, parse('{ greeting }'), operation_name='Other')
+    [GraphQLError("Unknown operation named 'Other'.")]
     """
 
     schema: GraphQLSchema
+    """Schema used for execution."""
+
     # TODO: consider deprecating/removing fragment_definitions if/when fragment
     # arguments are officially supported and/or the full fragment details are
     # exposed within GraphQLResolveInfo.
     fragment_definitions: dict[str, FragmentDefinitionNode]
+    """Fragment definitions keyed by fragment name."""
+
     fragments: dict[str, FragmentDetails]
+    """Fragment details keyed by fragment name."""
+
     root_value: Any
+    """Root value passed to the operation."""
+
     context_value: Any
+    """Application context value passed to every resolver."""
+
     operation: OperationDefinitionNode
+    """Operation definition selected for execution."""
+
     variable_values: VariableValues
+    """Operation variable values with source metadata and coerced runtime values."""
+
     field_resolver: GraphQLFieldResolver
+    """Resolver used for fields without an explicit resolver."""
+
     type_resolver: GraphQLTypeResolver
+    """Resolver used for abstract types without an explicit type resolver."""
+
     subscribe_field_resolver: GraphQLFieldResolver
+    """Resolver used for subscription fields without an explicit subscribe resolver."""
+
     enable_early_execution: bool
+    """Whether incremental execution may begin eligible work early."""
+
     hide_suggestions: bool
+    """Whether suggestion text should be omitted from execution errors."""
+
     abort_signal: AbortSignal | None
+    """External signal that may abort execution."""
+
     hooks: ExecutionHooks | None
+    """Execution hooks supplied by the caller."""
+
     async_helpers: GraphQLResolveInfoHelpers
+    """Helpers for asynchronous work that are passed to the resolvers."""
+
     collected_errors: CollectedErrors
+    """The errors collected during execution."""
+
     pending_incremental_futures: set[Future[Any]]
+    """Pending futures belonging to incremental work (shared with sub-executors)."""
+
     background_futures: set[Future[Any]]
+    """Futures of work settled in the background (shared with sub-executors)."""
+
     async_work_finished_hook_task: Future[None] | None
+    """The task running the ``async_work_finished`` hook, if it has been started."""
+
     middleware_manager: MiddlewareManager | None
+    """The manager for the middleware that wraps the field resolvers, if any."""
+
     error_propagation: bool
+    """Whether execution should use error propagation."""
 
     is_awaitable: Callable[[Any], TypeGuard[Awaitable]] = staticmethod(
         default_is_awaitable  # type: ignore
     )
+    """The predicate used for checking whether values are awaitable."""
+
     is_async_iterable: Callable[[Any], TypeGuard[AsyncIterable]] = staticmethod(
         default_is_async_iterable  # type: ignore
     )
+    """The predicate used for checking whether values are async iterables."""
 
     def __init__(  # noqa: PLR0913, PLR0917
         self,
@@ -326,14 +424,86 @@ class Executor(Generic[TContext]):
         hooks: ExecutionHooks | None = None,
         **custom_args: Any,
     ) -> list[GraphQLError] | Executor:
-        """Build an executor
+        """Build an executor.
 
         Constructs an Executor object from the arguments passed to execute, which
         we will pass throughout the other execution methods.
 
-        Throws a GraphQLError if a valid executor cannot be created.
+        Returns a list of GraphQLErrors if a valid executor cannot be created.
 
-        For internal use only.
+        Additional keyword arguments are passed on to the constructor, which is
+        useful for custom executor classes.
+
+        :param schema: The schema used for execution.
+        :param document: The parsed GraphQL document to execute.
+        :param root_value: Initial root value passed to the operation.
+        :param context_value: Application context value passed to every resolver.
+        :param raw_variable_values: Runtime variable values keyed by variable name.
+        :param operation_name: Name of the operation to execute when the document
+            contains multiple operations.
+        :param field_resolver: Resolver used when a field does not define its own
+            resolver.
+        :param type_resolver: Resolver used when an abstract type does not define its
+            own resolver.
+        :param subscribe_field_resolver: Resolver used for the root subscription field.
+        :param max_coercion_errors: Set the maximum number of errors allowed for
+            coercing (defaults to 50).
+        :param enable_early_execution: Whether incremental execution may begin
+            eligible work early.
+        :param middleware: Middleware wrapping the field resolvers, either as a list
+            or tuple of functions or objects, or as a single
+            :class:`~graphql.execution.MiddlewareManager`.
+        :param is_awaitable: The predicate to be used for checking whether values are
+            awaitable. If not provided, the default predicate is used.
+        :param is_async_iterable: The predicate to be used for checking whether values
+            are async iterables. If not provided, the default predicate is used.
+        :param hide_suggestions: Whether suggestion text should be omitted from
+            request errors.
+        :param abort_signal: AbortSignal used to cancel execution.
+        :param hooks: Execution hooks invoked during this operation.
+        :returns: The executor for the validated execution arguments, or a list of
+            validation errors.
+
+        >>> from graphql import (
+        ...     AbortController, Executor, ExecutionHooks, build_schema, parse
+        ... )
+        >>> schema = build_schema('''
+        ...     interface Named {
+        ...       name: String!
+        ...     }
+        ...
+        ...     type User implements Named {
+        ...       name: String!
+        ...     }
+        ...
+        ...     type Query {
+        ...       viewer: Named
+        ...     }
+        ... ''')
+        >>> def field_resolver(source, info, **_args):
+        ...     assert info.context['locale'] == 'en'
+        ...     return source[info.field_name]
+        >>> abort_controller = AbortController()
+        >>> executor = Executor.build(
+        ...     schema,
+        ...     parse('query Viewer { viewer { __typename name } }'),
+        ...     root_value={'viewer': {'kind': 'user', 'name': 'Ada'}},
+        ...     context_value={'locale': 'en'},
+        ...     operation_name='Viewer',
+        ...     field_resolver=field_resolver,
+        ...     type_resolver=lambda value, _info, _type: (
+        ...         'User' if value['kind'] == 'user' else None
+        ...     ),
+        ...     hide_suggestions=True,
+        ...     abort_signal=abort_controller.signal,
+        ...     enable_early_execution=True,
+        ...     hooks=ExecutionHooks(async_work_finished=lambda _info: None),
+        ...     max_coercion_errors=1,
+        ... )
+        >>> executor.operation.name.value
+        'Viewer'
+        >>> executor.hide_suggestions
+        True
         """
         # If the schema used for execution is invalid, raise an error.
         assert_valid_schema(schema)
@@ -425,7 +595,31 @@ class Executor(Generic[TContext]):
         )
 
     def build_per_event_executor(self, payload: Any) -> Executor:
-        """Create a copy of the executor for usage with subscribe events."""
+        """Create a copy of the executor for usage with subscribe events.
+
+        The copy shares the validated execution arguments with this executor, but
+        uses the given event payload as root value and collects its own errors.
+
+        :param payload: The subscription event payload used as root value.
+        :returns: The per-event executor.
+
+        >>> from graphql import Executor, build_schema, parse
+        >>> schema = build_schema('''
+        ...     type Query {
+        ...       dummy: String
+        ...     }
+        ...
+        ...     type Subscription {
+        ...       greeting: String
+        ...     }
+        ... ''')
+        >>> executor = Executor.build(schema, parse('subscription { greeting }'))
+        >>> event_executor = executor.build_per_event_executor({'greeting': 'Hello'})
+        >>> event_executor.root_value
+        {'greeting': 'Hello'}
+        >>> event_executor.execute_operation(False)
+        ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+        """
         executor = copy(self)
         executor.root_value = payload
         executor.collected_errors = CollectedErrors()
@@ -455,6 +649,33 @@ class Executor(Generic[TContext]):
         aborted execution error rather than resolving to a partial response with
         located errors; the partial result that the unwinding execution can still
         produce is exposed on that error.
+
+        :param serially: Whether the root fields shall be executed serially. If not
+            specified, root fields are executed serially only for mutations.
+        :returns: The execution result, or an awaitable resolving to it.
+
+        >>> from graphql import Executor, build_schema, parse
+        >>> schema = build_schema('''
+        ...     type Query {
+        ...       greeting: String
+        ...     }
+        ... ''')
+        >>> executor = Executor.build(
+        ...     schema, parse('{ greeting }'), {'greeting': 'Hello'}
+        ... )
+        >>> executor.execute_operation()
+        ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+        If a resolver returns an awaitable, the result must be awaited:
+
+        >>> import asyncio
+        >>> async def greeting(_info):
+        ...     return 'Hello'
+        >>> executor = Executor.build(
+        ...     schema, parse('{ greeting }'), {'greeting': greeting}
+        ... )
+        >>> asyncio.run(executor.execute_operation())
+        ExecutionResult(data={'greeting': 'Hello'}, errors=None)
         """
         abort_signal = self.abort_signal
         if abort_signal is not None and abort_signal.aborted:
@@ -532,7 +753,10 @@ class Executor(Generic[TContext]):
         serially: bool,
         new_defer_usages: Sequence[DeferUsage],
     ) -> AwaitableOrValue[dict[str, Any]]:
-        """Execute the collected root fields, ignoring incremental delivery."""
+        """Execute the collected root fields, ignoring incremental delivery.
+
+        :meta private:
+        """
         return self.execute_root_grouped_field_set(
             root_type,
             root_value,
@@ -549,7 +773,10 @@ class Executor(Generic[TContext]):
         serially: bool,
         position_context: TContext | None,
     ) -> AwaitableOrValue[dict[str, Any]]:
-        """Execute the root grouped field set."""
+        """Execute the root grouped field set.
+
+        :meta private:
+        """
         return (self.execute_fields_serially if serially else self.execute_fields)(
             root_type,
             root_value,
@@ -565,6 +792,8 @@ class Executor(Generic[TContext]):
 
         Given completed execution data, build the ``(data, errors)`` response
         defined by the "Response" section of the GraphQL specification.
+
+        :meta private:
         """
         self.run_async_work_finished_hook()
         errors = self.collected_errors.errors
@@ -582,6 +811,8 @@ class Executor(Generic[TContext]):
 
         Implements the "Executing selection sets" section of the spec
         for fields that must be executed serially.
+
+        :meta private:
         """
         is_awaitable = self.is_awaitable
         abort_signal = self.abort_signal
@@ -630,6 +861,8 @@ class Executor(Generic[TContext]):
 
         Implements the "Executing selection sets" section of the spec
         for fields that may be executed in parallel.
+
+        :meta private:
         """
         results: dict[str, Any] = {}
         is_awaitable = self.is_awaitable
@@ -696,6 +929,8 @@ class Executor(Generic[TContext]):
         In particular, this method figures out the value that the field returns by
         calling its resolve function, then calls complete_value to await coroutine
         objects, coercing scalars, or execute the sub-selection-set for objects.
+
+        :meta private:
         """
         first_field_details = field_details_list[0]
         first_field_node = first_field_details.node
@@ -785,7 +1020,7 @@ class Executor(Generic[TContext]):
     ) -> GraphQLResolveInfo:
         """Build the GraphQLResolveInfo object.
 
-        For internal use only.
+        :meta private:
         """
         # The resolve function's first argument is a collection of information about
         # the current execution state.
@@ -813,7 +1048,10 @@ class Executor(Generic[TContext]):
         field_details_list: FieldDetailsList,
         path: Path,
     ) -> None:
-        """Handle error properly according to the field type."""
+        """Handle error properly according to the field type.
+
+        :meta private:
+        """
         error = located_error(raw_error, to_nodes(field_details_list), path.as_list())
 
         # If the field type is non-nullable, then it is resolved without any protection
@@ -837,7 +1075,7 @@ class Executor(Generic[TContext]):
         """Complete a value.
 
         Implements the instructions for completeValue as defined in the
-        "Value completion" section of the spec.
+        "Value Completion" section of the spec.
 
         If the field type is Non-Null, then this recursively completes the value
         for the inner type. It throws a field error if that completion returns null,
@@ -854,7 +1092,9 @@ class Executor(Generic[TContext]):
         then complete based on that type.
 
         Otherwise, the field type expects a sub-selection set, and will complete the
-        value by evaluating all sub-selections.
+        value by executing all sub-selections.
+
+        :meta private:
         """
         # If result is an Exception, throw a located error.
         if isinstance(result, Exception):
@@ -940,6 +1180,8 @@ class Executor(Generic[TContext]):
         If the abort signal fires before the awaitable settles, the underlying
         awaitable is cancelled and the abort reason is raised (an exception reason
         is raised as is, any other value is reported as an unexpected error value).
+
+        :meta private:
         """
         abort_signal = self.abort_signal
         if abort_signal is None:
@@ -966,6 +1208,8 @@ class Executor(Generic[TContext]):
 
         An abort reason that is itself an exception is raised as is; any other value
         is reported as an unexpected error value.
+
+        :meta private:
         """
         reason = self.abort_signal.reason  # type: ignore[union-attr]
         if isinstance(reason, Exception):
@@ -976,10 +1220,12 @@ class Executor(Generic[TContext]):
     async def with_aborted_execution_error(self, awaitable: Awaitable[T]) -> T:
         """Await a result, but raise an aborted execution error when aborted.
 
-        Unlike :meth:`with_abort_signal`, the awaited work is not cancelled as a
+        Unlike ``with_abort_signal()``, the awaited work is not cancelled as a
         whole when the abort signal is triggered: only its in-flight resolvers are
         cancelled individually, so that it still settles into a partial result,
         which is exposed via the raised aborted execution error.
+
+        :meta private:
         """
         abort_signal = self.abort_signal
         task = ensure_future(awaitable)
@@ -1003,6 +1249,8 @@ class Executor(Generic[TContext]):
 
         If the operation has been aborted during otherwise synchronous execution,
         raise an aborted execution error exposing the already completed result.
+
+        :meta private:
         """
         abort_signal = self.abort_signal
         if abort_signal is not None and abort_signal.aborted:
@@ -1012,7 +1260,10 @@ class Executor(Generic[TContext]):
     def create_aborted_execution_error(
         self, result: AwaitableOrValue[Any]
     ) -> AbortedGraphQLExecutionError:
-        """Create an aborted execution error exposing the given result."""
+        """Create an aborted execution error exposing the given result.
+
+        :meta private:
+        """
         reason = self.abort_signal.reason  # type: ignore[union-attr]
         return AbortedGraphQLExecutionError(reason, result)
 
@@ -1020,14 +1271,18 @@ class Executor(Generic[TContext]):
         """Abort the incremental work produced by this executor.
 
         The base executor produces no incremental work, so this is a no-op.
+
+        :meta private:
         """
 
     def track_incremental_future(self, future: Future[Any]) -> None:
         """Register a pending future belonging to incremental work.
 
         The registered futures can be cancelled via
-        :meth:`cancel_incremental_work` when the incremental execution is
+        ``cancel_incremental_work()`` when the incremental execution is
         stopped before they have settled.
+
+        :meta private:
         """
         futures = self.pending_incremental_futures
         futures.add(future)
@@ -1042,6 +1297,8 @@ class Executor(Generic[TContext]):
         the still pending incremental execution tasks and triggers the early
         return of the stream sources, and cancels any remaining pending
         incremental futures, waiting until all cancellation has settled.
+
+        :meta private:
         """
         abort_result = self.abort(reason)
         if default_is_awaitable(abort_result):
@@ -1061,6 +1318,8 @@ class Executor(Generic[TContext]):
         they would be orphaned (the Python analog of silencing JS unhandled
         rejections). Without a running event loop the awaitables can never run;
         pending coroutines are then closed instead to dispose of them.
+
+        :meta private:
         """
         try:
             get_running_loop()
@@ -1080,6 +1339,8 @@ class Executor(Generic[TContext]):
         Awaitables among the given values are settled in the background, so that
         they are still settled and their errors observed when they would otherwise
         be abandoned. Non-awaitable values are ignored.
+
+        :meta private:
         """
         is_awaitable = self.is_awaitable
         awaitables: list[Awaitable[Any]] = [
@@ -1096,6 +1357,8 @@ class Executor(Generic[TContext]):
         This allows resolvers to await multiple concurrent operations together.
         When one of the values fails, the others are cancelled and settled before
         the error is propagated, so that no asynchronous work is orphaned.
+
+        :meta private:
         """
         return gather_with_cancel(*values)
 
@@ -1106,6 +1369,8 @@ class Executor(Generic[TContext]):
         all tracked pending asynchronous work has been settled - synchronously when
         there is no pending asynchronous work, which allows synchronous execution
         paths to remain synchronous. Errors raised by the hook are ignored.
+
+        :meta private:
         """
         hooks = self.hooks
         hook = hooks.async_work_finished if hooks is not None else None
@@ -1133,8 +1398,10 @@ class Executor(Generic[TContext]):
         When the abort signal is triggered, any pending ``__anext__`` call returns
         immediately by raising the abort reason. This mirrors the JavaScript
         ``cancellableIterable``; GraphQL-core needs no ``AbortSignalListener``
-        class since :meth:`with_abort_signal` already provides the cancellation
+        class since ``with_abort_signal()`` already provides the cancellation
         mechanism.
+
+        :meta private:
         """
         if self.abort_signal is None:
             return iterable
@@ -1164,7 +1431,10 @@ class Executor(Generic[TContext]):
         result: Any,
         position_context: TContext | None,
     ) -> Any:
-        """Complete an awaitable value."""
+        """Complete an awaitable value.
+
+        :meta private:
+        """
         try:
             resolved = await self.with_abort_signal(result)
             completed = self.complete_value(
@@ -1190,6 +1460,8 @@ class Executor(Generic[TContext]):
         Returns an object containing info for streaming if a field should be
         streamed based on the experimental flag, stream directive present and
         not disabled by the "if" argument.
+
+        :meta private:
         """
         # do not stream inner lists of multidimensional lists
         if isinstance(path.key, int):
@@ -1247,6 +1519,8 @@ class Executor(Generic[TContext]):
 
         The base executor does not support streaming, so this is a no-op
         returning False, which means that the list is completed normally.
+
+        :meta private:
         """
         return False
 
@@ -1263,6 +1537,8 @@ class Executor(Generic[TContext]):
 
         Complete an async iterator value by completing the result and calling
         recursively until all the results are completed.
+
+        :meta private:
         """
         is_awaitable = self.is_awaitable
         complete_list_item_value = self.complete_list_item_value
@@ -1370,6 +1646,8 @@ class Executor(Generic[TContext]):
         """Complete a list value.
 
         Complete a list value by completing each item in the list with the inner type.
+
+        :meta private:
         """
         item_type = return_type.of_type
 
@@ -1410,7 +1688,10 @@ class Executor(Generic[TContext]):
         items: Iterable[Any],
         position_context: TContext | None,
     ) -> AwaitableOrValue[list[Any]]:
-        """Complete an iterable value."""
+        """Complete an iterable value.
+
+        :meta private:
+        """
         # This is specified as a simple map, however we're optimizing the path
         # where the list contains no awaitable routine objects by avoiding creating
         # another awaitable object.
@@ -1518,6 +1799,8 @@ class Executor(Generic[TContext]):
         """Complete a list item value by adding it to the completed results.
 
         Returns True if the value is awaitable.
+
+        :meta private:
         """
         is_awaitable = self.is_awaitable
 
@@ -1570,7 +1853,10 @@ class Executor(Generic[TContext]):
         item_path: Path,
         position_context: TContext | None,
     ) -> Any:
-        """Complete an awaitable list item value."""
+        """Complete an awaitable list item value.
+
+        :meta private:
+        """
         try:
             resolved = await self.with_abort_signal(item)
             completed = self.complete_value(
@@ -1599,6 +1885,8 @@ class Executor(Generic[TContext]):
 
         Complete a Scalar or Enum by coercing to a valid value, returning null if
         coercion is not possible.
+
+        :meta private:
         """
         coerced = return_type.coerce_output_value(result)
         if coerced is Undefined or coerced is None:
@@ -1623,6 +1911,8 @@ class Executor(Generic[TContext]):
 
         Complete a value of an abstract type by determining the runtime object type of
         that value, then complete the value for that type.
+
+        :meta private:
         """
         resolve_type_fn = return_type.resolve_type or self.type_resolver
         runtime_type = resolve_type_fn(result, info, return_type)
@@ -1670,7 +1960,10 @@ class Executor(Generic[TContext]):
         info: GraphQLResolveInfo,
         result: Any,
     ) -> GraphQLObjectType:
-        """Ensure that the given type is valid at runtime."""
+        """Ensure that the given type is valid at runtime.
+
+        :meta private:
+        """
         if runtime_type_name is None:
             msg = (
                 f"Abstract type '{return_type}' must resolve"
@@ -1726,7 +2019,10 @@ class Executor(Generic[TContext]):
         result: Any,
         position_context: TContext | None,
     ) -> AwaitableOrValue[dict[str, Any]]:
-        """Complete an Object value by executing all sub-selections."""
+        """Complete an Object value by executing all sub-selections.
+
+        :meta private:
+        """
         # If there is an `is_type_of()` predicate function, call it with the current
         # result. If `is_type_of()` returns False, then raise an error rather than
         # continuing execution.
@@ -1772,7 +2068,10 @@ class Executor(Generic[TContext]):
         result: Any,
         position_context: TContext | None,
     ) -> AwaitableOrValue[dict[str, Any]]:
-        """Collect sub-fields to execute to complete this value."""
+        """Collect sub-fields to execute to complete this value.
+
+        :meta private:
+        """
         collected_subfields = self.collect_subfields(return_type, field_details_list)
         grouped_field_set, new_defer_usages, _forbidden = collected_subfields
 
@@ -1794,7 +2093,10 @@ class Executor(Generic[TContext]):
         new_defer_usages: Sequence[DeferUsage],
         position_context: TContext | None,
     ) -> AwaitableOrValue[dict[str, Any]]:
-        """Execute the collected subfields, ignoring incremental delivery."""
+        """Execute the collected subfields, ignoring incremental delivery.
+
+        :meta private:
+        """
         return self.execute_fields(
             parent_type,
             source_value,
@@ -1811,6 +2113,8 @@ class Executor(Generic[TContext]):
         A memoized function collecting relevant subfields regarding the return type.
         Memoizing ensures the subfields are not repeatedly calculated, which saves
         overhead when resolving lists of values.
+
+        :meta private:
         """
         relevant_sub_fields = self._relevant_sub_fields
         # We cannot use the field_details_list itself as key for the cache, since it
@@ -1895,6 +2199,42 @@ def default_type_resolver(
     Otherwise, test each possible type for the abstract type by calling
     :meth:`~graphql.type.GraphQLObjectType.is_type_of` for the object
     being coerced, returning the first type that matches.
+
+    :param value: The value for which the object type shall be determined.
+    :param info: Information about the current execution state.
+    :param abstract_type: The abstract type whose possible types are tested.
+    :returns: The name of the resolved object type, or ``None`` if it could not be
+        determined (or an awaitable resolving to one of these values).
+
+    >>> from graphql import build_schema, default_type_resolver, graphql_sync
+    >>> schema = build_schema('''
+    ...     interface Pet {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Cat implements Pet {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Dog implements Pet {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Query {
+    ...       pets: [Pet]
+    ...     }
+    ... ''')
+    >>> schema.type_map['Dog'].is_type_of = lambda value, _info: 'barks' in value
+    >>> pets = [{'__typename': 'Cat', 'name': 'Tom'}, {'name': 'Rex', 'barks': True}]
+    >>> graphql_sync(
+    ...     schema,
+    ...     '{ pets { __typename name } }',
+    ...     root_value={'pets': pets},
+    ...     type_resolver=default_type_resolver,
+    ... )
+    ExecutionResult(data={'pets': [{'__typename': 'Cat', 'name': 'Tom'},
+                                   {'__typename': 'Dog', 'name': 'Rex'}]},
+                    errors=None)
     """
     # First, look for `__typename`.
     type_name = get_typename(value)
@@ -1956,6 +2296,30 @@ def default_field_resolver(source: Any, info: GraphQLResolveInfo, **args: Any) -
 
     For dictionaries, the field names are used as keys, for all other objects they are
     used as attribute names.
+
+    :param source: The source value of the parent field.
+    :param info: Information about the current execution state. The arguments passed
+        to the field follow as keyword arguments.
+    :returns: The resolved field value.
+
+    >>> from graphql import build_schema, default_field_resolver, graphql_sync
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting(name: String): String
+    ...       answer: Int
+    ...     }
+    ... ''')
+    >>> class Root:
+    ...     answer = 42
+    ...     def greeting(self, _info, name):
+    ...         return f'Hello, {name}!'
+    >>> graphql_sync(
+    ...     schema,
+    ...     '{ greeting(name: "Ada") answer }',
+    ...     root_value=Root(),
+    ...     field_resolver=default_field_resolver,
+    ... )
+    ExecutionResult(data={'greeting': 'Hello, Ada!', 'answer': 42}, errors=None)
     """
     # Ensure source is a value for which property access is acceptable.
     field_name = info.field_name

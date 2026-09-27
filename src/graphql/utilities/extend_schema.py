@@ -108,6 +108,53 @@ def extend_schema(
     schema is valid. Set ``assume_valid`` to ``True`` to assume the produced schema is
     valid. Set ``assume_valid_sdl`` to ``True`` to assume it is already a valid SDL
     document.
+
+    :param schema: The GraphQL schema to extend.
+    :param document_ast: The parsed GraphQL document AST.
+    :param assume_valid: Set to ``True`` to assume the produced schema is valid and
+        skip schema validation.
+    :param assume_valid_sdl: Set to ``True`` to assume the SDL extension is valid and
+        skip SDL validation.
+    :returns: A new schema with the extensions and definitions applied.
+
+    Extend a schema with new fields and types:
+
+    >>> from graphql import build_schema, extend_schema, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> extension_ast = parse('''
+    ...     extend type Query {
+    ...       farewell: String
+    ...     }
+    ...
+    ...     type Review {
+    ...       body: String
+    ...     }
+    ... ''')
+    >>> extended_schema = extend_schema(schema, extension_ast)
+    >>> print(schema.get_type('Review'))
+    None
+    >>> extended_schema.get_type('Review').name
+    'Review'
+    >>> list(extended_schema.query_type.fields)
+    ['greeting', 'farewell']
+
+    This variant bypasses validation for an otherwise invalid extension:
+
+    >>> invalid_extension = parse('''
+    ...     extend type Missing {
+    ...       field: String
+    ...     }
+    ... ''')
+    >>> extend_schema(schema, invalid_extension)
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot extend type 'Missing' because it is not defined.
+    >>> extended_schema = extend_schema(
+    ...     schema, invalid_extension, assume_valid=True, assume_valid_sdl=True)
     """
     assert_schema(schema)
 

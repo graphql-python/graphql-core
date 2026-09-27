@@ -121,16 +121,163 @@ def execute(  # noqa: PLR0913, PLR0917
 
     Implements the "Executing requests" section of the GraphQL specification.
 
-    Returns an ExecutionResult (if all encountered resolvers are synchronous),
-    or a coroutine object eventually yielding an ExecutionResult.
+    Returns either a synchronous ExecutionResult (if all encountered resolvers
+    are synchronous), or an awaitable of an ExecutionResult that will eventually
+    be resolved and never raise an exception.
 
-    If the arguments to this function do not result in a legal executor,
+    If the arguments to this function do not result in a legal execution context,
     a GraphQLError will be thrown immediately explaining the invalid input.
 
-    This function does not support incremental delivery (`@defer` and `@stream`).
-    If an operation that defers or streams data is executed with this function,
-    it will throw an error instead. Use `experimental_execute_incrementally` if
-    you want to support incremental delivery.
+    Field errors are collected into the response instead of raising an exception.
+    Only the field that produced the error and its descendants are omitted; sibling
+    fields continue to execute. Errors from fields of non-null type may propagate to
+    the nearest nullable parent, which can be the entire response data.
+
+    This function does not support incremental delivery (``@defer`` and
+    ``@stream``). Use :func:`~graphql.execution.experimental_execute_incrementally`
+    to execute operations with incremental delivery enabled.
+
+    Additional keyword arguments are passed on to the constructor of the executor
+    class.
+
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document to execute.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document
+        contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its
+        own resolver.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :param enable_early_execution: Whether incremental execution may begin eligible
+        work early.
+    :param middleware: The middleware to wrap the resolvers with.
+    :param executor_class: The executor class to use to build the executor.
+    :param is_awaitable: The predicate to be used for checking whether values are
+        awaitable.
+    :param is_async_iterable: The predicate to be used for checking whether values
+        are async iterables.
+    :param hide_suggestions: Whether suggestion text should be omitted from request
+        errors.
+    :param abort_signal: The abort signal used to cancel execution.
+    :param hooks: Execution hooks invoked during this operation.
+    :returns: A completed execution result, or an awaitable resolving to one when
+        execution is asynchronous.
+
+    Execute an asynchronous operation with variables:
+
+    >>> import asyncio
+    >>> from graphql import build_schema, execute, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting(name: String!): String
+    ...     }
+    ... ''')
+    >>> async def greeting(_info, name):
+    ...     return f'Hello, {name}!'
+    >>> result = asyncio.run(execute(
+    ...     schema,
+    ...     parse('query ($name: String!) { greeting(name: $name) }'),
+    ...     root_value={'greeting': greeting},
+    ...     variable_values={'name': 'Ada'},
+    ... ))
+    >>> result
+    ExecutionResult(data={'greeting': 'Hello, Ada!'}, errors=None)
+
+    This variant supplies context, custom field and type resolvers and further
+    execution options. Since all resolvers are synchronous, the result is
+    returned directly:
+
+    >>> from graphql import ExecutionHooks
+    >>> from graphql.pyutils import AbortController
+    >>> schema = build_schema('''
+    ...     interface Named {
+    ...       name: String!
+    ...     }
+    ...
+    ...     type User implements Named {
+    ...       name: String!
+    ...     }
+    ...
+    ...     type Query {
+    ...       viewer: Named
+    ...     }
+    ... ''')
+    >>> def field_resolver(source, info, **_args):
+    ...     assert info.context['locale'] == 'en'
+    ...     return source[info.field_name]
+    >>> def type_resolver(value, _info, _abstract_type):
+    ...     return 'User' if value['kind'] == 'user' else None
+    >>> abort_controller = AbortController()
+    >>> finished = []
+    >>> execute(
+    ...     schema,
+    ...     parse('query Viewer { viewer { __typename name } }'),
+    ...     root_value={'viewer': {'kind': 'user', 'name': 'Ada'}},
+    ...     context_value={'locale': 'en'},
+    ...     operation_name='Viewer',
+    ...     field_resolver=field_resolver,
+    ...     type_resolver=type_resolver,
+    ...     hide_suggestions=True,
+    ...     abort_signal=abort_controller.signal,
+    ...     enable_early_execution=True,
+    ...     hooks=ExecutionHooks(async_work_finished=finished.append),
+    ... )
+    ExecutionResult(data={'viewer': {'__typename': 'User', 'name': 'Ada'}},
+                    errors=None)
+    >>> len(finished)
+    1
+
+    This variant shows how resolver errors become field errors in the result:
+
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       broken: String
+    ...     }
+    ... ''')
+    >>> def broken(_info):
+    ...     raise RuntimeError('Resolver failed.')
+    >>> result = execute(schema, parse('{ broken }'), root_value={'broken': broken})
+    >>> result.data
+    {'broken': None}
+    >>> result.errors[0].message
+    'Resolver failed.'
+
+    This variant limits how many variable coercion errors are reported:
+
+    >>> schema = build_schema('''
+    ...     input ReviewInput {
+    ...       stars: Int!
+    ...     }
+    ...
+    ...     type Query {
+    ...       review(input: ReviewInput!): String
+    ...     }
+    ... ''')
+    >>> document = parse('''
+    ...     query ($first: ReviewInput!, $second: ReviewInput!) {
+    ...       first: review(input: $first)
+    ...       second: review(input: $second)
+    ...     }
+    ... ''')
+    >>> result = execute(
+    ...     schema,
+    ...     document,
+    ...     variable_values={
+    ...         'first': {'stars': 'bad'},
+    ...         'second': {'stars': 'also bad'},
+    ...     },
+    ...     max_coercion_errors=1,
+    ... )
+    >>> len(result.errors)
+    2
+    >>> result.errors[1].message
+    'Too many errors processing variables, error limit reached. Execution aborted.'
     """
     if schema.get_directive("defer") or schema.get_directive("stream"):
         raise GraphQLError(UNEXPECTED_EXPERIMENTAL_DIRECTIVES)
@@ -191,15 +338,89 @@ def experimental_execute_incrementally(  # noqa: PLR0913, PLR0917
     hooks: ExecutionHooks | None = None,
     **custom_context_args: Any,
 ) -> AwaitableOrValue[ExecutionResult | ExperimentalIncrementalExecutionResults]:
-    """Execute GraphQL operation incrementally (internal implementation).
+    """Execute a GraphQL operation incrementally.
 
     Implements the "Executing requests" section of the GraphQL specification,
-    including `@defer` and `@stream` as proposed in
+    including ``@defer`` and ``@stream`` as proposed in
     https://github.com/graphql/graphql-spec/pull/742
 
-    This function returns an awaitable that is either a single ExecutionResult or
-    an ExperimentalIncrementalExecutionResults object, containing an `initial_result`
-    and a stream of `subsequent_results`.
+    This function returns either a single ExecutionResult, or an
+    ExperimentalIncrementalExecutionResults object containing an ``initial_result``
+    and a stream of ``subsequent_results``, or an awaitable resolving to one of
+    these when execution is asynchronous.
+
+    If the arguments to this function do not result in a legal execution context,
+    a GraphQLError will be thrown immediately explaining the invalid input.
+
+    Additional keyword arguments are passed on to the constructor of the executor
+    class.
+
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document to execute.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document
+        contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its
+        own resolver.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :param enable_early_execution: Whether incremental execution may begin eligible
+        work early.
+    :param middleware: The middleware to wrap the resolvers with.
+    :param executor_class: The executor class to use to build the executor
+        (defaults to the incremental executor).
+    :param is_awaitable: The predicate to be used for checking whether values are
+        awaitable.
+    :param is_async_iterable: The predicate to be used for checking whether values
+        are async iterables.
+    :param hide_suggestions: Whether suggestion text should be omitted from request
+        errors.
+    :param abort_signal: The abort signal used to cancel execution.
+    :param hooks: Execution hooks invoked during this operation.
+    :returns: A single execution result or incremental execution results.
+
+    >>> from graphql import build_schema, parse
+    >>> from graphql.execution import experimental_execute_incrementally
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> experimental_execute_incrementally(
+    ...     schema, parse('{ greeting }'), root_value={'greeting': 'Hello'}
+    ... )
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+    This variant defers a fragment, so the result is delivered incrementally:
+
+    >>> import asyncio
+    >>> schema = build_schema('''
+    ...     directive @defer(label: String, if: Boolean! = true)
+    ...       on FRAGMENT_SPREAD | INLINE_FRAGMENT
+    ...
+    ...     type Query {
+    ...       greeting: String
+    ...       name: String
+    ...     }
+    ... ''')
+    >>> result = experimental_execute_incrementally(
+    ...     schema,
+    ...     parse('{ greeting ... @defer { name } }'),
+    ...     root_value={'greeting': 'Hello', 'name': 'Ada'},
+    ... )
+    >>> result.initial_result.formatted
+    {'data': {'greeting': 'Hello'}, 'pending': [{'id': '0', 'path': []}],
+     'hasNext': True}
+    >>> async def subsequent_results():
+    ...     return [item.formatted async for item in result.subsequent_results]
+    >>> asyncio.run(subsequent_results())
+    [{'hasNext': False, 'incremental': [{'data': {'name': 'Ada'}, 'id': '0'}],
+      'completed': [{'id': '0'}]}]
     """
     if executor_class is None:
         executor_class = IncrementalExecutor
@@ -235,7 +456,10 @@ def experimental_execute_incrementally(  # noqa: PLR0913, PLR0917
 
 
 def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
-    """Replacement for is_awaitable if everything is assumed to be synchronous."""
+    """Replacement for isawaitable if everything is assumed to be synchronous.
+
+    :meta private:
+    """
     return False
 
 
@@ -259,11 +483,64 @@ def execute_sync(
     """Execute a GraphQL operation synchronously.
 
     Also implements the "Executing requests" section of the GraphQL specification.
-
     However, it guarantees to complete synchronously (or throw an error) assuming
     that all field resolvers are also synchronous.
 
-    Set check_sync to True to still run checks that no awaitable values are returned.
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document to execute.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document
+        contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its
+        own resolver.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :param middleware: The middleware to wrap the resolvers with.
+    :param executor_class: The executor class to use to build the executor.
+    :param check_sync: Set this to ``True`` to still run checks that no awaitable
+        values are returned. By default, everything is assumed to be synchronous.
+    :param hide_suggestions: Whether suggestion text should be omitted from request
+        errors.
+    :param abort_signal: The abort signal used to cancel execution.
+    :param hooks: Execution hooks invoked during this operation.
+    :returns: The completed execution result for a synchronous operation.
+
+    Execute an operation synchronously when all resolvers are synchronous:
+
+    >>> from graphql import build_schema, execute_sync, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> document = parse('{ greeting }')
+    >>> execute_sync(schema, document, root_value={'greeting': 'Hello'})
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+    This variant shows ``execute_sync`` raising an error when ``check_sync`` is set
+    and a resolver returns an awaitable (the check requires a running event loop, and
+    warnings about the resulting unawaited coroutines are suppressed here):
+
+    >>> import asyncio, gc, warnings
+    >>> async def greeting(_info):
+    ...     return 'Hello'
+    >>> async def main():
+    ...     try:
+    ...         execute_sync(
+    ...             schema, document, {'greeting': greeting}, check_sync=True
+    ...         )
+    ...     except RuntimeError as error:
+    ...         return str(error)
+    >>> with warnings.catch_warnings():
+    ...     warnings.simplefilter('ignore', RuntimeWarning)
+    ...     message = asyncio.run(main())
+    ...     _ = gc.collect()
+    >>> message
+    'GraphQL execution failed to complete synchronously.'
     """
     is_awaitable = (
         cast("Callable[[Any], TypeGuard[Awaitable]]", check_sync)
@@ -323,26 +600,29 @@ def subscribe(
 ) -> AwaitableOrValue[AsyncIterator[ExecutionResult] | ExecutionResult]:
     """Create a GraphQL subscription.
 
-    Implements the "Subscribe" algorithm described in the GraphQL spec.
+    Implements the "Subscribe" algorithm described in the GraphQL specification.
 
-    Returns a coroutine object which yields either an AsyncIterator (if successful) or
-    an ExecutionResult (client error). The coroutine will raise an exception if a server
-    error occurs.
+    Returns either an AsyncIterator (if successful) or an ExecutionResult (error),
+    or an awaitable resolving to one of these if the subscription resolver is
+    asynchronous. An exception will be raised if the schema or other arguments to
+    this function are invalid, or if the resolved event stream is not an async
+    iterable.
 
     If the client-provided arguments to this function do not result in a compliant
     subscription, a GraphQL Response (ExecutionResult) with descriptive errors and no
     data will be returned.
 
-    If the source stream could not be created due to faulty subscription resolver logic
-    or underlying systems, the coroutine object will yield a single ExecutionResult
+    If the source stream could not be created due to faulty subscription resolver
+    logic or underlying systems, the result will be a single ExecutionResult
     containing ``errors`` and no ``data``.
 
-    If the operation succeeded, the coroutine will yield an AsyncIterator, which yields
-    a stream of ExecutionResults representing the response stream.
+    If the operation succeeded, the result is an AsyncIterator, which yields a
+    stream of ExecutionResults representing the response stream.
 
-    This function does not support incremental delivery (`@defer` and `@stream`).
-    If an operation that defers or streams data is executed with this function,
-    a field error will be raised at the location of the `@defer` or `@stream` directive.
+    This function does not support incremental delivery (``@defer`` and
+    ``@stream``). If an operation which would defer or stream data is executed with
+    this function, a field error will be raised at the location of the ``@defer`` or
+    ``@stream`` directive.
 
     To customize how each subscription event is executed, compose the subscription
     pipeline directly instead of calling this function: build an executor with
@@ -350,6 +630,104 @@ def subscribe(
     :func:`~graphql.execution.create_source_event_stream`, and map it to the response
     stream with :func:`~graphql.execution.map_source_to_response_event`, passing a
     custom ``root_selection_set_executor``.
+
+    Additional keyword arguments are passed on to the constructor of the executor
+    class.
+
+    :param schema: The schema used for execution.
+    :param document: The parsed GraphQL document containing the subscription
+        operation.
+    :param root_value: Initial root value passed to the subscription resolver.
+    :param context_value: Application context value passed to every resolver.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the subscription operation to execute when the
+        document contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver while executing the payloads of the source event stream.
+    :param type_resolver: Resolver used when an abstract type does not define its
+        own resolver.
+    :param subscribe_field_resolver: Resolver used for the root subscription field.
+    :param max_coercion_errors: Set the maximum number of errors allowed for coercing
+        variable values (defaults to 50).
+    :param enable_early_execution: Whether incremental execution may begin eligible
+        work early.
+    :param executor_class: The executor class to use to build the executor.
+    :param middleware: The middleware to wrap the resolvers with.
+    :param hide_suggestions: Whether suggestion text should be omitted from request
+        errors.
+    :returns: A response stream for a valid subscription, or an execution result
+        containing errors.
+
+    Use a same-named root value function to provide the source event stream:
+
+    >>> import asyncio
+    >>> from graphql import build_schema, parse, subscribe
+    >>> async def greetings():
+    ...     yield {'greeting': 'Hello'}
+    ...     yield {'greeting': 'Bonjour'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> result = subscribe(
+    ...     schema,
+    ...     parse('subscription { greeting }'),
+    ...     root_value={'greeting': lambda _info: greetings()},
+    ... )
+    >>> asyncio.run(result.__anext__())
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+
+    This variant supplies events through a custom ``subscribe_field_resolver``:
+
+    >>> async def default_greetings():
+    ...     yield {'greeting': 'Hello'}
+    >>> async def french_greetings():
+    ...     yield {'greeting': 'Bonjour'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting(locale: String): String
+    ...     }
+    ... ''')
+    >>> def greeting(args, context):
+    ...     locale = args.get('locale') or context['default_locale']
+    ...     return french_greetings() if locale == 'fr' else default_greetings()
+    >>> def subscribe_field_resolver(root_value, info, **args):
+    ...     assert args['locale'] == 'fr'
+    ...     return root_value[info.field_name](args, info.context)
+    >>> result = subscribe(
+    ...     schema,
+    ...     parse(
+    ...         'subscription Greeting($locale: String)'
+    ...         ' { greeting(locale: $locale) }'
+    ...     ),
+    ...     root_value={'greeting': greeting},
+    ...     context_value={'default_locale': 'fr'},
+    ...     variable_values={'locale': 'fr'},
+    ...     operation_name='Greeting',
+    ...     subscribe_field_resolver=subscribe_field_resolver,
+    ... )
+    >>> asyncio.run(result.__anext__())
+    ExecutionResult(data={'greeting': 'Bonjour'}, errors=None)
+
+    This variant shows the error result when the schema has no subscription root:
+
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ... ''')
+    >>> result = subscribe(schema, parse('subscription { greeting }'))
+    >>> result.errors[0].message
+    'Schema is not configured to execute subscription operation.'
     """
     if executor_class is None:
         executor_class = ExecutorThrowingOnIncremental
@@ -408,8 +786,31 @@ def execute_root_selection_set(
     """Execute the root selection set.
 
     Implements the "Executing operations" section of the GraphQL specification,
-    running the given executor to completion. This does not support
-    incremental delivery (``@defer`` and ``@stream``).
+    running the given executor to completion.
+
+    Returns either an ExecutionResult or an awaitable that will eventually resolve
+    to the data described by the "Response" section of the GraphQL specification.
+
+    If errors are encountered while executing a GraphQL field, only that field and
+    its descendants will be omitted, and sibling fields will still be executed. An
+    execution which encounters errors will still result in an ExecutionResult.
+
+    Errors from sub-fields of a NonNull type may propagate to the top level, at
+    which point we still log the error and null the parent field, which in this
+    case is the entire response.
+
+    This does not support incremental delivery (``@defer`` and ``@stream``).
+
+    :param executor: The executor built for the operation.
+    :returns: Execution result for the operation root selection set.
+
+    >>> from graphql import Executor, build_schema, execute_root_selection_set, parse
+    >>> schema = build_schema('type Query { greeting: String }')
+    >>> executor = Executor.build(
+    ...     schema, parse('{ greeting }'), root_value={'greeting': 'Hello'}
+    ... )
+    >>> execute_root_selection_set(executor)
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
     """
     return cast("AwaitableOrValue[ExecutionResult]", executor.execute_operation())
 
@@ -419,6 +820,8 @@ def execute_subscription_event(
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a single subscription event.
 
+    Executes a subscription operation once for a single source event.
+
     This is the default ``root_selection_set_executor`` used by
     :func:`map_source_to_response_event`. It provides the "ExecuteSubscriptionEvent"
     algorithm described in the GraphQL specification, which is nearly identical to the
@@ -427,6 +830,25 @@ def execute_subscription_event(
 
     The passed executor should be a per-event executor as created by
     :meth:`Executor.build_per_event_executor`.
+
+    :param executor: The per-event executor for the subscription event.
+    :returns: Execution result for the subscription event.
+
+    >>> from graphql import Executor, build_schema, execute_subscription_event, parse
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> executor = Executor.build(schema, parse('subscription { greeting }'))
+    >>> execute_subscription_event(
+    ...     executor.build_per_event_executor({'greeting': 'Hello'})
+    ... )
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
     """
     return cast("AwaitableOrValue[ExecutionResult]", executor.execute_operation(False))
 
@@ -454,6 +876,30 @@ def map_source_to_response_event(
     :func:`~graphql.execution.execute_subscription_event` (providing the
     "ExecuteSubscriptionEvent" algorithm) but can be overridden to set up and tear
     down a custom executor around the execution of each event.
+
+    :param executor: The executor built for the subscription operation.
+    :param source_event_stream: Source event stream returned by the subscription
+        resolver.
+    :param root_selection_set_executor: Function used to execute each source event.
+    :returns: A response stream of execution results.
+
+    >>> import asyncio
+    >>> from graphql import Executor, build_schema, map_source_to_response_event, parse
+    >>> async def events():
+    ...     yield {'greeting': 'Hello'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> executor = Executor.build(schema, parse('subscription { greeting }'))
+    >>> response_stream = map_source_to_response_event(executor, events())
+    >>> asyncio.run(response_stream.__anext__())
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
     """
     build_executor = executor.build_per_event_executor
 
@@ -481,15 +927,21 @@ def create_source_event_stream(
     specification, resolving the subscription source event stream for a
     previously built executor.
 
-    Returns a coroutine that yields an AsyncIterable.
+    Returns either an AsyncIterable (if successful) or an ExecutionResult (error),
+    or an awaitable resolving to one of these if the subscription resolver is
+    asynchronous. An exception will be raised if the passed executor is invalid,
+    or if the resolved event stream is not an async iterable.
 
-    If the built executor is invalid, or if the resolved event stream is not an
-    async iterable, a GraphQL Response (ExecutionResult) with descriptive errors
-    and no data will be returned.
+    If the client-provided arguments do not result in a compliant subscription,
+    a GraphQL Response (ExecutionResult) with descriptive errors and no data will
+    be returned.
 
-    If the source stream could not be created due to faulty subscription resolver logic
-    or underlying systems, the coroutine object will yield a single ExecutionResult
+    If the source stream could not be created due to faulty subscription resolver
+    logic or underlying systems, the result will be a single ExecutionResult
     containing ``errors`` and no ``data``.
+
+    If the operation succeeded, the result is the AsyncIterable for the event stream
+    returned by the resolver.
 
     A source event stream represents a sequence of events, each of which triggers a
     GraphQL execution for that event.
@@ -497,7 +949,32 @@ def create_source_event_stream(
     This may be useful when hosting the stateful subscription service in a different
     process or machine than the stateless GraphQL execution engine, or otherwise
     separating these two steps. For more on this, see the "Supporting Subscriptions
-    at Scale" information in the GraphQL spec.
+    at Scale" information in the GraphQL specification.
+
+    :param executor: The executor built for the subscription operation.
+    :returns: A source event stream, or an execution result containing errors.
+
+    >>> from collections.abc import AsyncIterable
+    >>> from graphql import Executor, build_schema, create_source_event_stream, parse
+    >>> async def greetings():
+    ...     yield {'greeting': 'Hello'}
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       noop: String
+    ...     }
+    ...
+    ...     type Subscription {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> executor = Executor.build(
+    ...     schema,
+    ...     parse('subscription { greeting }'),
+    ...     root_value={'greeting': lambda _info: greetings()},
+    ... )
+    >>> stream = create_source_event_stream(executor)
+    >>> isinstance(stream, AsyncIterable)
+    True
     """
     if not isinstance(executor, Executor):
         msg = (

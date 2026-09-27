@@ -89,12 +89,42 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
     """Defer and stream directives are used on valid operations
 
     A GraphQL document is only valid if defer and stream directives are not used
-    on root mutation or subscription types.
+    in subscription operations, unless they can be disabled via their ``if``
+    argument or the selection can be skipped via ``@skip`` or ``@include``.
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import DeferStreamDirectiveOnValidOperationsRule
+    >>> schema = build_schema(
+    ...     'type Query { message: Message } type Subscription { message: Message }'
+    ...     ' type Message { body: String }'
+    ... )
+    >>> document = parse(
+    ...     'subscription { message { ...MessageBody @defer } }'
+    ...     ' fragment MessageBody on Message { body }'
+    ... )
+    >>> errors = validate(
+    ...     schema, document, [DeferStreamDirectiveOnValidOperationsRule]
+    ... )
+    >>> print(errors[0].message)
+    Defer directive not supported on subscription operations.
+    Disable `@defer` by setting the `if` argument to `false`.
+    >>> document = parse(
+    ...     'subscription { message { ...MessageBody @defer(if: false) } }'
+    ...     ' fragment MessageBody on Message { body }'
+    ... )
+    >>> validate(schema, document, [DeferStreamDirectiveOnValidOperationsRule])
+    []
     """
 
     def enter_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         if operation.operation != OperationType.SUBSCRIPTION:
             return
         fragments: dict[str, FragmentDefinitionNode] = {}
@@ -112,6 +142,10 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
         parent_nodes: list[FragmentSpreadNode],
         visited_fragments: set[str],
     ) -> None:
+        """Report defer and stream directives that cannot be disabled.
+
+        :meta private:
+        """
         for selection in selection_set.selections:
             skip = get_directive(selection, GraphQLSkipDirective.name)
             if skip and can_be_skipped_via_skip_directive(skip):

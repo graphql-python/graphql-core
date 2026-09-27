@@ -128,12 +128,11 @@ __all__ = ["recommended_rules", "specified_rules", "specified_sdl_rules"]
 # validation rules.
 
 recommended_rules: tuple[type[ASTValidationRule], ...] = (MaxIntrospectionDepthRule,)
-"""A tuple with all recommended validation rules."""
+"""A tuple with all recommended validation rules.
 
-# This list includes all validation rules defined by the GraphQL spec.
-#
-# The order of the rules in this list has been adjusted to lead to the
-# most clear output when encountering multiple validation errors.
+Technically these aren't part of the spec but they are strongly encouraged
+validation rules.
+"""
 
 specified_rules: tuple[type[ASTValidationRule], ...] = (
     ExecutableDefinitionsRule,

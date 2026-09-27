@@ -51,69 +51,141 @@ async def graphql(  # noqa: PLR0913, PLR0917
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
-    This is the primary entry point function for fulfilling GraphQL operations by
-    parsing, validating, and executing a GraphQL document along side a GraphQL schema.
+    Parses, validates, and executes a GraphQL document against a schema.
 
-    More sophisticated GraphQL servers, such as those which persist queries, may wish
-    to separate the validation and execution phases to a static time tooling step,
-    and a server runtime step.
+    This is the primary entry point for fulfilling GraphQL operations. Use this
+    when you want a single-call request lifecycle that always needs to be awaited.
 
-    This function does not support incremental delivery (`@defer` and `@stream`).
+    More sophisticated GraphQL servers, such as those which persist queries, may
+    wish to separate the validation and execution phases to a static-time tooling
+    step and a server runtime step.
 
-    Accepts the following arguments:
+    This function does not support incremental delivery (``@defer`` and
+    ``@stream``); use :func:`~graphql.execution.experimental_execute_incrementally`
+    after parsing and validating when incremental delivery is required.
 
-    :arg schema:
-      The GraphQL type system to use when validating and executing a query.
-    :arg source:
-      A GraphQL language formatted string representing the requested operation.
-    :arg root_value:
-      The value provided as the first argument to resolver functions on the top level
-      type (e.g. the query object type).
-    :arg context_value:
-      The context value is provided as an attribute of the second argument
-      (the resolve info) to resolver functions. It is used to pass shared information
-      useful at any point during query execution, for example the currently logged in
-      user and connections to databases or other services.
-    :arg variable_values:
-      A mapping of variable name to runtime value to use for all variables defined
-      in the request string.
-    :arg operation_name:
-      The name of the operation to use if request string contains multiple possible
-      operations. Can be omitted if request string contains only one operation.
-    :arg field_resolver:
-      A resolver function to use when one is not provided by the schema.
-      If not provided, the default field resolver is used (which looks for a value
-      or method on the source value with the field's name).
-    :arg type_resolver:
-      A type resolver function to use when none is provided by the schema.
-      If not provided, the default type resolver is used (which looks for a
-      ``__typename`` field or alternatively calls the
-      :meth:`~graphql.type.GraphQLObjectType.is_type_of` method).
-    :arg middleware:
-      The middleware to wrap the resolvers with
-    :arg executor_class:
-      The executor class to use to build the executor
-    :arg is_awaitable:
-      The predicate to be used for checking whether values are awaitable
-    :arg is_async_iterable:
-      The predicate to be used for checking whether values are async iterables
-    :arg abort_signal:
-      A signal object that can be used to cancel execution, e.g. the signal of an
-      :class:`~graphql.AbortController`
-    :arg no_location:
-      Parse option: do not include location information in the parsed document.
-    :arg max_tokens:
-      Parse option: the maximum number of tokens the document may contain.
-    :arg experimental_fragment_arguments:
-      Parse option: enable experimental support for fragment arguments.
-    :arg rules:
-      The validation rules to use when validating the query.
-      If not provided, the specified rules are used.
-    :arg max_errors:
-      The maximum number of validation errors to report before stopping.
-    :arg harness:
-      A custom set of parse/validate/execute/subscribe functions to use when
-      fulfilling the operation. Defaults to ``default_harness``.
+    :param schema: The schema used for validation or execution.
+    :param source: A GraphQL language-formatted string or source object representing
+        the requested operation.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+        It is made available as the ``context`` attribute of the resolve info.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document
+        contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its own
+        resolver.
+    :param middleware: The middleware to wrap the resolvers with.
+    :param executor_class: The executor class to use to build the executor.
+    :param is_awaitable: The predicate to be used for checking whether values are
+        awaitable.
+    :param is_async_iterable: The predicate to be used for checking whether values
+        are async iterables.
+    :param hide_suggestions: Whether suggestion text should be omitted from request
+        errors.
+    :param abort_signal: AbortSignal used to cancel execution, e.g. the signal of an
+        :class:`~graphql.AbortController`.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: The maximum number of tokens allowed within the document,
+        to limit the CPU time and memory the parser can burn.
+    :param experimental_fragment_arguments: Allows fragment variable definitions
+        and arguments on fragment spreads to be parsed (experimental).
+    :param rules: Validation rules to use instead of the specified rules.
+    :param max_errors: Maximum number of validation errors before validation stops.
+    :param harness: Custom parse, validate, execute, and subscribe functions for this
+        request pipeline. Defaults to ``default_harness``.
+    :returns: An execution result or validation errors.
+
+    Execute a complete asynchronous request with variables:
+
+    >>> import asyncio
+    >>> from graphql import graphql, build_schema
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     greeting(name: String!): String
+    ...   }
+    ... ''')
+    >>> result = asyncio.run(graphql(
+    ...     schema,
+    ...     'query SayHello($name: String!) { greeting(name: $name) }',
+    ...     root_value={'greeting': lambda _info, name: f'Hello, {name}!'},
+    ...     variable_values={'name': 'Ada'},
+    ...     operation_name='SayHello',
+    ... ))
+    >>> result
+    ExecutionResult(data={'greeting': 'Hello, Ada!'}, errors=None)
+
+    This variant supplies context plus custom field and type resolvers:
+
+    >>> schema = build_schema('''
+    ...   interface Named {
+    ...     name: String!
+    ...   }
+    ...
+    ...   type User implements Named {
+    ...     name: String!
+    ...   }
+    ...
+    ...   type Query {
+    ...     viewer: Named
+    ...   }
+    ... ''')
+    >>> def field_resolver(source, info, **_args):
+    ...     assert info.context['locale'] == 'en'
+    ...     return source[info.field_name]
+    >>> def type_resolver(value, _info, _abstract_type):
+    ...     return 'User' if value['kind'] == 'user' else None
+    >>> result = asyncio.run(graphql(
+    ...     schema,
+    ...     '{ viewer { __typename name } }',
+    ...     root_value={'viewer': {'kind': 'user', 'name': 'Ada'}},
+    ...     context_value={'locale': 'en'},
+    ...     field_resolver=field_resolver,
+    ...     type_resolver=type_resolver,
+    ... ))
+    >>> result
+    ExecutionResult(data={'viewer': {'__typename': 'User', 'name': 'Ada'}}, errors=None)
+
+    This variant customizes the request pipeline with a harness:
+
+    >>> from graphql import AbortController
+    >>> from graphql.harness import default_harness
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     greeting: String
+    ...   }
+    ... ''')
+    >>> stages = []
+    >>> def record_stage(stage):
+    ...     def stage_fn(*args, **kwargs):
+    ...         stages.append(stage)
+    ...         return getattr(default_harness, stage)(*args, **kwargs)
+    ...     return stage_fn
+    >>> harness = default_harness._replace(
+    ...     parse=record_stage('parse'),
+    ...     validate=record_stage('validate'),
+    ...     execute=record_stage('execute'),
+    ...     subscribe=record_stage('subscribe'),
+    ... )
+    >>> result = asyncio.run(graphql(
+    ...     schema,
+    ...     '{ greeting }',
+    ...     root_value={'greeting': 'Hello'},
+    ...     rules=[],
+    ...     max_errors=25,
+    ...     hide_suggestions=True,
+    ...     no_location=True,
+    ...     abort_signal=AbortController().signal,
+    ...     harness=harness,
+    ... ))
+    >>> result
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
+    >>> stages
+    ['parse', 'validate', 'execute']
     """
     # Always return asynchronously for a consistent API.
     result = graphql_impl(
@@ -146,12 +218,18 @@ async def graphql(  # noqa: PLR0913, PLR0917
 
 
 def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
-    """Replacement for is_awaitable if everything is assumed to be synchronous."""
+    """Replacement for isawaitable if everything is assumed to be synchronous.
+
+    :meta private:
+    """
     return False
 
 
 def assume_not_async_iterable(_value: Any) -> TypeGuard[AsyncIterable]:
-    """Replacement for is_async_iterable if everything is assumed to be synchronous."""
+    """Replacement for is_async_iterable if everything is assumed to be synchronous.
+
+    :meta private:
+    """
     return False
 
 
@@ -178,12 +256,83 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
-    The graphql_sync function also fulfills GraphQL operations by parsing, validating,
-    and executing a GraphQL document along side a GraphQL schema. However, it guarantees
-    to complete synchronously (or throw an error) assuming that all field resolvers
-    are also synchronous.
+    Parses, validates, and executes a GraphQL document synchronously.
 
-    Set check_sync to True to still run checks that no awaitable values are returned.
+    This function guarantees that execution completes synchronously, or raises an
+    error, assuming that all field resolvers are also synchronous. It raises a
+    :exc:`RuntimeError` when execution does not complete synchronously.
+
+    :param schema: The schema used for validation or execution.
+    :param source: A GraphQL language-formatted string or source object representing
+        the requested operation.
+    :param root_value: Initial root value passed to the operation.
+    :param context_value: Application context value passed to every resolver.
+        It is made available as the ``context`` attribute of the resolve info.
+    :param variable_values: Runtime variable values keyed by variable name.
+    :param operation_name: Name of the operation to execute when the document
+        contains multiple operations.
+    :param field_resolver: Resolver used when a field does not define its own
+        resolver.
+    :param type_resolver: Resolver used when an abstract type does not define its own
+        resolver.
+    :param middleware: The middleware to wrap the resolvers with.
+    :param executor_class: The executor class to use to build the executor.
+    :param check_sync: Set this to ``True`` to still run checks that no awaitable
+        values are returned by resolvers. You can also pass a custom predicate for
+        checking whether values are awaitable.
+    :param hide_suggestions: Whether suggestion text should be omitted from request
+        errors.
+    :param abort_signal: AbortSignal used to cancel execution, e.g. the signal of an
+        :class:`~graphql.AbortController`.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: The maximum number of tokens allowed within the document,
+        to limit the CPU time and memory the parser can burn.
+    :param experimental_fragment_arguments: Allows fragment variable definitions
+        and arguments on fragment spreads to be parsed (experimental).
+    :param rules: Validation rules to use instead of the specified rules.
+    :param max_errors: Maximum number of validation errors before validation stops.
+    :param harness: Custom parse, validate, execute, and subscribe functions for this
+        request pipeline. Defaults to ``default_harness``.
+    :returns: Completed execution output, or request errors if parsing or
+        validation fails.
+
+    Execute a complete synchronous request with variables:
+
+    >>> from graphql import graphql_sync, build_schema
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     greeting(name: String!): String
+    ...   }
+    ... ''')
+    >>> result = graphql_sync(
+    ...     schema,
+    ...     'query SayHello($name: String!) { greeting(name: $name) }',
+    ...     root_value={'greeting': lambda _info, name: f'Hello, {name}!'},
+    ...     variable_values={'name': 'Ada'},
+    ...     operation_name='SayHello',
+    ... )
+    >>> result
+    ExecutionResult(data={'greeting': 'Hello, Ada!'}, errors=None)
+
+    This variant uses a synchronous custom field resolver and context:
+
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     greeting: String
+    ...   }
+    ... ''')
+    >>> result = graphql_sync(
+    ...     schema,
+    ...     '{ greeting }',
+    ...     field_resolver=lambda _source, info, **_args: (
+    ...         info.context['default_greeting']
+    ...     ),
+    ...     context_value={'default_greeting': 'Hello'},
+    ... )
+    >>> result
+    ExecutionResult(data={'greeting': 'Hello'}, errors=None)
     """
     is_awaitable = (
         cast("Callable[[Any], TypeGuard[Awaitable]]", check_sync)
@@ -247,7 +396,10 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
     max_errors: int | None = None,
     harness: GraphQLHarness = default_harness,
 ) -> AwaitableOrValue[ExecutionResult]:
-    """Execute a query, return asynchronously only if necessary."""
+    """Execute a query, return asynchronously only if necessary.
+
+    :meta private:
+    """
     # Validate Schema
     if schema_validation_errors := validate_schema(schema):
         return ExecutionResult(data=None, errors=schema_validation_errors)

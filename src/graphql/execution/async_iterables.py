@@ -46,8 +46,24 @@ async def map_async_iterable(
 
     Given an AsyncIterable and an async callback function, return an AsyncGenerator
     that produces values mapped via calling the callback function.
-    If the inner iterator supports an `aclose()` method, it will be called when
+    If the inner iterator supports an ``aclose()`` method, it will be called when
     the generator finishes or closes.
+
+    :param iterable: The source AsyncIterable whose values shall be mapped.
+    :param callback: The async function that is called with each source value.
+    :returns: An AsyncGenerator yielding the mapped values.
+
+    >>> import asyncio
+    >>> from graphql import map_async_iterable
+    >>> async def numbers():
+    ...     for number in range(3):
+    ...         yield number
+    >>> async def double(number):
+    ...     return 2 * number
+    >>> async def doubled_numbers():
+    ...     return [value async for value in map_async_iterable(numbers(), double)]
+    >>> asyncio.run(doubled_numbers())
+    [0, 2, 4]
     """
     async with aclosing(iterable) as items:
         async for item in items:

@@ -27,6 +27,7 @@ _KIND_FOR_PUNCT = {
 class SchemaCoordinateLexer(Lexer):
     """GraphQL Schema Coordinate Lexer
 
+    Given a Source schema coordinate, creates a Lexer for that source.
     A SchemaCoordinateLexer is a stateful stream generator in that every time it is
     advanced, it returns the next token in the Source. Assuming the source lexes, the
     final Token emitted by the lexer will be of kind EOF, after which the lexer will
@@ -35,6 +36,8 @@ class SchemaCoordinateLexer(Lexer):
     Unlike the regular Lexer, this lexer uses a restricted syntax that does not allow
     any ignored tokens (such as whitespace or comments). Since a schema coordinate may
     not contain a newline, the line is always 1 and the line start is always 0.
+
+    :meta private:
     """
 
     def read_next_token(self, start: int) -> Token:
@@ -42,6 +45,8 @@ class SchemaCoordinateLexer(Lexer):
 
         This lexes punctuators and names only, raising a syntax error on any other
         character (including ignored tokens such as whitespace and comments).
+
+        :meta private:
         """
         body = self.source.body
         body_length = len(body)

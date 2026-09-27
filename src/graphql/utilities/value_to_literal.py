@@ -48,6 +48,33 @@ def value_to_literal(value: Any, type_: GraphQLInputType) -> ConstValueNode | No
     The provided value is a non-coerced "input" value. This function does not
     perform any coercion, however it does perform validation. Provided values
     which are invalid for the given type will result in a ``None`` return value.
+
+    :param value: Python value to convert.
+    :param type_: GraphQL input type to convert the value against.
+    :returns: A GraphQL value AST, or ``None`` if the value is invalid.
+
+    >>> from graphql import (
+    ...     GraphQLInputField,
+    ...     GraphQLInputObjectType,
+    ...     GraphQLInt,
+    ...     GraphQLList,
+    ...     GraphQLNonNull,
+    ...     GraphQLString,
+    ...     print_ast,
+    ... )
+    >>> from graphql.utilities import value_to_literal
+    >>> review_input = GraphQLInputObjectType(
+    ...     'ReviewInput',
+    ...     {
+    ...         'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...         'tags': GraphQLInputField(GraphQLList(GraphQLString)),
+    ...     },
+    ... )
+    >>> literal = value_to_literal({'stars': 5, 'tags': ['featured']}, review_input)
+    >>> print_ast(literal)
+    '{ stars: 5, tags: ["featured"] }'
+    >>> value_to_literal({'tags': ['missing stars']}, review_input) is None
+    True
     """
     if is_non_null_type(type_):
         if value is None or value is Undefined:
@@ -111,6 +138,8 @@ def value_to_literal(value: Any, type_: GraphQLInputType) -> ConstValueNode | No
 def default_scalar_value_to_literal(value: Any) -> ConstValueNode:
     """Convert a Python value to a literal (AST) using the default rules.
 
+    The default implementation to convert scalar values to literals.
+
     ================= =======================
        Python Value         GraphQL Value
     ================= =======================
@@ -122,7 +151,7 @@ def default_scalar_value_to_literal(value: Any) -> ConstValueNode:
        None               Null
     ================= =======================
 
-    .. internal::
+    :meta private:
     """
     # Like JSON, a null literal is produced for both null and undefined.
     if value is None or value is Undefined:

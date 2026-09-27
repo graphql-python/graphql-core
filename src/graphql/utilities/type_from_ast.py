@@ -51,6 +51,32 @@ def type_from_ast(
     ``[User]``, a GraphQLList instance will be returned, containing the type called
     "User" found in the schema. If a type called "User" is not found in the schema,
     then None will be returned.
+
+    :param schema: The GraphQL schema to use.
+    :param type_node: The GraphQL type AST node to resolve.
+    :returns: The GraphQL type referenced by the AST node, or ``None`` if it cannot be
+        resolved.
+
+    >>> from graphql import build_schema, parse_type, type_from_ast
+    >>> schema = build_schema('''
+    ...     type User {
+    ...       name: String
+    ...     }
+    ...
+    ...     type Query {
+    ...       users: [User!]!
+    ...     }
+    ... ''')
+    >>> type_from_ast(schema, parse_type('User'))
+    <GraphQLObjectType 'User'>
+    >>> print(type_from_ast(schema, parse_type('[User!]!')))
+    [User!]!
+    >>> print(type_from_ast(schema, parse_type('[String]')))
+    [String]
+    >>> print(type_from_ast(schema, parse_type('Missing')))
+    None
+    >>> print(type_from_ast(schema, parse_type('[Missing]')))
+    None
     """
     inner_type: GraphQLType | None
     if isinstance(type_node, ListTypeNode):

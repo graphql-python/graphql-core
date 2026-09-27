@@ -67,6 +67,18 @@ def validate_schema(schema: GraphQLSchema) -> list[GraphQLError]:
 
     Validation runs synchronously, returning a list of encountered errors, or an empty
     list if no errors were encountered and the Schema is valid.
+
+    :param schema: the GraphQL schema to validate
+    :returns: the schema validation errors, or an empty list if the schema is valid
+
+    >>> from graphql import build_schema, validate_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       name: String
+    ...     }
+    ... ''')
+    >>> validate_schema(schema)
+    []
     """
     # First check to ensure the provided value is in fact a GraphQLSchema.
     assert_schema(schema)
@@ -92,6 +104,16 @@ def assert_valid_schema(schema: GraphQLSchema) -> None:
     """Utility function which asserts a schema is valid.
 
     Throws a TypeError if the schema is invalid.
+
+    :param schema: the GraphQL schema to validate
+
+    >>> from graphql import assert_valid_schema, build_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       name: String
+    ...     }
+    ... ''')
+    >>> assert_valid_schema(schema)  # does not raise
     """
     errors = validate_schema(schema)
     if errors:
@@ -626,7 +648,7 @@ def validate_default_input(
 
     All errors are collected via a callback function.
 
-    .. internal::
+    :meta private:
     """
     if default_input.literal:
         validate_input_literal(

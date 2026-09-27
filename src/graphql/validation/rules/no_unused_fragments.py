@@ -23,6 +23,19 @@ class NoUnusedFragmentsRule(ASTValidationRule):
     operations, or spread within other fragments spread within operations.
 
     See https://spec.graphql.org/draft/#sec-Fragments-Must-Be-Used
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import NoUnusedFragmentsRule
+    >>> schema = build_schema('type Query { name: String }')
+    >>> document = parse('fragment Unused on Query { name } query { name }')
+    >>> errors = validate(schema, document, [NoUnusedFragmentsRule])
+    >>> print(errors[0].message)
+    Fragment 'Unused' is never used.
+    >>> document = parse('fragment Used on Query { name } query { ...Used }')
+    >>> validate(schema, document, [NoUnusedFragmentsRule])
+    []
     """
 
     def __init__(self, context: ASTValidationContext) -> None:
@@ -33,16 +46,28 @@ class NoUnusedFragmentsRule(ASTValidationRule):
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> VisitorAction:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         self.operation_defs.append(node)
         return SKIP
 
     def enter_fragment_definition(
         self, node: FragmentDefinitionNode, *_args: Any
     ) -> VisitorAction:
+        """Called when entering a fragment definition node.
+
+        :meta private:
+        """
         self.fragment_defs.append(node)
         return SKIP
 
     def leave_document(self, *_args: Any) -> None:
+        """Called when leaving a document node.
+
+        :meta private:
+        """
         fragment_names_used = set()
         get_fragments = self.context.get_recursively_referenced_fragments
         for operation in self.operation_defs:

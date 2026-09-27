@@ -140,6 +140,50 @@ def parse(
     is not part of the GraphQL specification and may change. For example::
 
         directive @foo @bar on FIELD
+
+    :param source: A GraphQL source string or source object.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
+        in a document, however in extreme cases it becomes quadratic due to memory
+        exhaustion. Parsing happens before validation, so even invalid queries can
+        burn lots of CPU time and memory. To prevent this, you can set a maximum
+        number of tokens allowed within a document.
+    :param experimental_fragment_arguments: Allows fragment variable definitions
+        and arguments on fragment spreads to be parsed (experimental).
+    :param experimental_directives_on_directive_definitions: Allows directives on
+        directive definitions to be parsed (experimental).
+    :returns: The parsed GraphQL document AST.
+
+    Parse a GraphQL document with the default parser options:
+
+    >>> from graphql import parse
+    >>> document = parse('{ hero { name } }')
+    >>> document.kind
+    'document'
+
+    This variant enables parser options:
+
+    >>> document = parse(
+    ...     '{ t { ...A(var: true) } }'
+    ...     ' fragment A($var: Boolean = false) on T { name }',
+    ...     experimental_fragment_arguments=True,
+    ...     max_tokens=80,
+    ...     no_location=True,
+    ... )
+    >>> directive_document = parse(
+    ...     'directive @foo @bar on FIELD',
+    ...     experimental_directives_on_directive_definitions=True,
+    ... )
+    >>> document.definitions[0].kind
+    'operation_definition'
+    >>> document.definitions[1].kind
+    'fragment_definition'
+    >>> document.loc is None
+    True
+    >>> directive_document.definitions[0].kind
+    'directive_definition'
     """
     parser = Parser(
         source,
@@ -166,6 +210,26 @@ def parse_value(
 
     This is useful within tools that operate upon GraphQL Values directly and in
     isolation of complete GraphQL documents.
+
+    :param source: A GraphQL source string or source object containing a value.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
+        in a document, however in extreme cases it becomes quadratic due to memory
+        exhaustion. Parsing happens before validation, so even invalid queries can
+        burn lots of CPU time and memory. To prevent this, you can set a maximum
+        number of tokens allowed within a document.
+    :param experimental_fragment_arguments: Allows fragment variable definitions
+        and arguments on fragment spreads to be parsed (experimental).
+    :param experimental_directives_on_directive_definitions: Allows directives on
+        directive definitions to be parsed (experimental).
+    :returns: The parsed GraphQL value AST.
+
+    >>> from graphql import parse_value
+    >>> value = parse_value('[42]')
+    >>> value.kind
+    'list_value'
     """
     parser = Parser(
         source,
@@ -191,8 +255,33 @@ def parse_const_value(
 ) -> ConstValueNode:
     """Parse the AST for a given string containing a GraphQL constant value.
 
-    Similar to parse_value, but raises a arse error if it encounters a variable.
+    Similar to parse_value, but raises a parse error if it encounters a variable.
     The return type will be a constant value.
+
+    :param source: A GraphQL source string or source object containing a
+        constant value.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
+        in a document, however in extreme cases it becomes quadratic due to memory
+        exhaustion. Parsing happens before validation, so even invalid queries can
+        burn lots of CPU time and memory. To prevent this, you can set a maximum
+        number of tokens allowed within a document.
+    :param experimental_fragment_arguments: Allows fragment variable definitions
+        and arguments on fragment spreads to be parsed (experimental).
+    :param experimental_directives_on_directive_definitions: Allows directives on
+        directive definitions to be parsed (experimental).
+    :returns: The parsed GraphQL constant value AST.
+
+    >>> from graphql import parse_const_value
+    >>> value = parse_const_value('{ enabled: true }')
+    >>> value.kind
+    'object_value'
+    >>> parse_const_value('$variable')
+    Traceback (most recent call last):
+    ...
+    graphql.error.syntax_error.GraphQLSyntaxError: Syntax Error: Unexpected ...
     """
     parser = Parser(
         source,
@@ -225,6 +314,27 @@ def parse_type(
 
     Consider providing the results to the utility function:
     :func:`~graphql.utilities.value_from_ast`.
+
+    :param source: A GraphQL source string or source object containing a type
+        reference.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
+        in a document, however in extreme cases it becomes quadratic due to memory
+        exhaustion. Parsing happens before validation, so even invalid queries can
+        burn lots of CPU time and memory. To prevent this, you can set a maximum
+        number of tokens allowed within a document.
+    :param experimental_fragment_arguments: Allows fragment variable definitions
+        and arguments on fragment spreads to be parsed (experimental).
+    :param experimental_directives_on_directive_definitions: Allows directives on
+        directive definitions to be parsed (experimental).
+    :returns: The parsed GraphQL type AST.
+
+    >>> from graphql import parse_type
+    >>> type_ = parse_type('[String!]')
+    >>> type_.kind
+    'list_type'
     """
     parser = Parser(
         source,
@@ -257,6 +367,23 @@ def parse_schema_coordinate(
     :func:`~graphql.utilities.resolve_ast_schema_coordinate`. Or calling
     :func:`~graphql.utilities.resolve_schema_coordinate` directly with an
     unparsed source.
+
+    :param source: A GraphQL source string or source object containing a schema
+        coordinate.
+    :param no_location: By default, the parser creates AST nodes that know the
+        location in the source that they correspond to. Setting this parameter to
+        ``True`` disables that behavior for performance or testing.
+    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
+        in a document, however in extreme cases it becomes quadratic due to memory
+        exhaustion. Parsing happens before validation, so even invalid queries can
+        burn lots of CPU time and memory. To prevent this, you can set a maximum
+        number of tokens allowed within a document.
+    :returns: The parsed GraphQL schema coordinate AST.
+
+    >>> from graphql import parse_schema_coordinate
+    >>> coordinate = parse_schema_coordinate('Query.hero')
+    >>> coordinate.kind
+    'member_coordinate'
     """
     if not is_source(source):
         source = Source(cast("str", source))

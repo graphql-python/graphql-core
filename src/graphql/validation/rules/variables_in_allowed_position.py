@@ -30,6 +30,19 @@ class VariablesInAllowedPositionRule(ValidationRule):
     Variable usages must be compatible with the arguments they are passed to.
 
     See https://spec.graphql.org/draft/#sec-All-Variable-Usages-are-Allowed
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import VariablesInAllowedPositionRule
+    >>> schema = build_schema('type Query { field(arg: ID!): String }')
+    >>> document = parse('query ($id: String) { field(arg: $id) }')
+    >>> errors = validate(schema, document, [VariablesInAllowedPositionRule])
+    >>> print(errors[0].message)
+    Variable '$id' of type 'String' used in position expecting type 'ID!'.
+    >>> document = parse('query ($id: ID!) { field(arg: $id) }')
+    >>> validate(schema, document, [VariablesInAllowedPositionRule])
+    []
     """
 
     def __init__(self, context: ValidationContext) -> None:
@@ -39,6 +52,10 @@ class VariablesInAllowedPositionRule(ValidationRule):
     def enter_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         var_def_map = self.var_def_map
         var_def_map.clear()
         for var_def in operation.variable_definitions or ():
@@ -47,6 +64,10 @@ class VariablesInAllowedPositionRule(ValidationRule):
     def leave_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when leaving an operation definition node.
+
+        :meta private:
+        """
         var_def_map = self.var_def_map
         usages = self.context.get_recursive_variable_usages(operation)
 

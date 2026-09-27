@@ -40,6 +40,32 @@ def replace_variables(
 
     Used primarily to ensure only complete constant values are used during input
     coercion of custom scalars which accept complex literals.
+
+    :param value_node: Value AST node in which variables should be replaced.
+    :param variable_values: Operation variable values returned by
+        :func:`~graphql.execution.get_variable_values`.
+    :param fragment_variable_values: Fragment variable values for the current
+        fragment scope.
+    :returns: A constant value AST with variables replaced.
+
+    >>> from graphql import build_schema, parse, parse_value, print_ast
+    >>> from graphql.execution import get_variable_values
+    >>> from graphql.utilities import replace_variables
+    >>> schema = build_schema('''
+    ...   type Query {
+    ...     review(stars: Int = 5): String
+    ...   }
+    ... ''')
+    >>> document = parse('query ($stars: Int = 5) { review(stars: $stars) }')
+    >>> operation = document.definitions[0]
+    >>> variable_values = get_variable_values(
+    ...     schema, operation.variable_definitions, {'stars': 4}
+    ... )
+    >>> literal = replace_variables(
+    ...     parse_value('{ stars: $stars, comment: $missing }'), variable_values
+    ... )
+    >>> print_ast(literal)
+    '{ stars: 4 }'
     """
     if isinstance(value_node, VariableNode):
         var_name = value_node.name.value

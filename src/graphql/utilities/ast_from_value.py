@@ -40,9 +40,7 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> ConstValueNode | None
     """Produce a GraphQL Value AST given a Python object.
 
     This function will match Python/JSON values to GraphQL AST schema format by using
-    the suggested GraphQLInputType. For example::
-
-        ast_from_value('value', GraphQLString)
+    the suggested GraphQLInputType.
 
     A GraphQL type must be provided, which will be used to interpret different Python
     values.
@@ -59,10 +57,30 @@ def ast_from_value(value: Any, type_: GraphQLInputType) -> ConstValueNode | None
        null            NullValue
     ================ =======================
 
-    .. deprecated:: 3.3
-        Use :func:`~graphql.utilities.value_to_literal` instead with care to
-        operate on external values. ``ast_from_value`` will be removed in v18.
+    :param value: Runtime value to convert.
+    :param type_: The GraphQL input type used to interpret the value.
+    :returns: A GraphQL value AST for the provided Python value, or ``None`` when no
+        literal can represent it.
 
+    >>> from graphql import (
+    ...     GraphQLInputField, GraphQLInputObjectType, GraphQLInt, GraphQLList,
+    ...     GraphQLNonNull, GraphQLString, Undefined, ast_from_value, print_ast)
+    >>> ReviewInput = GraphQLInputObjectType('ReviewInput', {
+    ...     'stars': GraphQLInputField(GraphQLNonNull(GraphQLInt)),
+    ...     'tags': GraphQLInputField(GraphQLList(GraphQLString)),
+    ... })
+    >>> value_node = ast_from_value(
+    ...     {'stars': 5, 'tags': ['featured', 'verified']}, ReviewInput)
+    >>> print(print_ast(value_node))
+    { stars: 5, tags: ["featured", "verified"] }
+    >>> print(ast_from_value(Undefined, GraphQLString))
+    None
+    >>> print(ast_from_value(None, GraphQLNonNull(GraphQLString)))
+    None
+
+    .. deprecated:: 3.3
+        Use :func:`~graphql.utilities.value_to_literal` instead, with care to operate
+        on external values. ``ast_from_value`` will be removed in a future version.
     """
     if is_non_null_type(type_):
         ast_value = ast_from_value(value, type_.of_type)

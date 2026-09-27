@@ -18,6 +18,18 @@ def is_equal_type(type_a: GraphQLType, type_b: GraphQLType) -> bool:
     """Check whether two types are equal.
 
     Provided two types, return true if the types are equal (invariant).
+
+    :param type_a: The first GraphQL type to compare.
+    :param type_b: The second GraphQL type to compare.
+    :returns: ``True`` when both types are equal.
+
+    >>> from graphql import GraphQLList, GraphQLNonNull, GraphQLString, is_equal_type
+    >>> is_equal_type(GraphQLString, GraphQLString)
+    True
+    >>> is_equal_type(GraphQLList(GraphQLString), GraphQLList(GraphQLString))
+    True
+    >>> is_equal_type(GraphQLNonNull(GraphQLString), GraphQLString)
+    False
     """
     # Equivalent types are equal.
     if type_a is type_b:
@@ -42,6 +54,37 @@ def is_type_sub_type_of(
 
     Provided a type and a super type, return true if the first type is either equal or
     a subset of the second super type (covariant).
+
+    :param schema: The GraphQL schema to use.
+    :param maybe_subtype: The possible subtype to compare.
+    :param super_type: The possible supertype to compare.
+    :returns: ``True`` when ``maybe_subtype`` is equal to or a subtype of
+        ``super_type``.
+
+    >>> from graphql import (
+    ...     GraphQLNonNull, assert_interface_type, assert_object_type, build_schema,
+    ...     is_type_sub_type_of)
+    >>> schema = build_schema('''
+    ...     interface Node {
+    ...       id: ID!
+    ...     }
+    ...
+    ...     type User implements Node {
+    ...       id: ID!
+    ...     }
+    ...
+    ...     type Query {
+    ...       node: Node
+    ...     }
+    ... ''')
+    >>> Node = assert_interface_type(schema.get_type('Node'))
+    >>> User = assert_object_type(schema.get_type('User'))
+    >>> is_type_sub_type_of(schema, User, Node)
+    True
+    >>> is_type_sub_type_of(schema, GraphQLNonNull(User), Node)
+    True
+    >>> is_type_sub_type_of(schema, Node, User)
+    False
     """
     # Equivalent type is a valid subtype
     if maybe_subtype is super_type:
@@ -90,6 +133,38 @@ def do_types_overlap(
     visited in a context of another type.
 
     This function is commutative.
+
+    :param schema: The GraphQL schema to use.
+    :param type_a: The first composite type to compare.
+    :param type_b: The second composite type to compare.
+    :returns: ``True`` when the two composite types can apply to at least one common
+        object type.
+
+    >>> from graphql import (
+    ...     assert_object_type, assert_union_type, build_schema, do_types_overlap)
+    >>> schema = build_schema('''
+    ...     type Photo {
+    ...       url: String!
+    ...     }
+    ...
+    ...     type Video {
+    ...       url: String!
+    ...     }
+    ...
+    ...     union Media = Photo | Video
+    ...     union StillImage = Photo
+    ...
+    ...     type Query {
+    ...       media: [Media]
+    ...     }
+    ... ''')
+    >>> Media = assert_union_type(schema.get_type('Media'))
+    >>> StillImage = assert_union_type(schema.get_type('StillImage'))
+    >>> Video = assert_object_type(schema.get_type('Video'))
+    >>> do_types_overlap(schema, Media, StillImage)
+    True
+    >>> do_types_overlap(schema, StillImage, Video)
+    False
     """
     # Equivalent types overlap
     if type_a is type_b:

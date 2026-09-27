@@ -20,11 +20,28 @@ class KnownOperationTypesRule(ValidationRule):
     the root type for the operation exists within the schema.
 
     See https://spec.graphql.org/draft/#sec-Operation-Type-Existence
+
+    :param context: The validation context used while checking the document.
+
+    >>> from graphql import build_schema, parse, validate
+    >>> from graphql.validation import KnownOperationTypesRule
+    >>> schema = build_schema('type Query { greeting: String }')
+    >>> document = parse('mutation { greeting }')
+    >>> errors = validate(schema, document, [KnownOperationTypesRule])
+    >>> print(errors[0].message)
+    The mutation operation is not supported by the schema.
+    >>> document = parse('{ greeting }')
+    >>> validate(schema, document, [KnownOperationTypesRule])
+    []
     """
 
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
+        """Called when entering an operation definition node.
+
+        :meta private:
+        """
         operation = node.operation
         if not self.context.schema.get_root_type(operation):
             self.report_error(

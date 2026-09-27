@@ -25,7 +25,35 @@ def separate_operations(document_ast: DocumentNode) -> dict[str, DocumentNode]:
 
     This function accepts a single AST document which may contain many operations and
     fragments and returns a collection of AST documents each of which contains a single
-    operation as well the fragment definitions it refers to.
+    operation as well as the fragment definitions it refers to.
+
+    :param document_ast: The parsed GraphQL document AST.
+    :returns: A dictionary mapping operation names to documents containing each
+        operation and its referenced fragments.
+
+    >>> from graphql import parse, print_ast, separate_operations
+    >>> document = parse('''
+    ...     query GetUser {
+    ...       viewer {
+    ...         ...UserFields
+    ...       }
+    ...     }
+    ...
+    ...     query GetStatus {
+    ...       status
+    ...     }
+    ...
+    ...     fragment UserFields on User {
+    ...       id
+    ...     }
+    ... ''')
+    >>> separated = separate_operations(document)
+    >>> list(separated)
+    ['GetUser', 'GetStatus']
+    >>> 'fragment UserFields' in print_ast(separated['GetUser'])
+    True
+    >>> 'fragment UserFields' in print_ast(separated['GetStatus'])
+    False
     """
     operations: list[OperationDefinitionNode] = []
     dep_graph: DepGraph = {}

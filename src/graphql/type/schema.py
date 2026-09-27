@@ -49,23 +49,37 @@ TypeMap: TypeAlias = dict[str, GraphQLNamedType]
 
 
 class InterfaceImplementations(NamedTuple):
+    """Objects and interfaces that implement an interface type."""
+
     objects: list[GraphQLObjectType]
+    """Object types that implement the interface."""
     interfaces: list[GraphQLInterfaceType]
+    """Interface types that implement the interface."""
 
 
 class GraphQLSchemaKwargs(TypedDict, total=False):
     """Arguments for GraphQL schemas"""
 
     query: GraphQLObjectType | None
+    """Root object type for query operations."""
     mutation: GraphQLObjectType | None
+    """Root object type for mutation operations."""
     subscription: GraphQLObjectType | None
+    """Root object type for subscription operations."""
     types: tuple[GraphQLNamedType, ...] | None
+    """Named types that belong to this schema."""
     directives: tuple[GraphQLDirective, ...]
+    """Directives available in this schema."""
     description: str | None
+    """Human-readable description for this schema element, if provided."""
     extensions: dict[str, Any]
+    """Custom extension fields reserved for users."""
     ast_node: ast.SchemaDefinitionNode | None
+    """AST node from which this schema element was built, if available."""
     extension_ast_nodes: tuple[ast.SchemaExtensionNode, ...]
+    """AST extension nodes applied to this schema element."""
     assume_valid: bool
+    """Whether the schema is assumed to be valid and will not be validated."""
 
 
 class GraphQLSchema:
@@ -80,6 +94,12 @@ class GraphQLSchema:
 
     Example::
 
+        MyAppQueryRootType = GraphQLObjectType(
+            'Query', {'greeting': GraphQLField(GraphQLString)})
+
+        MyAppMutationRootType = GraphQLObjectType(
+            'Mutation', {'setGreeting': GraphQLField(GraphQLString)})
+
         MyAppSchema = GraphQLSchema(
           query=MyAppQueryRootType,
           mutation=MyAppMutationRootType)
@@ -90,18 +110,20 @@ class GraphQLSchema:
 
     Example::
 
-        character_interface = GraphQLInterfaceType('Character', ...)
+        character_interface = GraphQLInterfaceType(
+            'Character', {'name': GraphQLField(GraphQLString)})
 
         human_type = GraphQLObjectType(
-            'Human', interfaces=[character_interface], ...)
+            'Human', {'name': GraphQLField(GraphQLString)},
+            interfaces=[character_interface])
 
         droid_type = GraphQLObjectType(
-            'Droid', interfaces: [character_interface], ...)
+            'Droid', {'name': GraphQLField(GraphQLString)},
+            interfaces=[character_interface])
 
         schema = GraphQLSchema(
             query=GraphQLObjectType('Query',
-                fields={'hero': GraphQLField(character_interface, ....)}),
-            ...
+                fields={'hero': GraphQLField(character_interface)}),
             # Since this schema references only the `Character` interface it's
             # necessary to explicitly list the types that implement it if
             # you want them to be included in the final schema.
@@ -114,21 +136,126 @@ class GraphQLSchema:
     you must explicitly declare them. Example::
 
         MyAppSchema = GraphQLSchema(
-          ...
-          directives=specified_directives + [my_custom_directive])
+          query=MyAppQueryRootType,
+          directives=(*specified_directives, my_custom_directive))
+
+    :param query: the root object type for query operations
+    :param mutation: the root object type for mutation operations
+    :param subscription: the root object type for subscription operations
+    :param types: additional named types that shall be included in the schema
+    :param directives: the directives available in this schema; if not provided,
+        the specified directives will be used
+    :param description: a human-readable description for this schema, if any
+    :param extensions: custom extension fields reserved for users
+    :param ast_node: the AST node from which this schema was built, if available
+    :param extension_ast_nodes: the AST extension nodes applied to this schema
+    :param assume_valid: if this schema was built from a source known to be valid,
+        then it may be marked with ``assume_valid`` to avoid an additional type
+        system validation
+
+    Create a schema with the required query root:
+
+    >>> from graphql import (
+    ...     GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+    ... )
+    >>> Query = GraphQLObjectType(
+    ...     'Query',
+    ...     {'greeting': GraphQLField(GraphQLString, resolve=lambda *_: 'Hello')},
+    ... )
+    >>> schema = GraphQLSchema(
+    ...     description='The application schema.',
+    ...     query=Query,
+    ... )
+    >>> schema.query_type is Query
+    True
+    >>> schema.description
+    'The application schema.'
+
+    This variant configures every schema option, including directives and
+    extensions:
+
+    >>> from graphql import (
+    ...     DirectiveLocation,
+    ...     GraphQLArgument,
+    ...     GraphQLBoolean,
+    ...     GraphQLDirective,
+    ...     GraphQLField,
+    ...     GraphQLObjectType,
+    ...     GraphQLSchema,
+    ...     GraphQLString,
+    ...     parse,
+    ... )
+    >>> Query = GraphQLObjectType(
+    ...     'Query', {'greeting': GraphQLField(GraphQLString)}
+    ... )
+    >>> Mutation = GraphQLObjectType(
+    ...     'Mutation', {'setGreeting': GraphQLField(GraphQLString)}
+    ... )
+    >>> Subscription = GraphQLObjectType(
+    ...     'Subscription', {'greetingChanged': GraphQLField(GraphQLString)}
+    ... )
+    >>> AuditEvent = GraphQLObjectType(
+    ...     'AuditEvent', {'message': GraphQLField(GraphQLString)}
+    ... )
+    >>> auth_directive = GraphQLDirective(
+    ...     'auth',
+    ...     [DirectiveLocation.FIELD_DEFINITION],
+    ...     {'required': GraphQLArgument(GraphQLBoolean)},
+    ... )
+    >>> schema_document = parse('''
+    ...     schema {
+    ...       query: Query
+    ...       mutation: Mutation
+    ...       subscription: Subscription
+    ...     }
+    ...
+    ...     extend schema @auth
+    ... ''')
+    >>> schema = GraphQLSchema(
+    ...     description='Operations exposed by the application.',
+    ...     query=Query,
+    ...     mutation=Mutation,
+    ...     subscription=Subscription,
+    ...     types=[AuditEvent],
+    ...     directives=[auth_directive],
+    ...     extensions={'owner': 'platform'},
+    ...     ast_node=schema_document.definitions[0],
+    ...     extension_ast_nodes=[schema_document.definitions[1]],
+    ...     assume_valid=True,
+    ... )
+    >>> schema.mutation_type is Mutation
+    True
+    >>> schema.subscription_type is Subscription
+    True
+    >>> schema.get_type('AuditEvent') is AuditEvent
+    True
+    >>> schema.get_directive('auth') is auth_directive
+    True
+    >>> schema.extensions
+    {'owner': 'platform'}
     """
 
     query_type: GraphQLObjectType | None
+    """The root object type for query operations, if this schema defines one."""
     mutation_type: GraphQLObjectType | None
+    """The root object type for mutation operations, if this schema defines one."""
     subscription_type: GraphQLObjectType | None
+    """The root object type for subscription operations, if defined."""
     type_map: TypeMap
+    """All named types known to this schema, keyed by type name."""
     directives: tuple[GraphQLDirective, ...]
+    """Directives available in this schema."""
     description: str | None
+    """Human-readable description for this schema element, if provided."""
     extensions: dict[str, Any]
+    """Custom extension fields reserved for users."""
     ast_node: ast.SchemaDefinitionNode | None
+    """AST node from which this schema element was built, if available."""
     extension_ast_nodes: tuple[ast.SchemaExtensionNode, ...]
+    """AST extension nodes applied to this schema element."""
 
     assume_valid: bool
+    """Whether this schema instance skips validation checks."""
 
     _implementations_map: dict[str, InterfaceImplementations]
     _sub_type_map: dict[str, set[str]]
@@ -255,7 +382,26 @@ class GraphQLSchema:
                         implementations.objects.append(named_type)
 
     def to_kwargs(self) -> GraphQLSchemaKwargs:
-        """Get corresponding arguments."""
+        """Get a normalized dictionary of keyword arguments for this schema.
+
+        The returned keyword arguments preserve the original ``assume_valid`` flag so
+        the schema can be recreated with the same validation behavior.
+
+        :returns: keyword arguments that can be used to recreate this schema
+
+        >>> from graphql import GraphQLSchema, build_schema
+        >>> schema = build_schema('''
+        ...     type Query {
+        ...       greeting: String
+        ...     }
+        ... ''')
+        >>> kwargs = schema.to_kwargs()
+        >>> schema_copy = GraphQLSchema(**kwargs)
+        >>> kwargs['query'].name
+        'Query'
+        >>> schema_copy.query_type.name
+        'Query'
+        """
         return GraphQLSchemaKwargs(
             query=self.query_type,
             mutation=self.mutation_type,
@@ -310,17 +456,92 @@ class GraphQLSchema:
         )
 
     def get_root_type(self, operation: OperationType) -> GraphQLObjectType | None:
-        """Get the root type."""
+        """Get the root object type for the requested operation kind.
+
+        :param operation: the operation kind to resolve
+        :returns: the root object type for the operation kind, if this schema
+            defines one
+
+        >>> from graphql import OperationType, build_schema
+        >>> schema = build_schema('''
+        ...     type Query {
+        ...       greeting: String
+        ...     }
+        ...
+        ...     type Mutation {
+        ...       setGreeting(value: String!): String
+        ...     }
+        ... ''')
+        >>> schema.get_root_type(OperationType.QUERY).name
+        'Query'
+        >>> schema.get_root_type(OperationType.MUTATION).name
+        'Mutation'
+        >>> schema.get_root_type(OperationType.SUBSCRIPTION) is None
+        True
+        """
         return getattr(self, f"{operation.value}_type")
 
     def get_type(self, name: str) -> GraphQLNamedType | None:
-        """Get the type with the given name."""
+        """Get the named type with the provided name.
+
+        :param name: the GraphQL name to look up
+        :returns: the named schema type, if one exists
+
+        >>> from graphql import build_schema
+        >>> schema = build_schema('''
+        ...     type User {
+        ...       name: String
+        ...     }
+        ...
+        ...     type Query {
+        ...       viewer: User
+        ...     }
+        ... ''')
+        >>> str(schema.get_type('User'))
+        'User'
+        >>> schema.get_type('Missing') is None
+        True
+        """
         return self.type_map.get(name)
 
     def get_possible_types(
         self, abstract_type: GraphQLAbstractType
     ) -> list[GraphQLObjectType]:
-        """Get list of all possible concrete types for given abstract type."""
+        """Get list of all possible concrete types for given abstract type.
+
+        :param abstract_type: the interface or union type to inspect
+        :returns: the object types that may satisfy the abstract type
+
+        >>> from graphql import (
+        ...     assert_interface_type, assert_union_type, build_schema
+        ... )
+        >>> schema = build_schema('''
+        ...     interface Node {
+        ...       id: ID!
+        ...     }
+        ...
+        ...     type User implements Node {
+        ...       id: ID!
+        ...     }
+        ...
+        ...     type Organization implements Node {
+        ...       id: ID!
+        ...     }
+        ...
+        ...     union SearchResult = User | Organization
+        ...
+        ...     type Query {
+        ...       node: Node
+        ...       search: [SearchResult]
+        ...     }
+        ... ''')
+        >>> Node = assert_interface_type(schema.get_type('Node'))
+        >>> SearchResult = assert_union_type(schema.get_type('SearchResult'))
+        >>> [type_.name for type_ in schema.get_possible_types(Node)]
+        ['User', 'Organization']
+        >>> [type_.name for type_ in schema.get_possible_types(SearchResult)]
+        ['User', 'Organization']
+        """
         return (
             abstract_type.types
             if is_union_type(abstract_type)
@@ -332,7 +553,38 @@ class GraphQLSchema:
     def get_implementations(
         self, interface_type: GraphQLInterfaceType
     ) -> InterfaceImplementations:
-        """Get implementations for the given interface type."""
+        """Get the objects and interfaces that implement an interface type.
+
+        :param interface_type: the interface type to inspect
+        :returns: the object and interface implementations of the interface
+
+        >>> from graphql import assert_interface_type, build_schema
+        >>> schema = build_schema('''
+        ...     interface Resource {
+        ...       url: String!
+        ...     }
+        ...
+        ...     interface Image implements Resource {
+        ...       url: String!
+        ...       width: Int
+        ...     }
+        ...
+        ...     type Photo implements Resource & Image {
+        ...       url: String!
+        ...       width: Int
+        ...     }
+        ...
+        ...     type Query {
+        ...       resource: Resource
+        ...     }
+        ... ''')
+        >>> Resource = assert_interface_type(schema.get_type('Resource'))
+        >>> implementations = schema.get_implementations(Resource)
+        >>> [type_.name for type_ in implementations.interfaces]
+        ['Image']
+        >>> [type_.name for type_ in implementations.objects]
+        ['Photo']
+        """
         return self._implementations_map.get(
             interface_type.name, InterfaceImplementations(objects=[], interfaces=[])
         )
@@ -342,7 +594,42 @@ class GraphQLSchema:
         abstract_type: GraphQLAbstractType,
         maybe_sub_type: GraphQLNamedType,
     ) -> bool:
-        """Check whether a type is a subtype of a given abstract type."""
+        """Check whether a type is a subtype of a given abstract type.
+
+        :param abstract_type: the interface or union type to inspect
+        :param maybe_sub_type: the object or interface type to test as a possible
+            subtype
+        :returns: whether the subtype may satisfy the abstract type
+
+        >>> from graphql import (
+        ...     assert_interface_type, assert_object_type, build_schema
+        ... )
+        >>> schema = build_schema('''
+        ...     interface Node {
+        ...       id: ID!
+        ...     }
+        ...
+        ...     type User implements Node {
+        ...       id: ID!
+        ...     }
+        ...
+        ...     type Review {
+        ...       body: String
+        ...     }
+        ...
+        ...     type Query {
+        ...       node: Node
+        ...       review: Review
+        ...     }
+        ... ''')
+        >>> Node = assert_interface_type(schema.get_type('Node'))
+        >>> User = assert_object_type(schema.get_type('User'))
+        >>> Review = assert_object_type(schema.get_type('Review'))
+        >>> schema.is_sub_type(Node, User)
+        True
+        >>> schema.is_sub_type(Node, Review)
+        False
+        """
         types = self._sub_type_map.get(abstract_type.name)
         if types is None:
             types = set()
@@ -362,7 +649,26 @@ class GraphQLSchema:
         return maybe_sub_type.name in types
 
     def get_directive(self, name: str) -> GraphQLDirective | None:
-        """Get the directive with the given name."""
+        """Get the directive with the provided name.
+
+        :param name: the GraphQL name to look up
+        :returns: the directive definition, if known
+
+        >>> from graphql import build_schema
+        >>> schema = build_schema('''
+        ...     directive @upper on FIELD_DEFINITION
+        ...
+        ...     type Query {
+        ...       greeting: String @upper
+        ...     }
+        ... ''')
+        >>> schema.get_directive('upper').name
+        'upper'
+        >>> schema.get_directive('missing') is None
+        True
+        >>> [directive.name for directive in schema.directives]
+        ['upper', 'include', 'skip', 'deprecated', 'specifiedBy', 'oneOf']
+        """
         for directive in self.directives:
             if directive.name == name:
                 return directive
@@ -374,14 +680,32 @@ class GraphQLSchema:
         """Get field of a given type with the given name.
 
         This method looks up the field on the given type definition.
-        It has special casing for the three introspection fields, `__schema`,
-        `__type` and `__typename`.
+        It has special casing for the three introspection fields, ``__schema``,
+        ``__type`` and ``__typename``.
 
-        `__typename` is special because it can always be queried as a field, even
+        ``__typename`` is special because it can always be queried as a field, even
         in situations where no other fields are allowed, like on a Union.
 
-        `__schema` and `__type` could get automatically added to the query type,
+        ``__schema`` and ``__type`` could get automatically added to the query type,
         but that would require mutating type definitions, which would cause issues.
+
+        :param parent_type: composite type to look up the field on
+        :param field_name: field name to look up
+        :returns: the field definition, including supported introspection fields
+
+        >>> from graphql import build_schema
+        >>> schema = build_schema('''
+        ...     type Query {
+        ...       greeting: String
+        ...     }
+        ... ''')
+        >>> query_type = schema.query_type
+        >>> schema.get_field(query_type, 'greeting').type
+        <GraphQLScalarType 'String'>
+        >>> str(schema.get_field(query_type, '__typename').type)
+        'String!'
+        >>> schema.get_field(query_type, 'missing') is None
+        True
         """
         if field_name == "__schema":
             return SchemaMetaFieldDef if self.query_type is parent_type else None
@@ -399,7 +723,10 @@ class GraphQLSchema:
 
     @property
     def validation_errors(self) -> list[GraphQLError] | None:
-        """Get validation errors."""
+        """Cached schema validation errors, if validation has already run.
+
+        :meta private:
+        """
         return self._validation_errors
 
 
@@ -437,12 +764,44 @@ class TypeSet(dict[GraphQLNamedType, None]):
 
 
 def is_schema(schema: Any) -> TypeGuard[GraphQLSchema]:
-    """Check whether this is a GraphQL schema."""
+    """Test if the given value is a GraphQL schema.
+
+    :param schema: the value to inspect
+    :returns: whether the value is a :class:`GraphQLSchema`
+
+    >>> from graphql import GraphQLString, build_schema, is_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> is_schema(schema)
+    True
+    >>> is_schema(GraphQLString)
+    False
+    """
     return isinstance(schema, GraphQLSchema)
 
 
 def assert_schema(schema: Any) -> GraphQLSchema:
-    """Assert that this is a GraphQL schema."""
+    """Return the value as a GraphQL schema, or raise if it is not a schema.
+
+    :param schema: the value to inspect
+    :returns: the value typed as a :class:`GraphQLSchema`
+
+    >>> from graphql import GraphQLString, assert_schema, build_schema
+    >>> schema = build_schema('''
+    ...     type Query {
+    ...       greeting: String
+    ...     }
+    ... ''')
+    >>> assert_schema(schema) is schema
+    True
+    >>> assert_schema(GraphQLString)
+    Traceback (most recent call last):
+    ...
+    TypeError: Expected String to be a GraphQL schema.
+    """
     if not is_schema(schema):
         msg = f"Expected {inspect(schema)} to be a GraphQL schema."
         raise TypeError(msg)
