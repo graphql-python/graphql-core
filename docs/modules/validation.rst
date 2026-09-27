@@ -33,6 +33,11 @@ Rules
 
    A tuple with all validation rules defined by the GraphQL specification
 
+.. data:: recommended_rules
+
+   A tuple with validation rules that are not part of the GraphQL specification,
+   but recommended to be used, like limiting the depth of introspection queries
+
 **Spec Section: "Executable Definitions"**
 
 .. autoclass:: ExecutableDefinitionsRule
@@ -151,3 +156,8 @@ Rules
 .. autoclass:: UniqueArgumentDefinitionNamesRule
 .. autoclass:: UniqueDirectiveNamesRule
 .. autoclass:: PossibleTypeExtensionsRule
+
+**Custom validation rules (not part of the specification)**
+
+.. autoclass:: NoDeprecatedCustomRule
+.. autoclass:: NoSchemaIntrospectionCustomRule

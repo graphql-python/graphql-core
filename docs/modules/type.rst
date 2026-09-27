@@ -13,6 +13,7 @@ Definition
 Predicates
 ^^^^^^^^^^
 
+.. autofunction:: is_abstract_type
 .. autofunction:: is_composite_type
 .. autofunction:: is_enum_type
 .. autofunction:: is_input_object_type
@@ -25,6 +26,8 @@ Predicates
 .. autofunction:: is_nullable_type
 .. autofunction:: is_object_type
 .. autofunction:: is_output_type
+.. autofunction:: is_required_argument
+.. autofunction:: is_required_input_field
 .. autofunction:: is_scalar_type
 .. autofunction:: is_type
 .. autofunction:: is_union_type
@@ -116,6 +119,11 @@ Predicates
 .. autofunction:: is_directive
 .. autofunction:: is_specified_directive
 
+Assertions
+^^^^^^^^^^
+
+.. autofunction:: assert_directive
+
 Definitions
 ^^^^^^^^^^^
 
@@ -123,6 +131,8 @@ Definitions
 .. autoclass:: GraphQLIncludeDirective
 .. autoclass:: GraphQLSkipDirective
 .. autoclass:: GraphQLDeprecatedDirective
+.. autoclass:: GraphQLSpecifiedByDirective
+.. autoclass:: GraphQLOneOfDirective
 
 .. data:: specified_directives
 
@@ -172,6 +182,10 @@ Definitions
 .. autoclass:: GraphQLInt
 .. autoclass:: GraphQLString
 
+.. data:: specified_scalar_types
+
+   A mapping containing all scalar types from the GraphQL specification
+
 .. data:: GRAPHQL_MAX_INT
 
    Maximum possible Int value as per GraphQL Spec (32-bit signed integer)
@@ -188,6 +202,11 @@ Predicates
 ^^^^^^^^^^
 
 .. autofunction:: is_schema
+
+Assertions
+^^^^^^^^^^
+
+.. autofunction:: assert_schema
 
 Definitions
 ^^^^^^^^^^^

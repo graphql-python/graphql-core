@@ -32,6 +32,8 @@ Execution
 
 .. autoclass:: MiddlewareManager
 
+.. autofunction:: get_argument_values
+
 .. autofunction:: get_directive_values
 
 .. autofunction:: get_variable_values
