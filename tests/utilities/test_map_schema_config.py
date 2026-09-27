@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import cast
 
-from graphql.type import GraphQLNamedType, GraphQLObjectType, GraphQLSchema
+from graphql.type import (
+    GraphQLNamedType,
+    GraphQLObjectType,
+    GraphQLSchema,
+    assert_object_type,
+)
 from graphql.utilities import build_schema, print_schema
 from graphql.utilities.map_schema_config import (
     ConfigMapperMap,
@@ -83,6 +88,30 @@ def describe_map_schema_config():
             schema_config = build_schema(sdl).to_kwargs()
 
             expect_schema_mapping(schema_config, lambda _context: {}, sdl)
+
+        def provides_field_and_parent_type_names_when_mapping_field_arguments():
+            sdl = """
+                type SomeType {
+                  field(arg: String): String
+                }
+                """
+
+            schema_config = build_schema(sdl).to_kwargs()
+            visits: list[str] = []
+
+            def map_argument(config, field_or_directive_name, parent_type_name):
+                visits.append(f"{parent_type_name}.{field_or_directive_name}")
+                return config
+
+            new_schema_config = map_schema_config(
+                schema_config,
+                lambda _context: {SchemaElementKind.ARGUMENT: map_argument},
+            )
+            schema = GraphQLSchema(**new_schema_config)
+            type_ = assert_object_type(schema.get_type("SomeType"))
+            assert len(type_.fields["field"].args) == 1
+
+            assert visits == ["SomeType.field"]
 
     def describe_field_mapping():
         def can_map_fields():

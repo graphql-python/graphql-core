@@ -226,7 +226,7 @@ def map_schema_config(
             mapped_field = merge_kwargs(
                 field.to_kwargs(),
                 type_=get_type(cast("GraphQLNamedType", field.type)),
-                args=map_args(field.args, parent_type_name, field_name),
+                args=map_args(field.args, field_name, parent_type_name),
             )
             if mapper is not None:
                 mapped_field = mapper(mapped_field, parent_type_name)
