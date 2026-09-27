@@ -2010,6 +2010,6 @@ def is_abstract_type(type_: Any) -> TypeGuard[GraphQLAbstractType]:
 def assert_abstract_type(type_: Any) -> GraphQLAbstractType:
     """Assert that this is a GraphQL abstract type."""
     if not is_abstract_type(type_):
-        msg = f"Expected {type_} to be a GraphQL composite type."
+        msg = f"Expected {type_} to be a GraphQL abstract type."
         raise TypeError(msg)
     return type_

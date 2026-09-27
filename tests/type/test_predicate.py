@@ -446,8 +446,11 @@ def describe_type_predicates():
 
         def returns_false_for_non_abstract_type():
             assert is_abstract_type(ObjectType) is False
-            with pytest.raises(TypeError):
+            with pytest.raises(TypeError) as exc_info:
                 assert_abstract_type(ObjectType)
+            assert str(exc_info.value) == (
+                "Expected Object to be a GraphQL abstract type."
+            )
 
         def returns_false_for_wrapped_non_abstract_type():
             assert is_abstract_type(GraphQLList(ObjectType)) is False
