@@ -1,7 +1,6 @@
 """Execute a GraphQL operation"""
 
-from asyncio import ensure_future
-from inspect import isawaitable
+from inspect import isawaitable, iscoroutine
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from .error import GraphQLError
@@ -251,7 +250,9 @@ def graphql_sync(
 
     # Assert that the execution was synchronous.
     if isawaitable(result):
-        ensure_future(result).cancel()
+        if iscoroutine(result):  # pragma: no branch
+            # close the coroutine to avoid a "was never awaited" warning
+            result.close()
         raise RuntimeError("GraphQL execution failed to complete synchronously.")
 
     return result
