@@ -1,6 +1,6 @@
 # GraphQL-core 3
 
-GraphQL-core 3 is a Python 3.7+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
+GraphQL-core 3 is a Python 3.10+ port of [GraphQL.js](https://github.com/graphql/graphql-js),
 the JavaScript reference implementation for [GraphQL](https://graphql.org/),
 a query language for APIs created by Facebook.
 
@@ -15,18 +15,17 @@ An extensive test suite with over 3000 unit tests and 100% coverage replicates t
 complete test suite of GraphQL.js, ensuring that this port is reliable and compatible
 with GraphQL.js.
 
-The current stable version 3.2.13 of GraphQL-core is up-to-date with GraphQL.js
-version 16.14.2 and supports Python versions 3.7 to 3.15.
+The current stable version 3.3.0rc1 of GraphQL-core is up-to-date with GraphQL.js
+version 17.0.2 and supports Python versions 3.10 to 3.15.
 
-You can also try out the latest release candidate 3.3.0rc1 of GraphQL-core,
-which is up-to-date with GraphQL.js version 17.0.0rc0.
-This new minor version of GraphQL-core also supports Python versions 3.10 to 3.14.
+If you need compatibility with GraphQL.js 16 or support for Python 3.7 to 3.9,
+you can use the latest version 3.2.13 from the 3.2 branch.
 
 Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
 Changes in the major version of GraphQL.js are reflected in the minor version of
 GraphQL-core instead. This means there can be breaking changes in the API
 when the minor version changes, and only patch releases are fully backward compatible.
-Therefore, we recommend using something like `~= 3.2.0` as the version specifier
+Therefore, we recommend using something like `~= 3.3.0` as the version specifier
 when including GraphQL-core as a dependency.
 
 ## Documentation
@@ -205,7 +204,7 @@ Design goals for the GraphQL-core 3 library were:
 
 Some restrictions (mostly in line with the design goals):
 
-* requires Python 3.6 or newer (Python 3.7 and newer in latest version)
+* requires Python 3.10 or newer, while the 3.2 branch supports Python 3.7 and newer
 * does not support some already deprecated methods and options of GraphQL.js
 * supports asynchronous operations only via async.io
   (does not support the additional executors in GraphQL-core)
