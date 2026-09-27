@@ -125,8 +125,9 @@ def execute(  # noqa: PLR0913, PLR0917
     are synchronous), or an awaitable of an ExecutionResult that will eventually
     be resolved and never raise an exception.
 
-    If the arguments to this function do not result in a legal execution context,
-    a GraphQLError will be thrown immediately explaining the invalid input.
+    If the schema is invalid, an error will be raised immediately. GraphQL request
+    errors, including missing operations and variable coercion errors, are returned
+    in an errors-only ExecutionResult.
 
     Field errors are collected into the response instead of raising an exception.
     Only the field that produced the error and its descendants are omitted; sibling
@@ -349,8 +350,9 @@ def experimental_execute_incrementally(  # noqa: PLR0913, PLR0917
     and a stream of ``subsequent_results``, or an awaitable resolving to one of
     these when execution is asynchronous.
 
-    If the arguments to this function do not result in a legal execution context,
-    a GraphQLError will be thrown immediately explaining the invalid input.
+    If the schema is invalid, an error will be raised immediately. GraphQL request
+    errors, including missing operations and variable coercion errors, are returned
+    in an errors-only ExecutionResult.
 
     Additional keyword arguments are passed on to the constructor of the executor
     class.
@@ -425,8 +427,8 @@ def experimental_execute_incrementally(  # noqa: PLR0913, PLR0917
     if executor_class is None:
         executor_class = IncrementalExecutor
 
-    # If a valid executor cannot be created due to incorrect arguments,
-    # a "Response" with only errors is returned.
+    # If the request cannot produce a valid executor, return a "Response"
+    # with only errors.
     executor = executor_class.build(
         schema,
         document,
@@ -602,19 +604,19 @@ def subscribe(
 
     Implements the "Subscribe" algorithm described in the GraphQL specification.
 
-    Returns either an AsyncIterator (if successful) or an ExecutionResult (error),
-    or an awaitable resolving to one of these if the subscription resolver is
-    asynchronous. An exception will be raised if the schema or other arguments to
-    this function are invalid, or if the resolved event stream is not an async
-    iterable.
+    Returns either an AsyncIterator (if successful), an ExecutionResult (error),
+    or an awaitable resolving to one of those results. The call will raise an
+    exception immediately if the schema is invalid or the selected operation is not
+    a subscription.
 
-    If the client-provided arguments to this function do not result in a compliant
-    subscription, a GraphQL Response (ExecutionResult) with descriptive errors and no
-    data will be returned.
+    GraphQL request errors, including missing operations and variable coercion
+    errors, return or resolve to a GraphQL Response (ExecutionResult) with
+    descriptive errors and no data.
 
     If the source stream could not be created due to faulty subscription resolver
-    logic or underlying systems, the result will be a single ExecutionResult
-    containing ``errors`` and no ``data``.
+    logic, a non-async-iterable resolver result, or a system error, the function
+    will return or resolve to a single ExecutionResult containing ``errors`` and no
+    ``data``.
 
     If the operation succeeded, the result is an AsyncIterator, which yields a
     stream of ExecutionResults representing the response stream.
@@ -732,8 +734,8 @@ def subscribe(
     if executor_class is None:
         executor_class = ExecutorThrowingOnIncremental
 
-    # If a valid executor cannot be created due to incorrect arguments,
-    # a "Response" with only errors is returned.
+    # If the request cannot produce a valid executor, return a "Response"
+    # with only errors.
     executor = executor_class.build(
         schema,
         document,
@@ -788,15 +790,17 @@ def execute_root_selection_set(
     Implements the "Executing operations" section of the GraphQL specification,
     running the given executor to completion.
 
-    Returns either an ExecutionResult or an awaitable that will eventually resolve
-    to the data described by the "Response" section of the GraphQL specification.
+    Returns either a synchronous ExecutionResult, or an awaitable for an
+    ExecutionResult, described by the "Response" section of the GraphQL
+    specification.
 
     If errors are encountered while executing a GraphQL field, only that field and
-    its descendants will be omitted, and sibling fields will still be executed. An
-    execution which encounters errors will still result in an ExecutionResult.
+    its descendants will be omitted, and sibling fields will still be executed.
+    These field errors are collected into the returned result instead of being
+    raised.
 
     Errors from sub-fields of a NonNull type may propagate to the top level, at
-    which point we still log the error and null the parent field, which in this
+    which point we still collect the error and null the parent field, which in this
     case is the entire response.
 
     This does not support incremental delivery (``@defer`` and ``@stream``).
@@ -927,18 +931,13 @@ def create_source_event_stream(
     specification, resolving the subscription source event stream for a
     previously built executor.
 
-    Returns either an AsyncIterable (if successful) or an ExecutionResult (error),
-    or an awaitable resolving to one of these if the subscription resolver is
-    asynchronous. An exception will be raised if the passed executor is invalid,
-    or if the resolved event stream is not an async iterable.
-
-    If the client-provided arguments do not result in a compliant subscription,
-    a GraphQL Response (ExecutionResult) with descriptive errors and no data will
-    be returned.
+    Returns either an AsyncIterable (if successful), an ExecutionResult (error),
+    or an awaitable resolving to one of those results.
 
     If the source stream could not be created due to faulty subscription resolver
-    logic or underlying systems, the result will be a single ExecutionResult
-    containing ``errors`` and no ``data``.
+    logic, a non-async-iterable resolver result, or a system error, the function
+    will return or resolve to a single ExecutionResult containing ``errors`` and no
+    ``data``.
 
     If the operation succeeded, the result is the AsyncIterable for the event stream
     returned by the resolver.

@@ -642,8 +642,8 @@ class Executor(Generic[TContext]):
         can be executed without errors.
 
         Errors from sub-fields of a NonNull type may propagate to the top level,
-        at which point we still log the error and null the parent field, which
-        in this case is the entire response.
+        at which point we still collect the error and null the parent field,
+        which in this case is the entire response.
 
         If the operation is aborted, the whole operation is rejected with an
         aborted execution error rather than resolving to a partial response with
