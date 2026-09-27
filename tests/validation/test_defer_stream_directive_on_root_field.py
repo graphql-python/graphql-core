@@ -105,6 +105,33 @@ def describe_defer_stream_on_root_field():
             ],
         )
 
+    def fragment_spread_cycle_on_root_mutation_field():
+        assert_valid(
+            """
+            mutation {
+              ...rootFragment
+            }
+            fragment rootFragment on MutationRoot {
+              ...otherFragment
+            }
+            fragment otherFragment on MutationRoot {
+              ...rootFragment
+            }
+            """
+        )
+
+    def self_referencing_fragment_spread_on_root_mutation_field():
+        assert_valid(
+            """
+            mutation {
+              ...rootFragment
+            }
+            fragment rootFragment on MutationRoot {
+              ...rootFragment
+            }
+            """
+        )
+
     def defer_fragment_spread_on_root_mutation_field_interface():
         assert_errors(
             """

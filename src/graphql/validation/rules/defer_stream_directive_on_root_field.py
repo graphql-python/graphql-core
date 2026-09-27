@@ -84,6 +84,7 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                 fragment_name = selection.name.value
                 if fragment_name in visited_fragments:
                     continue
+                visited_fragments.add(fragment_name)
                 fragment = fragments.get(fragment_name)
                 if fragment:
                     defer = get_directive(selection, GraphQLDeferDirective.name)
@@ -102,7 +103,6 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                         fragment.selection_set,
                         visited_fragments,
                     )
-                visited_fragments.add(fragment_name)
             else:  # the only remaining selection kind is an inline fragment
                 inline_fragment = cast("InlineFragmentNode", selection)
                 defer = get_directive(inline_fragment, GraphQLDeferDirective.name)
