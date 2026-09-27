@@ -3913,8 +3913,8 @@ def assert_abstract_type(type_: Any) -> GraphQLAbstractType:
     >>> assert_abstract_type(schema.get_type('User'))
     Traceback (most recent call last):
     ...
-    TypeError: Expected User to be a GraphQL ... type.
+    TypeError: Expected User to be a GraphQL abstract type.
     """
     if not is_abstract_type(type_):
-        raise TypeError(f"Expected {type_} to be a GraphQL composite type.")
+        raise TypeError(f"Expected {type_} to be a GraphQL abstract type.")
     return cast(GraphQLAbstractType, type_)
