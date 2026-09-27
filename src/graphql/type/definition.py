@@ -736,7 +736,8 @@ class GraphQLDefaultInput:  # noqa: PLW1641
 
     Default values can be provided either as already coerced Python values or as
     GraphQL literals (AST nodes). Preserving the original literal allows it to be
-    printed back without a lossy round-trip through coercion (see :issue:`3051`).
+    printed back without a lossy round-trip through coercion (see `GraphQL.js issue
+    #3051 <https://github.com/graphql/graphql-js/issues/3051>`_).
     Exactly one of ``value`` or ``literal`` is set; the other is left undefined.
 
     Here ``value`` is the *external* default value (it will be coerced), while the

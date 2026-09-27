@@ -33,6 +33,23 @@ Rules
 
    A tuple with all validation rules defined by the GraphQL specification
 
+.. data:: recommended_rules
+
+   A tuple with validation rules that are not part of the GraphQL specification,
+   but recommended to be used, like limiting the depth of introspection queries
+
+**Spec Section: "Defer And Stream Directive Labels Are Unique"**
+
+.. autoclass:: DeferStreamDirectiveLabel
+
+**Spec Section: "Defer And Stream Directives Are Used On Valid Root Field"**
+
+.. autoclass:: DeferStreamDirectiveOnRootField
+
+**Spec Section: "Defer And Stream Directives Are Used On Valid Operations"**
+
+.. autoclass:: DeferStreamDirectiveOnValidOperationsRule
+
 **Spec Section: "Executable Definitions"**
 
 .. autoclass:: ExecutableDefinitionsRule
@@ -105,6 +122,10 @@ Rules
 
 .. autoclass:: SingleFieldSubscriptionsRule
 
+**Spec Section: "Stream Directives Are Used On List Fields"**
+
+.. autoclass:: StreamDirectiveOnListField
+
 **Spec Section: "Argument Uniqueness"**
 
 .. autoclass:: UniqueArgumentNamesRule
@@ -155,3 +176,8 @@ Rules
 .. autoclass:: UniqueArgumentDefinitionNamesRule
 .. autoclass:: UniqueDirectiveNamesRule
 .. autoclass:: PossibleTypeExtensionsRule
+
+**Custom validation rules (not part of the specification)**
+
+.. autoclass:: NoDeprecatedCustomRule
+.. autoclass:: NoSchemaIntrospectionCustomRule

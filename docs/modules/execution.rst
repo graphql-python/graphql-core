@@ -59,6 +59,13 @@ Execution
 .. autoclass:: FormattedIncrementalResult
    :no-inherited-members:
 
+.. autoclass:: PendingResult
+
+.. autoclass:: FormattedPendingResult
+   :no-inherited-members:
+
+.. autoclass:: CompletedResult
+
 .. autofunction:: subscribe
 
 .. autofunction:: execute_subscription_event
@@ -67,11 +74,15 @@ Execution
 
 .. autofunction:: map_source_to_response_event
 
+.. autofunction:: map_async_iterable
+
 .. autoclass:: RootSelectionSetExecutor
 
 .. autoclass:: Middleware
 
 .. autoclass:: MiddlewareManager
+
+.. autofunction:: get_argument_values
 
 .. autofunction:: get_directive_values
 

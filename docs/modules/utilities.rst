@@ -74,6 +74,10 @@ Replace any variables in an AST value with their literal values:
 
 .. autofunction:: replace_variables
 
+Get the AST of the default value of an argument or input field:
+
+.. autofunction:: get_default_value_ast
+
 A helper to use within recursive-descent visitors which need to be aware of the GraphQL
 type system:
 
