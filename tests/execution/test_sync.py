@@ -96,6 +96,15 @@ def describe_execute_synchronously_when_possible():
             del exc_info
             cleanup()
 
+        def throws_if_encountering_async_execution_with_check_sync_without_loop():
+            doc = "query Example { syncField, asyncField }"
+            with pytest.raises(RuntimeError) as exc_info:
+                execute_sync(
+                    schema, document=parse(doc), root_value="rootValue", check_sync=True
+                )
+            msg = str(exc_info.value)
+            assert msg == "GraphQL execution failed to complete synchronously."
+
         async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"
             result = execute_sync(schema, document=parse(doc), root_value="rootValue")
@@ -193,6 +202,13 @@ def describe_execute_synchronously_when_possible():
             assert msg == "GraphQL execution failed to complete synchronously."
             del exc_info
             cleanup()
+
+        def throws_if_encountering_async_operation_with_check_sync_without_loop():
+            doc = "query Example { syncField, asyncField }"
+            with pytest.raises(RuntimeError) as exc_info:
+                graphql_sync(schema, doc, "rootValue", check_sync=True)
+            msg = str(exc_info.value)
+            assert msg == "GraphQL execution failed to complete synchronously."
 
         async def throws_if_encountering_async_operation_without_check_sync():
             doc = "query Example { syncField, asyncField }"

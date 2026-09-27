@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import ensure_future
+from inspect import iscoroutine
 from typing import TYPE_CHECKING, Any, cast
 
 from .error import GraphQLError
@@ -216,7 +216,9 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
 
     # Assert that the execution was synchronous.
     if default_is_awaitable(result):
-        ensure_future(result).cancel()
+        if iscoroutine(result):  # pragma: no branch
+            # close the coroutine to avoid a "was never awaited" warning
+            result.close()
         msg = "GraphQL execution failed to complete synchronously."
         raise RuntimeError(msg)
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from asyncio import ensure_future
 from collections.abc import Callable
+from inspect import iscoroutine
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -295,8 +295,9 @@ def execute_sync(
     if default_is_awaitable(result) or isinstance(
         result, ExperimentalIncrementalExecutionResults
     ):
-        if default_is_awaitable(result):
-            ensure_future(cast("Awaitable[ExecutionResult]", result)).cancel()
+        if iscoroutine(result):
+            # close the coroutine to avoid a "was never awaited" warning
+            result.close()
         msg = "GraphQL execution failed to complete synchronously."
         raise RuntimeError(msg)
 
