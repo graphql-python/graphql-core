@@ -40,7 +40,7 @@ test = [
 lint = [
     "ruff>=0.16.9,<0.17",
     "mypy>=2.3.1,<3",
-    "bump2version>=1,<2",
+    "bump-my-version>=1.5.1,<2",
     "typing-extensions>=4.16; python_version<'3.11'",
 ]
 doc = [
@@ -60,7 +60,6 @@ source-include = [
     "README.md",
     "tests/**",
     "docs/**",
-    ".bumpversion.cfg",
     ".editorconfig",
     ".readthedocs.yaml",
     "tox.ini",
@@ -311,6 +310,44 @@ timeout = "100"
 filterwarnings = "ignore::pytest.PytestConfigWarning"
 # All tests can be found in the tests directory.
 testpaths = ["tests"]
+
+[tool.bumpversion]
+current_version = "3.3.0rc1"
+commit = false
+tag = false
+parse = '''(?x)
+    (?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)
+    (?:(?P<release>a|b|rc)(?P<build>\d+))?
+'''
+serialize = [
+    "{major}.{minor}.{patch}{release}{build}",
+    "{major}.{minor}.{patch}",
+]
+
+[tool.bumpversion.parts.release]
+values = ["a", "b", "rc", "final"]
+optional_value = "final"
+
+[[tool.bumpversion.files]]
+filename = "src/graphql/version.py"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "docs/conf.py"
+search = 'version = release = "{current_version}"'
+replace = 'version = release = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "README.md"
+search = "{current_version} of GraphQL-core"
+replace = "{new_version} of GraphQL-core"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+regex = true
+search = '^version = "{current_version}"'
+replace = 'version = "{new_version}"'
 
 [build-system]
 requires = ["uv_build>=0.12,<0.13"]
