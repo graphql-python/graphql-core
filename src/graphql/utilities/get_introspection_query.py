@@ -295,14 +295,14 @@ class IntrospectionDirective(WithName, MaybeWithIsRepeatable, MaybeWithDeprecate
 class IntrospectionScalarType(WithName, MaybeWithSpecifiedByUrl):
     """The introspection representation of a scalar type."""
 
-    kind: Literal["scalar"]
+    kind: Literal["SCALAR"]
     """The introspection kind discriminator for this type reference or type."""
 
 
 class IntrospectionInterfaceType(WithName):
     """The introspection representation of an interface type."""
 
-    kind: Literal["interface"]
+    kind: Literal["INTERFACE"]
     """The introspection kind discriminator for this type reference or type."""
     fields: List[IntrospectionField]
     """Fields declared by this object, interface, input object, or literal."""
@@ -315,7 +315,7 @@ class IntrospectionInterfaceType(WithName):
 class IntrospectionObjectType(WithName):
     """The introspection representation of an object type."""
 
-    kind: Literal["object"]
+    kind: Literal["OBJECT"]
     """The introspection kind discriminator for this type reference or type."""
     fields: List[IntrospectionField]
     """Fields declared by this object, interface, input object, or literal."""
@@ -326,7 +326,7 @@ class IntrospectionObjectType(WithName):
 class IntrospectionUnionType(WithName):
     """The introspection representation of a union type."""
 
-    kind: Literal["union"]
+    kind: Literal["UNION"]
     """The introspection kind discriminator for this type reference or type."""
     possibleTypes: List[SimpleIntrospectionType]  # should be NamedType
     """Object types that may be returned for this abstract type."""
@@ -335,7 +335,7 @@ class IntrospectionUnionType(WithName):
 class IntrospectionEnumType(WithName):
     """The introspection representation of an enum type."""
 
-    kind: Literal["enum"]
+    kind: Literal["ENUM"]
     """The introspection kind discriminator for this type reference or type."""
     enumValues: List[IntrospectionEnumValue]
     """Values declared by this enum type."""
@@ -344,7 +344,7 @@ class IntrospectionEnumType(WithName):
 class IntrospectionInputObjectType(WithName):
     """The introspection representation of an input object type."""
 
-    kind: Literal["input_object"]
+    kind: Literal["INPUT_OBJECT"]
     """The introspection kind discriminator for this type reference or type."""
     inputFields: List[IntrospectionInputValue]
     """Input fields declared by this input object type."""
@@ -377,7 +377,7 @@ IntrospectionInputType = Union[
 class IntrospectionListType(TypedDict):
     """The introspection representation of a list type reference."""
 
-    kind: Literal["list"]
+    kind: Literal["LIST"]
     """The introspection kind discriminator for this type reference or type."""
     ofType: SimpleIntrospectionType  # should be IntrospectionType
     """The type wrapped by this list or non-null type."""
@@ -386,7 +386,7 @@ class IntrospectionListType(TypedDict):
 class IntrospectionNonNullType(TypedDict):
     """The introspection representation of a non-null type reference."""
 
-    kind: Literal["non_null"]
+    kind: Literal["NON_NULL"]
     """The introspection kind discriminator for this type reference or type."""
     ofType: SimpleIntrospectionType  # should be IntrospectionType
     """The type wrapped by this list or non-null type."""

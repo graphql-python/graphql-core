@@ -722,7 +722,7 @@ def describe_type_system_build_schema_from_introspection():
                 if type_["name"] == "Query"
             )
             assert query_type_introspection["kind"] == "OBJECT"
-            del query_type_introspection["kind"]
+            del query_type_introspection["kind"]  # type: ignore
 
             with raises(
                 TypeError,
