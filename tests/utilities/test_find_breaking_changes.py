@@ -1026,6 +1026,57 @@ def describe_find_dangerous_changes():
             ),
         ]
 
+    def should_detect_if_a_default_value_changed_on_an_input_field():
+        old_sdl = """
+            input InputType1 {
+              withDefaultValue: String = "TO BE DELETED"
+              stringField: String = "test"
+              emptyArray: [Int!] = []
+              withoutDefaultValue: String
+            }
+
+            type Query {
+              field1(arg: InputType1): String
+            }
+            """
+
+        old_schema = build_schema(old_sdl)
+        copy_of_old_schema = build_schema(old_sdl)
+        assert find_dangerous_changes(old_schema, copy_of_old_schema) == []
+
+        new_schema = build_schema(
+            """
+            input InputType1 {
+              withDefaultValue: String
+              stringField: String = "Test"
+              emptyArray: [Int!] = [7]
+              withoutDefaultValue: String = "now has one"
+            }
+
+            type Query {
+              field1(arg: InputType1): String
+            }
+            """
+        )
+
+        assert find_dangerous_changes(old_schema, new_schema) == [
+            (
+                DangerousChangeType.INPUT_FIELD_DEFAULT_VALUE_CHANGE,
+                "InputType1.withDefaultValue defaultValue was removed.",
+            ),
+            (
+                DangerousChangeType.INPUT_FIELD_DEFAULT_VALUE_CHANGE,
+                (
+                    "InputType1.stringField has changed defaultValue"
+                    ' from "test" to "Test".'
+                ),
+            ),
+            (
+                DangerousChangeType.INPUT_FIELD_DEFAULT_VALUE_CHANGE,
+                "InputType1.emptyArray has changed defaultValue from [] to [7].",
+            ),
+        ]
+
     def should_ignore_changes_in_field_order_of_default_value():
         old_schema = build_schema(
             """

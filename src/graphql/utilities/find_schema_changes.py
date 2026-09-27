@@ -88,6 +88,7 @@ class DangerousChangeType(Enum):
     OPTIONAL_ARG_ADDED = 63
     IMPLEMENTED_INTERFACE_ADDED = 64
     ARG_DEFAULT_VALUE_CHANGE = 65
+    INPUT_FIELD_DEFAULT_VALUE_CHANGE = 66
 
 
 class SafeChangeType(Enum):
@@ -108,6 +109,7 @@ class SafeChangeType(Enum):
     ARG_CHANGED_KIND_SAFE = 79
     ARG_DEFAULT_VALUE_ADDED = 80
     DESCRIPTION_CHANGED = 81
+    INPUT_FIELD_DEFAULT_VALUE_ADDED = 82
 
 
 class BreakingChange(NamedTuple):
@@ -522,12 +524,40 @@ def find_input_object_type_changes(
         is_safe = is_change_safe_for_input_object_field_or_field_arg(
             old_field.type, new_field.type
         )
+
+        old_default_value_str = get_default_value(old_field)
+        new_default_value_str = get_default_value(new_field)
         if not is_safe:
             schema_changes.append(
                 BreakingChange(
                     BreakingChangeType.FIELD_CHANGED_KIND,
                     f"Field {old_type}.{field_name} changed type"
                     f" from {old_field.type} to {new_field.type}.",
+                )
+            )
+        elif old_default_value_str is not None:
+            if new_default_value_str is None:
+                schema_changes.append(
+                    DangerousChange(
+                        DangerousChangeType.INPUT_FIELD_DEFAULT_VALUE_CHANGE,
+                        f"{old_type}.{field_name} defaultValue was removed.",
+                    )
+                )
+            elif old_default_value_str != new_default_value_str:
+                schema_changes.append(
+                    DangerousChange(
+                        DangerousChangeType.INPUT_FIELD_DEFAULT_VALUE_CHANGE,
+                        f"{old_type}.{field_name} has changed defaultValue"
+                        f" from {old_default_value_str}"
+                        f" to {new_default_value_str}.",
+                    )
+                )
+        elif new_default_value_str is not None and old_default_value_str is None:
+            schema_changes.append(
+                SafeChange(
+                    SafeChangeType.INPUT_FIELD_DEFAULT_VALUE_ADDED,
+                    f"{old_type}.{field_name} added a defaultValue"
+                    f" {new_default_value_str}.",
                 )
             )
         elif str(old_field.type) != str(new_field.type):
