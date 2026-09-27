@@ -73,7 +73,7 @@ class GraphQLSchemaKwargs(TypedDict, total=False):
     description: Optional[str]
     """Human-readable description for this schema element, if provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[ast.SchemaDefinitionNode]
     """AST node from which this schema element was built, if available."""
     extension_ast_nodes: Tuple[ast.SchemaExtensionNode, ...]
@@ -146,7 +146,7 @@ class GraphQLSchema:
     :param directives: the directives available in this schema; if not provided,
         the specified directives will be used
     :param description: a human-readable description for this schema, if any
-    :param extensions: extension fields to include in the formatted result
+    :param extensions: custom extension fields reserved for users
     :param ast_node: the AST node from which this schema was built, if available
     :param extension_ast_nodes: the AST extension nodes applied to this schema
     :param assume_valid: if this schema was built from a source known to be valid,
@@ -248,7 +248,7 @@ class GraphQLSchema:
     description: Optional[str]
     """Human-readable description for this schema element, if provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[ast.SchemaDefinitionNode]
     """AST node from which this schema element was built, if available."""
     extension_ast_nodes: Tuple[ast.SchemaExtensionNode, ...]

@@ -46,7 +46,7 @@ class GraphQLDirectiveKwargs(TypedDict, total=False):
     description: Optional[str]
     """Human-readable description for this schema element, if provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[ast.DirectiveDefinitionNode]
     """AST node from which this schema element was built, if available."""
     extension_ast_nodes: Tuple[ast.DirectiveExtensionNode, ...]
@@ -68,7 +68,7 @@ class GraphQLDirective:
         same location
     :param deprecation_reason: the reason this directive is deprecated, if any
     :param description: a human-readable description for this directive, if any
-    :param extensions: extension fields to include in the formatted result
+    :param extensions: custom extension fields reserved for users
     :param ast_node: the AST node from which this directive was built, if available
     :param extension_ast_nodes: the AST extension nodes applied to this directive
 
@@ -133,7 +133,7 @@ class GraphQLDirective:
     description: Optional[str]
     """Human-readable description for this schema element, if provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[ast.DirectiveDefinitionNode]
     """AST node from which this schema element was built, if available."""
     extension_ast_nodes: Tuple[ast.DirectiveExtensionNode, ...]

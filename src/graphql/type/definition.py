@@ -305,7 +305,7 @@ class GraphQLNamedTypeKwargs(TypedDict, total=False):
     description: Optional[str]
     """Human-readable description for this schema element, if provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     # unfortunately, we cannot make the following more specific, because they are
     # used by subclasses with different node types and typed dicts cannot be refined
     ast_node: Optional[Any]
@@ -345,7 +345,7 @@ class GraphQLNamedType(GraphQLType):
     description: Optional[str]
     """Human-readable description for this schema element, if provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[TypeDefinitionNode]
     """AST node from which this schema element was built, if available."""
     extension_ast_nodes: Tuple[TypeExtensionNode, ...]
@@ -809,7 +809,7 @@ class GraphQLFieldKwargs(TypedDict, total=False):
     deprecation_reason: Optional[str]
     """Reason this element is deprecated, if one was provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[FieldDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -871,7 +871,7 @@ class GraphQLField:
     deprecation_reason: Optional[str]
     """Reason this element is deprecated, if one was provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[FieldDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -1059,7 +1059,7 @@ class GraphQLArgumentKwargs(TypedDict, total=False):
     out_name: Optional[str]
     """Name of the Python keyword argument (extension of GraphQL.js)."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[InputValueDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -1117,7 +1117,7 @@ class GraphQLArgument:
     Used for transforming names; if not set, the argument name is used.
     """
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[InputValueDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -2550,7 +2550,7 @@ class GraphQLEnumValueKwargs(TypedDict, total=False):
     deprecation_reason: Optional[str]
     """Reason this element is deprecated, if one was provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[EnumValueDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -2595,7 +2595,7 @@ class GraphQLEnumValue:
     deprecation_reason: Optional[str]
     """Reason this element is deprecated, if one was provided."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[EnumValueDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -3013,7 +3013,7 @@ class GraphQLInputFieldKwargs(TypedDict, total=False):
     out_name: Optional[str]
     """Name of the key in the outbound value (extension of GraphQL.js)."""
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[InputValueDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
@@ -3067,7 +3067,7 @@ class GraphQLInputField:
     Used for transforming names; if not set, the field name is used.
     """
     extensions: Dict[str, Any]
-    """Extension fields to include in the formatted result."""
+    """Custom extension fields reserved for users."""
     ast_node: Optional[InputValueDefinitionNode]
     """AST node from which this schema element was built, if available."""
 
