@@ -136,7 +136,8 @@ def get_directive_location_for_ast_path(
         parent_node = ancestors[-3]
         return (
             DirectiveLocation.INPUT_FIELD_DEFINITION
-            if parent_node.kind == "input_object_type_definition"
+            if parent_node.kind
+            in ("input_object_type_definition", "input_object_type_extension")
             else DirectiveLocation.ARGUMENT_DEFINITION
         )
     if kind == "variable_definition":

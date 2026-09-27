@@ -331,7 +331,9 @@ def describe_known_directives():
                   myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
                 }
 
-                extend type MyObj @onObject
+                extend type MyObj @onObject {
+                  myExtensionField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
+                }
 
                 scalar MyScalar @onScalar
 
@@ -341,7 +343,9 @@ def describe_known_directives():
                   myField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
                 }
 
-                extend interface MyInterface @onInterface
+                extend interface MyInterface @onInterface {
+                  myExtensionField(myArg: Int @onArgumentDefinition): String @onFieldDefinition
+                }
 
                 union MyUnion @onUnion = MyObj | Other
 
@@ -357,7 +361,9 @@ def describe_known_directives():
                   myField: Int @onInputFieldDefinition
                 }
 
-                extend input MyInput @onInputObject
+                extend input MyInput @onInputObject {
+                  myExtensionField: Int @onInputFieldDefinition
+                }
 
                 schema @onSchema {
                   query: MyQuery
@@ -369,7 +375,7 @@ def describe_known_directives():
                 extend schema @onSchema
 
                 directive @myDirective3 on OBJECT
-                """,
+                """,  # noqa: E501
                 schema=schema_with_sdl_directives,
             )
 
@@ -380,10 +386,18 @@ def describe_known_directives():
                   myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
                 }
 
+                extend type MyObj @onDirective {
+                  myExtensionField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
+                }
+
                 scalar MyScalar @onEnum
 
                 interface MyInterface @onObject {
                   myField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
+                }
+
+                extend interface MyInterface @onObject {
+                  myExtensionField(myArg: Int @onInputFieldDefinition): String @onInputFieldDefinition
                 }
 
                 union MyUnion @onEnumValue = MyObj | Other
@@ -396,13 +410,15 @@ def describe_known_directives():
                   myField: Int @onArgumentDefinition
                 }
 
+                extend input MyInput {
+                  myExtensionField: Int @onArgumentDefinition
+                }
+
                 schema @onObject {
                   query: MyQuery
                 }
 
                 extend schema @onObject
-
-                extend type MyObj @onDirective
                 """,  # noqa: E501
                 [
                     {
@@ -421,59 +437,89 @@ def describe_known_directives():
                         "locations": [(3, 71)],
                     },
                     {
-                        "message": "Directive '@onEnum' may not be used on scalar.",
-                        "locations": [(6, 33)],
-                    },
-                    {
-                        "message": "Directive '@onObject'"
-                        " may not be used on interface.",
-                        "locations": [(8, 39)],
+                        "message": "Directive '@onDirective'"
+                        " may not be used on object.",
+                        "locations": [(6, 35)],
                     },
                     {
                         "message": "Directive '@onInputFieldDefinition'"
                         " may not be used on argument definition.",
-                        "locations": [(9, 38)],
+                        "locations": [(7, 47)],
                     },
                     {
                         "message": "Directive '@onInputFieldDefinition'"
                         " may not be used on field definition.",
-                        "locations": [(9, 71)],
+                        "locations": [(7, 80)],
+                    },
+                    {
+                        "message": "Directive '@onEnum' may not be used on scalar.",
+                        "locations": [(10, 33)],
+                    },
+                    {
+                        "message": "Directive '@onObject'"
+                        " may not be used on interface.",
+                        "locations": [(12, 39)],
+                    },
+                    {
+                        "message": "Directive '@onInputFieldDefinition'"
+                        " may not be used on argument definition.",
+                        "locations": [(13, 38)],
+                    },
+                    {
+                        "message": "Directive '@onInputFieldDefinition'"
+                        " may not be used on field definition.",
+                        "locations": [(13, 71)],
+                    },
+                    {
+                        "message": "Directive '@onObject'"
+                        " may not be used on interface.",
+                        "locations": [(16, 46)],
+                    },
+                    {
+                        "message": "Directive '@onInputFieldDefinition'"
+                        " may not be used on argument definition.",
+                        "locations": [(17, 47)],
+                    },
+                    {
+                        "message": "Directive '@onInputFieldDefinition'"
+                        " may not be used on field definition.",
+                        "locations": [(17, 80)],
                     },
                     {
                         "message": "Directive '@onEnumValue' may not be used on union.",
-                        "locations": [(12, 31)],
+                        "locations": [(20, 31)],
                     },
                     {
                         "message": "Directive '@onScalar' may not be used on enum.",
-                        "locations": [(14, 29)],
+                        "locations": [(22, 29)],
                     },
                     {
                         "message": "Directive '@onUnion'"
                         " may not be used on enum value.",
-                        "locations": [(15, 28)],
+                        "locations": [(23, 28)],
                     },
                     {
                         "message": "Directive '@onEnum'"
                         " may not be used on input object.",
-                        "locations": [(18, 31)],
+                        "locations": [(26, 31)],
                     },
                     {
                         "message": "Directive '@onArgumentDefinition'"
                         " may not be used on input field definition.",
-                        "locations": [(19, 32)],
+                        "locations": [(27, 32)],
+                    },
+                    {
+                        "message": "Directive '@onArgumentDefinition'"
+                        " may not be used on input field definition.",
+                        "locations": [(31, 41)],
                     },
                     {
                         "message": "Directive '@onObject' may not be used on schema.",
-                        "locations": [(22, 24)],
+                        "locations": [(34, 24)],
                     },
                     {
                         "message": "Directive '@onObject' may not be used on schema.",
-                        "locations": [(26, 31)],
-                    },
-                    {
-                        "message": "Directive '@onDirective'"
-                        " may not be used on object.",
-                        "locations": [(28, 35)],
+                        "locations": [(38, 31)],
                     },
                 ],
                 schema_with_sdl_directives,
