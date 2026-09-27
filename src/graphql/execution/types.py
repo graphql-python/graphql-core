@@ -586,9 +586,6 @@ class FormattedInitialIncrementalExecutionResult(TypedDict):
     hasNext: bool
     """Indicates whether subsequent incremental payloads will follow."""
 
-    incremental: list[FormattedIncrementalResult]
-    """Formatted deferred or streamed payloads delivered with the initial result."""
-
     extensions: NotRequired[dict[str, Any]]
     """Additional non-standard metadata included in the formatted initial result."""
 
