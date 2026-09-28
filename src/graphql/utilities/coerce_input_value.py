@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from ..language import (
     ListValueNode,
@@ -30,6 +30,7 @@ from .replace_variables import replace_variables
 if TYPE_CHECKING:
     from ..execution.get_variable_signature import GraphQLVariableSignature
     from ..execution.values import FragmentVariableValues, VariableValues
+    from ..language import ConstValueNode
     from ..type import GraphQLArgument, GraphQLInputField
 
 __all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
@@ -320,9 +321,14 @@ def coerce_input_literal(
     leaf_type = assert_leaf_type(type_)
     try:
         if leaf_type.coerce_input_literal is not None:
-            return leaf_type.coerce_input_literal(
+            # A bare variable was handled above, so only list and object literals
+            # can still contain variables; other literals are already constant.
+            const_node = (
                 replace_variables(value_node, variable_values, fragment_variable_values)
+                if isinstance(value_node, (ListValueNode, ObjectValueNode))
+                else cast("ConstValueNode", value_node)
             )
+            return leaf_type.coerce_input_literal(const_node)
         return leaf_type.parse_literal(
             value_node, variable_values.coerced if variable_values else None
         )

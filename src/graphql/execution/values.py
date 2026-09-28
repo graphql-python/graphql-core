@@ -435,6 +435,23 @@ def get_argument_values(
     return coerced_values
 
 
+def _default_value_error_handler(
+    arg_def: GraphQLArgument | GraphQLVariableSignature,
+    arg_name: str,
+    node: FieldNode | DirectiveNode | FragmentSpreadNode,
+) -> Callable[[GraphQLError, list[str | int]], None]:
+    """Build the error handler for an invalid argument default value."""
+
+    def on_arg_default_value_error(error: GraphQLError, path: list[str | int]) -> None:
+        msg = (
+            f"{print_argument_or_fragment_variable(arg_def, arg_name, node)}"
+            f" has invalid default value{print_path_list(path)}: {error.message}"
+        )
+        raise GraphQLError(msg, node)
+
+    return on_arg_default_value_error
+
+
 def coerce_argument(
     coerced_values: dict[str, Any],
     node: FieldNode | DirectiveNode | FragmentSpreadNode,
@@ -448,13 +465,6 @@ def coerce_argument(
     """Coerce a single argument value into the given coerced values mapping."""
     arg_type = arg_def.type
     out_name = getattr(arg_def, "out_name", None) or arg_name
-
-    def on_arg_default_value_error(error: GraphQLError, path: list[str | int]) -> None:
-        msg = (
-            f"{print_argument_or_fragment_variable(arg_def, arg_name, node)}"
-            f" has invalid default value{print_path_list(path)}: {error.message}"
-        )
-        raise GraphQLError(msg, node)
 
     if argument_node is None:
         if is_required_argument(arg_def):
@@ -470,7 +480,7 @@ def coerce_argument(
             coerced_values,
             out_name,
             arg_def,
-            on_arg_default_value_error,
+            _default_value_error_handler(arg_def, arg_name, node),
             hide_suggestions,
         )
         return
@@ -495,7 +505,7 @@ def coerce_argument(
                 coerced_values,
                 out_name,
                 arg_def,
-                on_arg_default_value_error,
+                _default_value_error_handler(arg_def, arg_name, node),
                 hide_suggestions,
             )
             return
