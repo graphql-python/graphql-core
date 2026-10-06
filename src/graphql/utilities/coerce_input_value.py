@@ -355,10 +355,12 @@ def coerce_default_value(
     # field on the GraphQLDefaultInput object. (Contrary to GraphQL.js, which
     # memoizes on the input value itself, this also works for the immutable
     # variable signatures that reuse this function for fragment arguments.)
+    # It is only reused for the same type, as a default can be used with
+    # different types, e.g. after extend_schema() replaced the type.
     default_input = input_value.default
     if default_input is not None:
-        coerced_value = default_input._memoized_coerced_value  # noqa: SLF001
-        if coerced_value is Undefined:
+        coerced_type, coerced_value = default_input._memoized_coercion  # noqa: SLF001
+        if coerced_type is not input_value.type:
             coerced_value = (
                 coerce_input_literal(default_input.literal, input_value.type)
                 if default_input.literal is not None
@@ -375,7 +377,7 @@ def coerce_default_value(
                     f" to be valid, found: {found}."
                 )
                 raise TypeError(msg)
-            default_input._memoized_coerced_value = coerced_value  # noqa: SLF001
+            default_input._memoized_coercion = input_value.type, coerced_value  # noqa: SLF001
         return coerced_value
 
     # The deprecated internal default value is used as is.
