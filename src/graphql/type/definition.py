@@ -1254,16 +1254,16 @@ class GraphQLDefaultInput:  # noqa: PLW1641
     literal: ConstValueNode | None
     """GraphQL literal default value, or None if a runtime value is provided instead."""
 
-    __slots__ = "_memoized_coercion", "literal", "value"
+    __slots__ = "_memoized_coerced_value", "literal", "value"
 
     def __init__(
         self, value: Any = Undefined, literal: ConstValueNode | None = None
     ) -> None:
         self.value = value
         self.literal = literal
-        # Used to memoize the result of coercing the default value, together with
-        # the type it was coerced to (see coerce_default_value() in the utilities).
-        self._memoized_coercion: tuple[GraphQLInputType | None, Any] = None, Undefined
+        # Used to memoize the result of coercing the default value of a variable
+        # signature (see coerce_default_value() in the utilities).
+        self._memoized_coerced_value: Any = Undefined
 
     def __eq__(self, other: object) -> bool:
         return self is other or (
@@ -1351,6 +1351,10 @@ class GraphQLArgument:  # noqa: PLW1641
     """Custom extension fields reserved for users."""
     ast_node: InputValueDefinitionNode | None
     """AST node from which this schema element was built, if available."""
+
+    # Used to memoize the result of coercing the default value
+    # (see coerce_default_value() in the utilities).
+    _memoized_coerced_value: Any = Undefined
 
     def __init__(
         self,
@@ -3325,6 +3329,10 @@ class GraphQLInputField:  # noqa: PLW1641
     """Custom extension fields reserved for users."""
     ast_node: InputValueDefinitionNode | None
     """AST node from which this schema element was built, if available."""
+
+    # Used to memoize the result of coercing the default value
+    # (see coerce_default_value() in the utilities).
+    _memoized_coerced_value: Any = Undefined
 
     def __init__(
         self,
