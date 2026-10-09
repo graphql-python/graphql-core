@@ -1,4 +1,6 @@
 import pickle
+from decimal import Decimal
+from fractions import Fraction
 from math import inf, nan, pi
 from typing import Any
 
@@ -15,6 +17,36 @@ from graphql.type import (
     GraphQLScalarType,
     GraphQLString,
 )
+
+
+class NumPyLikeScalar:  # noqa: PLW1641
+    """Mimic a NumPy scalar such as numpy.int64, numpy.float32 or numpy.bool.
+
+    Like these, it does not subclass a builtin numeric type,
+    but can be converted to and compared with one.
+    """
+
+    def __init__(self, value: float) -> None:
+        self.value = value
+
+    def __int__(self) -> int:
+        return int(self.value)
+
+    def __float__(self) -> float:
+        return float(self.value)
+
+    def __bool__(self) -> bool:
+        return bool(self.value)
+
+    def __eq__(self, other: object) -> bool:
+        return self.value == other
+
+
+class NumPyLikeFloat64(float):
+    """Mimic numpy.float64, which subclasses float but compares to numpy.bool."""
+
+    def __ne__(self, other: object) -> Any:
+        return NumPyLikeScalar(super().__ne__(other))
 
 
 def describe_type_system_specified_scalar_types():
@@ -200,6 +232,65 @@ def describe_type_system_specified_scalar_types():
                 coerce_output_value([5])
             assert str(exc_info.value) == "Int cannot represent non-integer value: [5]"
 
+        def coerce_output_value_from_other_numeric_types():
+            coerce_output_value = GraphQLInt.coerce_output_value
+
+            def _coerce_output_value_raises(value: Any, message: str):
+                with pytest.raises(GraphQLError) as exc_info:
+                    coerce_output_value(value)
+                assert str(exc_info.value) == message
+
+            result = coerce_output_value(Decimal(123))
+            assert result == 123
+            assert type(result) is int
+            assert coerce_output_value(Decimal("-1.0")) == -1
+            assert coerce_output_value(Fraction(4, 2)) == 2
+            result = coerce_output_value(NumPyLikeScalar(5))
+            assert result == 5
+            assert type(result) is int
+            assert coerce_output_value(NumPyLikeScalar(1e5)) == 100000
+            assert coerce_output_value(NumPyLikeScalar(True)) == 1
+
+            # Non-integer values are not truncated, even if the loss is not
+            # visible after conversion to float.
+            for value in (
+                Decimal("0.1"),
+                Decimal("1.0000000000000000000001"),
+                Fraction(1, 2),
+                NumPyLikeScalar(1.1),
+                Decimal("NaN"),
+                Decimal("sNaN"),
+                Decimal("Infinity"),
+                NumPyLikeScalar(nan),
+                NumPyLikeScalar(inf),
+            ):
+                _coerce_output_value_raises(
+                    value, "Int cannot represent non-integer value: " + inspect(value)
+                )
+            _coerce_output_value_raises(
+                Decimal(9876504321),
+                "Int cannot represent non 32-bit signed integer value:"
+                " <Decimal instance>",
+            )
+            _coerce_output_value_raises(
+                NumPyLikeScalar(-9876504321),
+                "Int cannot represent non 32-bit signed integer value:"
+                " <NumPyLikeScalar instance>",
+            )
+            # Numbers that cannot be converted to int are not accepted.
+            float_only = type("FloatOnly", (), {"__float__": lambda _self: 1.0})()
+            _coerce_output_value_raises(
+                float_only,
+                "Int cannot represent non-integer value: <FloatOnly instance>",
+            )
+            # Builtin types are not converted.
+            _coerce_output_value_raises(
+                b"5", "Int cannot represent non-integer value: b'5'"
+            )
+            _coerce_output_value_raises(
+                5 + 0j, "Int cannot represent non-integer value: (5+0j)"
+            )
+
         def cannot_be_redefined():
             with pytest.raises(TypeError, match="Redefinition of reserved type 'Int'"):
                 GraphQLScalarType(name="Int")
@@ -376,6 +467,51 @@ def describe_type_system_specified_scalar_types():
                 coerce_output_value([5])
             assert (
                 str(exc_info.value) == "Float cannot represent non numeric value: [5]"
+            )
+
+        def coerce_output_value_from_other_numeric_types():
+            coerce_output_value = GraphQLFloat.coerce_output_value
+
+            def _coerce_output_value_raises(value: Any, message: str):
+                with pytest.raises(GraphQLError) as exc_info:
+                    coerce_output_value(value)
+                assert str(exc_info.value) == message
+
+            result = coerce_output_value(Decimal("123.45"))
+            assert result == 123.45
+            assert type(result) is float
+            assert coerce_output_value(Decimal(-1)) == -1.0
+            assert coerce_output_value(Fraction(1, 4)) == 0.25
+            result = coerce_output_value(NumPyLikeScalar(1.5))
+            assert result == 1.5
+            assert type(result) is float
+            assert coerce_output_value(NumPyLikeScalar(3)) == 3.0
+            assert coerce_output_value(NumPyLikeScalar(True)) == 1.0
+
+            # These values may lose precision when converted to float.
+            assert coerce_output_value(Decimal("0.1000000000000000000001")) == 0.1
+            assert coerce_output_value(Fraction(1, 3)) == 1 / 3
+            assert coerce_output_value(Decimal(9007199254740993)) == 9007199254740992
+
+            for value in (
+                Decimal("NaN"),
+                Decimal("sNaN"),
+                Decimal("Infinity"),
+                Decimal("-Infinity"),
+                Decimal("1e400"),
+                Fraction(2**1024),
+                NumPyLikeScalar(nan),
+                NumPyLikeScalar(inf),
+            ):
+                _coerce_output_value_raises(
+                    value, "Float cannot represent non numeric value: " + inspect(value)
+                )
+            # Builtin types are not converted.
+            _coerce_output_value_raises(
+                b"1.5", "Float cannot represent non numeric value: b'1.5'"
+            )
+            _coerce_output_value_raises(
+                1.5 + 0j, "Float cannot represent non numeric value: (1.5+0j)"
             )
 
         def cannot_be_redefined():
@@ -654,6 +790,43 @@ def describe_type_system_specified_scalar_types():
                 coerce_output_value({})
             assert str(exc_info.value) == (
                 "Boolean cannot represent a non boolean value: {}"
+            )
+
+        def coerce_output_value_from_other_numeric_types():
+            coerce_output_value = GraphQLBoolean.coerce_output_value
+
+            def _coerce_output_value_raises(value: Any, message: str):
+                with pytest.raises(GraphQLError) as exc_info:
+                    coerce_output_value(value)
+                assert str(exc_info.value) == message
+
+            assert coerce_output_value(NumPyLikeFloat64(2.0)) is True
+            assert coerce_output_value(NumPyLikeFloat64(0.0)) is False
+            assert coerce_output_value(NumPyLikeScalar(True)) is True
+            assert coerce_output_value(NumPyLikeScalar(False)) is False
+            assert coerce_output_value(NumPyLikeScalar(5)) is True
+            assert coerce_output_value(NumPyLikeScalar(0.0)) is False
+            assert coerce_output_value(Decimal("0.5")) is True
+            assert coerce_output_value(Decimal(0)) is False
+            assert coerce_output_value(Fraction(1, 2)) is True
+
+            for value in (
+                Decimal("NaN"),
+                Decimal("sNaN"),
+                Decimal("Infinity"),
+                NumPyLikeScalar(nan),
+                NumPyLikeScalar(inf),
+            ):
+                _coerce_output_value_raises(
+                    value,
+                    "Boolean cannot represent a non boolean value: " + inspect(value),
+                )
+            # Builtin types are not converted.
+            _coerce_output_value_raises(
+                b"1", "Boolean cannot represent a non boolean value: b'1'"
+            )
+            _coerce_output_value_raises(
+                1 + 0j, "Boolean cannot represent a non boolean value: (1+0j)"
             )
 
         def cannot_be_redefined():
