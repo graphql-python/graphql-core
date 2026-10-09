@@ -58,6 +58,8 @@ def serialize_int(output_value: Any) -> int:
         return coerce_int_from_number(output_value)
     if isinstance(output_value, str):
         return coerce_int_from_string(output_value)
+    if is_numeric_object(output_value):
+        return coerce_int_from_numeric_object(output_value)
     msg = "Int cannot represent non-integer value: " + inspect(output_value)
     raise GraphQLError(msg)
 
@@ -106,7 +108,11 @@ GraphQLInt = GraphQLScalarType(
     coerce_input_literal=parse_int_literal,
     value_to_literal=int_value_to_literal,
 )
-"""The built-in ``Int`` scalar type."""
+"""The built-in ``Int`` scalar type.
+
+Besides Python ints, other numeric types like ``Decimal``, ``Fraction`` or NumPy
+scalars can also be serialized as Int, as long as they represent 32-bit integers.
+"""
 
 
 def serialize_float(output_value: Any) -> float:
@@ -118,6 +124,10 @@ def serialize_float(output_value: Any) -> float:
         return coerce_float_from_int(output_value)
     if isinstance(output_value, str):
         return coerce_float_from_string(output_value)
+    if is_numeric_object(output_value):
+        num = finite_float_from_numeric_object(output_value)
+        if num is not None:
+            return num
     msg = "Float cannot represent non numeric value: " + inspect(output_value)
     raise GraphQLError(msg)
 
@@ -160,7 +170,13 @@ GraphQLFloat = GraphQLScalarType(
     coerce_input_literal=parse_float_literal,
     value_to_literal=float_value_to_literal,
 )
-"""The built-in ``Float`` scalar type."""
+"""The built-in ``Float`` scalar type.
+
+Besides Python floats and ints, other numeric types like ``Decimal``, ``Fraction``
+or NumPy scalars can also be serialized as Float. Note that they are converted to
+Python floats and may lose precision. Use a custom scalar type if you need to
+preserve the precision.
+"""
 
 
 def serialize_string(output_value: Any) -> str:
@@ -230,6 +246,10 @@ def serialize_boolean(output_value: Any) -> bool:
     # always finite.
     if isinstance(output_value, int):
         return output_value != 0
+    if is_numeric_object(output_value):
+        num = finite_float_from_numeric_object(output_value)
+        if num is not None:
+            return num != 0
     raise GraphQLError(
         "Boolean cannot represent a non boolean value: " + inspect(output_value)
     )
@@ -269,7 +289,12 @@ GraphQLBoolean = GraphQLScalarType(
     coerce_input_literal=parse_boolean_literal,
     value_to_literal=boolean_value_to_literal,
 )
-"""The built-in ``Boolean`` scalar type."""
+"""The built-in ``Boolean`` scalar type.
+
+Besides Python bools and other numbers, numeric types like ``Decimal``,
+``Fraction`` or NumPy scalars (including NumPy booleans) can also be serialized
+as Boolean.
+"""
 
 
 def serialize_id(output_value: Any) -> str:
@@ -412,7 +437,8 @@ def coerce_boolean_from_number(value: float) -> bool:
     if not isfinite(value):
         msg = "Boolean cannot represent a non boolean value: " + inspect(value)
         raise GraphQLError(msg)
-    return value != 0
+    # use bool() since subclasses like NumPy's float64 return NumPy's bool here
+    return bool(value != 0)
 
 
 def coerce_id_from_number(value: float) -> str:
@@ -420,6 +446,41 @@ def coerce_id_from_number(value: float) -> str:
         msg = "ID cannot represent value: " + inspect(value)
         raise GraphQLError(msg)
     return str(int(value))
+
+
+def is_numeric_object(value: Any) -> bool:
+    """Check whether the value is a number of a non-builtin type.
+
+    Numbers of types such as ``Decimal``, ``Fraction`` or NumPy scalars do not
+    subclass Python's ``int`` or ``float``, but can be converted to them.
+    """
+    type_ = type(value)
+    return type_.__module__ != "builtins" and hasattr(type_, "__float__")
+
+
+def coerce_int_from_numeric_object(value: Any) -> int:
+    try:
+        num = int(value)
+    except (OverflowError, TypeError, ValueError) as error:
+        msg = "Int cannot represent non-integer value: " + inspect(value)
+        raise GraphQLError(msg) from error
+    # do not truncate non-integer values (the comparison is exact for decimals)
+    if num != value:
+        msg = "Int cannot represent non-integer value: " + inspect(value)
+        raise GraphQLError(msg)
+    if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
+        msg = "Int cannot represent non 32-bit signed integer value: " + inspect(value)
+        raise GraphQLError(msg)
+    return num
+
+
+def finite_float_from_numeric_object(value: Any) -> float | None:
+    """Convert a number of a non-builtin type to a finite float if possible."""
+    try:
+        num = float(value)
+    except (OverflowError, ValueError):
+        return None
+    return num if isfinite(num) else None
 
 
 specified_scalar_types: Mapping[str, GraphQLScalarType] = {
