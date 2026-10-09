@@ -4,7 +4,7 @@ from typing import TypeAlias
 
 import pytest
 
-from graphql import graphql_sync
+from graphql import ExecutionResult, graphql_sync
 from graphql.error import GraphQLSyntaxError
 from graphql.language import parse, print_ast
 from graphql.type import (
@@ -382,6 +382,35 @@ def describe_extend_schema():
                 '''
             ),
         )
+
+    def coerces_default_values_with_extended_input_types():
+        schema = build_schema(
+            """
+            type Query {
+              someInput(arg: SomeInput = {}): String
+            }
+
+            input SomeInput {
+              oldField: String
+            }
+            """
+        )
+        extend_ast = parse(
+            """
+            extend input SomeInput {
+              newField: String = "new"
+            }
+            """
+        )
+        extended_schema = extend_schema(schema, extend_ast)
+        root_value = {"someInput": lambda _info, arg: str(arg)}
+
+        def query(schema: GraphQLSchema) -> ExecutionResult:
+            return graphql_sync(schema, "{ someInput }", root_value)
+
+        assert query(schema) == ({"someInput": "{}"}, None)
+        assert query(extended_schema) == ({"someInput": "{'newField': 'new'}"}, None)
+        assert query(schema) == ({"someInput": "{}"}, None)
 
     def extends_scalars_by_adding_new_directives():
         schema = build_schema(

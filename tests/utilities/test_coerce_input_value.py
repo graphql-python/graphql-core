@@ -716,3 +716,14 @@ def describe_coerce_default_value():
         # Call a second time
         assert coerce_default_value(input_value) == "hello"
         assert coerce_input_value_calls == ["hello"]
+
+    def memoizes_coercion_per_type():
+        color_enum = GraphQLEnumType("Color", {"RED": 0, "BLUE": 1})
+        shared_default = GraphQLDefaultInput("RED")
+
+        color_value = GraphQLInputField(color_enum, default=shared_default)
+        string_value = GraphQLInputField(GraphQLString, default=shared_default)
+
+        assert coerce_default_value(color_value) == 0
+        assert coerce_default_value(string_value) == "RED"
+        assert coerce_default_value(color_value) == 0
