@@ -717,7 +717,7 @@ def describe_coerce_default_value():
         assert coerce_default_value(input_value) == "hello"
         assert coerce_input_value_calls == ["hello"]
 
-    def memoizes_coercion_per_type():
+    def coerces_shared_default_per_type():
         color_enum = GraphQLEnumType("Color", {"RED": 0, "BLUE": 1})
         shared_default = GraphQLDefaultInput("RED")
 
@@ -727,3 +727,30 @@ def describe_coerce_default_value():
         assert coerce_default_value(color_value) == 0
         assert coerce_default_value(string_value) == "RED"
         assert coerce_default_value(color_value) == 0
+
+    def memoizes_coercion_of_shared_default_per_input_value():
+        coerce_input_value_calls: list[Any] = []
+
+        def coerce_input_value(value):
+            coerce_input_value_calls.append(value)
+            return value
+
+        spy_scalar = GraphQLScalarType(
+            "SpyScalar", coerce_input_value=coerce_input_value
+        )
+        other_spy_scalar = GraphQLScalarType(
+            "SpyScalar", coerce_input_value=coerce_input_value
+        )
+
+        shared_default = GraphQLDefaultInput(literal=StringValueNode(value="hello"))
+
+        input_value = GraphQLInputField(spy_scalar, default=shared_default)
+        other_input_value = GraphQLInputField(other_spy_scalar, default=shared_default)
+
+        assert coerce_default_value(input_value) == "hello"
+        assert coerce_default_value(other_input_value) == "hello"
+
+        # Call a second time
+        assert coerce_default_value(input_value) == "hello"
+        assert coerce_default_value(other_input_value) == "hello"
+        assert coerce_input_value_calls == ["hello", "hello"]

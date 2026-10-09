@@ -18,6 +18,8 @@ from ..pyutils import (
     is_iterable,
 )
 from ..type import (
+    GraphQLArgument,
+    GraphQLInputField,
     GraphQLInputType,
     assert_leaf_type,
     is_input_object_type,
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
     from ..execution.get_variable_signature import GraphQLVariableSignature
     from ..execution.values import FragmentVariableValues, VariableValues
     from ..language import ConstValueNode
-    from ..type import GraphQLArgument, GraphQLInputField
+    from ..type import GraphQLDefaultInput
 
 __all__ = ["coerce_default_value", "coerce_input_literal", "coerce_input_value"]
 
@@ -351,16 +353,20 @@ def coerce_default_value(
 
     :meta private:
     """
-    # The external default value is coerced; the result is memoized in a hidden
-    # field on the GraphQLDefaultInput object. (Contrary to GraphQL.js, which
-    # memoizes on the input value itself, this also works for the immutable
-    # variable signatures that reuse this function for fragment arguments.)
-    # It is only reused for the same type, as a default can be used with
-    # different types, e.g. after extend_schema() replaced the type.
+    # The external default value is coerced; like in GraphQL.js, the result is
+    # memoized in a hidden field on the input value itself, since the same default
+    # can be used with different types, e.g. after extend_schema() replaced the
+    # type. The immutable variable signatures that reuse this function for fragment
+    # arguments memoize it on their default instead, which is not shared.
     default_input = input_value.default
     if default_input is not None:
-        coerced_type, coerced_value = default_input._memoized_coercion  # noqa: SLF001
-        if coerced_type is not input_value.type:
+        memo: GraphQLArgument | GraphQLInputField | GraphQLDefaultInput = (
+            input_value
+            if isinstance(input_value, (GraphQLArgument, GraphQLInputField))
+            else default_input
+        )
+        coerced_value = memo._memoized_coerced_value  # noqa: SLF001
+        if coerced_value is Undefined:
             coerced_value = (
                 coerce_input_literal(default_input.literal, input_value.type)
                 if default_input.literal is not None
@@ -377,7 +383,7 @@ def coerce_default_value(
                     f" to be valid, found: {found}."
                 )
                 raise TypeError(msg)
-            default_input._memoized_coercion = input_value.type, coerced_value  # noqa: SLF001
+            memo._memoized_coerced_value = coerced_value  # noqa: SLF001
         return coerced_value
 
     # The deprecated internal default value is used as is.
