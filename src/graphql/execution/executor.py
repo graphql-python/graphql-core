@@ -399,7 +399,9 @@ class Executor(Generic[TContext]):
         self.pending_incremental_futures = set()
         self.background_futures = set()
         self.async_work_finished_hook_task = None
-        self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
+        self._relevant_sub_fields: dict[
+            tuple, tuple[tuple[FieldDetails, ...], CollectedFields]
+        ] = {}
         self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
 
     @classmethod
@@ -2124,23 +2126,25 @@ class Executor(Generic[TContext]):
         # we do not use the id of the list, since we want to hit the cache for all
         # lists of the same nodes, not only for the same list of nodes. Also, the list
         # id may even be reused, in which case we would get wrong results from cache.
+        # Keep the items alive in each entry too, so their ids cannot be reused.
         key = (
             (return_type, id(field_details_list[0]))
             if len(field_details_list) == 1  # optimize most frequent case
             else (return_type, *map(id, field_details_list))
         )
-        collected_fields: CollectedFields | None = relevant_sub_fields.get(key)
-        if collected_fields is None:
-            collected_fields = collect_subfields(
-                self.schema,
-                self.fragments,
-                self.variable_values,
-                self.operation,
-                return_type,
-                field_details_list,
-                self.hide_suggestions,
-            )
-            relevant_sub_fields[key] = collected_fields
+        cached = relevant_sub_fields.get(key)
+        if cached is not None:
+            return cached[1]
+        collected_fields = collect_subfields(
+            self.schema,
+            self.fragments,
+            self.variable_values,
+            self.operation,
+            return_type,
+            field_details_list,
+            self.hide_suggestions,
+        )
+        relevant_sub_fields[key] = (tuple(field_details_list), collected_fields)
         return collected_fields
 
 
