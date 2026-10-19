@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Callable
+from collections.abc import AsyncIterable, AsyncIterator, Callable
 from typing import (
     Any,
     TypedDict,
@@ -1254,11 +1254,11 @@ def describe_subscription_publish_phase():
             ),
         )
         subscription = subscribe(schema, parse("subscription { newMessage }"))
-        assert isinstance(subscription, AsyncGenerator)
+        assert isinstance(subscription, AsyncIterator)
         try:
             assert await anext(subscription) == ({"newMessage": "Hello"}, None)
             assert not closed
-            await subscription.aclose()
+            await subscription.aclose()  # type: ignore
             assert closed
         finally:
             await messages.aclose()
