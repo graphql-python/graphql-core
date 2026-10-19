@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import AsyncIterable, AsyncIterator, Callable
+from collections.abc import AsyncGenerator, AsyncIterable, AsyncIterator, Callable
 from typing import (
     Any,
     TypedDict,
@@ -1223,6 +1223,45 @@ def describe_subscription_publish_phase():
         assert MessageGenerator.resolved == ["Hello", "Dolly"]
 
         await subscription.aclose()  # type: ignore
+
+    async def should_close_iterator_returned_by_async_iterable():
+        closed = False
+
+        async def generate_messages():
+            nonlocal closed
+            try:
+                yield "Hello"
+            finally:
+                closed = True
+
+        messages = generate_messages()
+
+        class MessageIterable:
+            def __aiter__(self):
+                return messages
+
+        schema = GraphQLSchema(
+            query=QueryType,
+            subscription=GraphQLObjectType(
+                "Subscription",
+                {
+                    "newMessage": GraphQLField(
+                        GraphQLString,
+                        resolve=lambda message, _info: message,
+                        subscribe=lambda _obj, _info: MessageIterable(),
+                    )
+                },
+            ),
+        )
+        subscription = subscribe(schema, parse("subscription { newMessage }"))
+        assert isinstance(subscription, AsyncGenerator)
+        try:
+            assert await anext(subscription) == ({"newMessage": "Hello"}, None)
+            assert not closed
+            await subscription.aclose()
+            assert closed
+        finally:
+            await messages.aclose()
 
     async def should_close_custom_async_iterator():
         class MessageGenerator:

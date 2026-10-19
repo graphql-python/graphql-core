@@ -65,6 +65,6 @@ async def map_async_iterable(
     >>> asyncio.run(doubled_numbers())
     [0, 2, 4]
     """
-    async with aclosing(iterable) as items:
+    async with aclosing(aiter(iterable)) as items:
         async for item in items:
             yield await callback(item)
