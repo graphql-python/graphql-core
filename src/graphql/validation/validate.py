@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from ..error import GraphQLError
 from ..language import DocumentNode, ParallelVisitor, visit
@@ -29,10 +29,17 @@ __all__ = [
 class ValidationAbortedError(GraphQLError):
     """Error when a validation has been aborted (error limit reached)."""
 
+    def __init__(
+        self,
+        message: str = (
+            "Too many validation errors, error limit reached. Validation aborted."
+        ),
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(message, **kwargs)
 
-validation_aborted_error = ValidationAbortedError(
-    "Too many validation errors, error limit reached. Validation aborted."
-)
+
+validation_aborted_error = ValidationAbortedError()
 
 
 # Per the specification, descriptions must not affect validation.
@@ -113,7 +120,7 @@ def validate(
 
     def on_error(error: GraphQLError) -> None:
         if len(errors) >= max_errors:
-            raise validation_aborted_error
+            raise ValidationAbortedError
         errors.append(error)
 
     context = ValidationContext(
@@ -131,8 +138,8 @@ def validate(
             TypeInfoVisitor(type_info, ParallelVisitor(visitors)),
             query_document_keys_to_validate,
         )
-    except ValidationAbortedError:
-        errors.append(validation_aborted_error)
+    except ValidationAbortedError as error:
+        errors.append(error.with_traceback(None))
     return errors
 
 

@@ -4,6 +4,7 @@ from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.utilities import build_schema
 from graphql.validation import ValidationRule, validate
+from graphql.validation.validate import ValidationAbortedError, validation_aborted_error
 
 from .harness import test_schema
 
@@ -135,6 +136,16 @@ def describe_validate_limit_maximum_number_of_validation_errors():
 
         with pytest.raises(RuntimeError, match=r"^Error from custom rule!$"):
             validate(test_schema, doc, [CustomRule], max_errors=1)
+
+    def does_not_accumulate_traceback_on_aborted_error():
+        first_error = _validate_document(max_errors=1)[-1]
+        second_error = _validate_document(max_errors=1)[-1]
+        assert isinstance(first_error, ValidationAbortedError)
+        assert isinstance(second_error, ValidationAbortedError)
+        assert first_error is not second_error
+        assert first_error.__traceback__ is None
+        assert second_error.__traceback__ is None
+        assert validation_aborted_error.__traceback__ is None
 
 
 def describe_operation_and_variable_definition_descriptions():
