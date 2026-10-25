@@ -26,7 +26,7 @@ from .work_queue import Work, WorkResult, WorkTask
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Iterator, Sequence
 
-    from ...pyutils import AwaitableOrValue, Path
+    from ...pyutils import AwaitableOrValue, Path, SetMap
     from ...type import (
         GraphQLObjectType,
         GraphQLOutputType,
@@ -403,7 +403,7 @@ class IncrementalExecutor(Executor[DeliveryGroupMap]):
         parent_type: GraphQLObjectType,
         source_value: Any,
         path: Path | None,
-        new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet],
+        new_grouped_field_sets: SetMap[DeferUsageSet, GroupedFieldSet],
         delivery_group_map: DeliveryGroupMap,
     ) -> None:
         """Create execution groups for the new deferred grouped field sets."""

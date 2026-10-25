@@ -37,6 +37,7 @@ from .simple_pub_sub import SimplePubSub, SimplePubSubIterator
 from .undefined import Undefined, UndefinedType
 from .ref_map import RefMap
 from .ref_set import RefSet
+from .set_map import SetMap
 
 __all__ = [
     "AbortController",
@@ -48,6 +49,7 @@ __all__ = [
     "Path",
     "RefMap",
     "RefSet",
+    "SetMap",
     "SimplePubSub",
     "SimplePubSubIterator",
     "Undefined",

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import NamedTuple, TypeAlias
 
-from ...pyutils import RefMap, RefSet
+from ...pyutils import RefSet, SetMap
 from ..collect_fields import DeferUsage, FieldDetailsList, GroupedFieldSet
 
 __all__ = [
@@ -22,7 +22,7 @@ class ExecutionPlan(NamedTuple):
     """A plan for executing fields."""
 
     grouped_field_set: GroupedFieldSet
-    new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet]
+    new_grouped_field_sets: SetMap[DeferUsageSet, GroupedFieldSet]
 
 
 def build_execution_plan(
@@ -34,7 +34,7 @@ def build_execution_plan(
         parent_defer_usages = RefSet()
 
     grouped_field_set: GroupedFieldSet = {}
-    new_grouped_field_sets: RefMap[DeferUsageSet, GroupedFieldSet] = RefMap()
+    new_grouped_field_sets: SetMap[DeferUsageSet, GroupedFieldSet] = SetMap()
 
     for response_key, field_details_list in original_grouped_field_set.items():
         filtered_defer_usage_set = get_filtered_defer_usage_set(field_details_list)
@@ -43,14 +43,9 @@ def build_execution_plan(
             grouped_field_set[response_key] = field_details_list
             continue
 
-        for defer_usage_set in new_grouped_field_sets:
-            if defer_usage_set == filtered_defer_usage_set:
-                new_grouped_field_set = new_grouped_field_sets[defer_usage_set]
-                break
-        else:
-            new_grouped_field_set = {}
-            new_grouped_field_sets[filtered_defer_usage_set] = new_grouped_field_set
-
+        new_grouped_field_set = new_grouped_field_sets.get_or_insert_computed(
+            filtered_defer_usage_set, lambda _members: {}
+        )
         new_grouped_field_set[response_key] = field_details_list
 
     return ExecutionPlan(grouped_field_set, new_grouped_field_sets)

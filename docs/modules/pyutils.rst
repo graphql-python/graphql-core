@@ -38,3 +38,5 @@ PyUtils
    :no-inherited-members:
 .. autoclass:: RefSet
    :no-inherited-members:
+.. autoclass:: SetMap
+   :no-inherited-members:
