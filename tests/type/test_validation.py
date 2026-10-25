@@ -3098,6 +3098,30 @@ def describe_objects_must_adhere_to_interfaces_they_implement():
         )
         assert validate_schema(schema) == []
 
+    def accepts_an_object_with_a_subset_non_null_interface_field_type_union():
+        schema = build_schema(
+            """
+            type Query {
+              test: AnotherObject
+            }
+
+            type SomeObject {
+              field: String
+            }
+
+            union SomeUnionType = SomeObject
+
+            interface AnotherInterface {
+              field: SomeUnionType
+            }
+
+            type AnotherObject implements AnotherInterface {
+              field: SomeUnionType!
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
     def rejects_an_object_with_a_superset_nullable_interface_field_type():
         schema = build_schema(
             """
@@ -3533,6 +3557,30 @@ def describe_interfaces_must_adhere_to_interface_they_implement():
 
             interface ChildInterface implements ParentInterface {
               field: String!
+            }
+            """
+        )
+        assert validate_schema(schema) == []
+
+    def accepts_an_interface_with_a_subset_non_null_interface_field_type_union():
+        schema = build_schema(
+            """
+            type Query {
+              test: ChildInterface
+            }
+
+            type SomeObject {
+              field: String
+            }
+
+            union SomeUnionType = SomeObject
+
+            interface ParentInterface {
+              field: SomeUnionType
+            }
+
+            interface ChildInterface implements ParentInterface {
+              field: SomeUnionType!
             }
             """
         )
