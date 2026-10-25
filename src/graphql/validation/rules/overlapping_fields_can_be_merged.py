@@ -93,16 +93,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
 
     def __init__(self, context: ValidationContext):
         super().__init__(context)
-        # A memoization for when fields and a fragment or two fragments are compared
-        # "between" each other for conflicts. Comparisons may be made many times, so
-        # memoizing this can dramatically improve the performance of this validator.
-        self.compared_fields_and_fragment_pairs = OrderedPairSet()
-        self.compared_fragment_pairs = PairSet()
-
-        # A cache for the "field map" and list of fragment names found in any given
-        # selection set. Selection sets may be asked for this information multiple
-        # times, so this improves the performance of this validator.
-        self.cached_fields_and_fragment_names: Dict = {}
+        self.rule_context = RuleContext()
 
         # Set once the comparison budget is exhausted. Further selection sets are then
         # skipped, since validation has already been aborted with an error.
@@ -118,9 +109,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         try:
             conflicts = find_conflicts_within_selection_set(
                 self.context,
-                self.cached_fields_and_fragment_names,
-                self.compared_fields_and_fragment_pairs,
-                self.compared_fragment_pairs,
+                self.rule_context,
                 self.context.get_parent_type(),
                 selection_set,
             )
@@ -159,6 +148,35 @@ else:
 NodeAndDef = Tuple[GraphQLCompositeType, FieldNode, Optional[GraphQLField]]
 # Dictionary of lists of those.
 NodeAndDefCollection = Dict[str, List[NodeAndDef]]
+FieldsAndFragmentNames = Tuple[NodeAndDefCollection, List[str]]
+
+
+class RuleContext:
+    """The state of the rule that is shared during the validation of a document."""
+
+    __slots__ = (
+        "cached_fields_and_fragment_names",
+        "compared_fields_and_fragment_pairs",
+        "compared_fragment_pairs",
+        "field_comparisons",
+    )
+
+    def __init__(self) -> None:
+        # A memoization for when fields and a fragment or two fragments are compared
+        # "between" each other for conflicts. Comparisons may be made many times, so
+        # memoizing this can dramatically improve the performance of this validator.
+        self.compared_fields_and_fragment_pairs = OrderedPairSet()
+        self.compared_fragment_pairs = PairSet()
+
+        # A cache for the "field map" and list of fragment names found in any given
+        # selection set.
+        self.cached_fields_and_fragment_names: Dict[
+            SelectionSetNode, FieldsAndFragmentNames
+        ] = {}
+
+        # The number of pairwise field comparisons made so far, which is limited by
+        # the comparison budget.
+        self.field_comparisons = 0
 
 
 # Algorithm:
@@ -215,10 +233,8 @@ NodeAndDefCollection = Dict[str, List[NodeAndDef]]
 
 
 def find_conflicts_within_selection_set(
-    context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    validation_context: ValidationContext,
+    rule_context: "RuleContext",
     parent_type: Optional[GraphQLNamedType],
     selection_set: SelectionSetNode,
 ) -> List[Conflict]:
@@ -232,17 +248,15 @@ def find_conflicts_within_selection_set(
     conflicts: List[Conflict] = []
 
     field_map, fragment_names = get_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, parent_type, selection_set
+        validation_context, rule_context, parent_type, selection_set
     )
 
     # (A) Find all conflicts "within" the fields of this selection set.
     # Note: this is the *only place* `collect_conflicts_within` is called.
     collect_conflicts_within(
-        context,
+        validation_context,
         conflicts,
-        cached_fields_and_fragment_names,
-        compared_fields_and_fragment_pairs,
-        compared_fragment_pairs,
+        rule_context,
         field_map,
     )
 
@@ -251,11 +265,9 @@ def find_conflicts_within_selection_set(
         # spread fragment name found.
         for i, fragment_name in enumerate(fragment_names):
             collect_conflicts_between_fields_and_fragment(
-                context,
+                validation_context,
                 conflicts,
-                cached_fields_and_fragment_names,
-                compared_fields_and_fragment_pairs,
-                compared_fragment_pairs,
+                rule_context,
                 False,
                 field_map,
                 fragment_name,
@@ -266,11 +278,9 @@ def find_conflicts_within_selection_set(
             # item in that same list (except for itself).
             for other_fragment_name in fragment_names[i + 1 :]:
                 collect_conflicts_between_fragments(
-                    context,
+                    validation_context,
                     conflicts,
-                    cached_fields_and_fragment_names,
-                    compared_fields_and_fragment_pairs,
-                    compared_fragment_pairs,
+                    rule_context,
                     False,
                     fragment_name,
                     other_fragment_name,
@@ -280,11 +290,9 @@ def find_conflicts_within_selection_set(
 
 
 def collect_conflicts_between_fields_and_fragment(
-    context: ValidationContext,
+    validation_context: ValidationContext,
     conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    rule_context: "RuleContext",
     are_mutually_exclusive: bool,
     field_map: NodeAndDefCollection,
     fragment_name: str,
@@ -294,6 +302,7 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
+    compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
     if compared_fields_and_fragment_pairs.has(
@@ -304,12 +313,12 @@ def collect_conflicts_between_fields_and_fragment(
         field_map, fragment_name, are_mutually_exclusive
     )
 
-    fragment = context.get_fragment(fragment_name)
+    fragment = validation_context.get_fragment(fragment_name)
     if not fragment:
         return None
 
     field_map2, referenced_fragment_names = get_referenced_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, fragment
+        validation_context, rule_context, fragment
     )
 
     # Do not compare a fragment's fieldMap to itself.
@@ -319,11 +328,9 @@ def collect_conflicts_between_fields_and_fragment(
     # (D) First collect any conflicts between the provided collection of fields and the
     # collection of fields represented by the given fragment.
     collect_conflicts_between(
-        context,
+        validation_context,
         conflicts,
-        cached_fields_and_fragment_names,
-        compared_fields_and_fragment_pairs,
-        compared_fragment_pairs,
+        rule_context,
         are_mutually_exclusive,
         field_map,
         field_map2,
@@ -333,11 +340,9 @@ def collect_conflicts_between_fields_and_fragment(
     # fragment names found in the given fragment.
     for referenced_fragment_name in referenced_fragment_names:
         collect_conflicts_between_fields_and_fragment(
-            context,
+            validation_context,
             conflicts,
-            cached_fields_and_fragment_names,
-            compared_fields_and_fragment_pairs,
-            compared_fragment_pairs,
+            rule_context,
             are_mutually_exclusive,
             field_map,
             referenced_fragment_name,
@@ -345,11 +350,9 @@ def collect_conflicts_between_fields_and_fragment(
 
 
 def collect_conflicts_between_fragments(
-    context: ValidationContext,
+    validation_context: ValidationContext,
     conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    rule_context: "RuleContext",
     are_mutually_exclusive: bool,
     fragment_name1: str,
     fragment_name2: str,
@@ -359,6 +362,7 @@ def collect_conflicts_between_fragments(
     Collect all conflicts found between two fragments, including via spreading in any
     nested fragments.
     """
+    compared_fragment_pairs = rule_context.compared_fragment_pairs
     # No need to compare a fragment to itself.
     if fragment_name1 == fragment_name2:
         return
@@ -370,27 +374,25 @@ def collect_conflicts_between_fragments(
         return
     compared_fragment_pairs.add(fragment_name1, fragment_name2, are_mutually_exclusive)
 
-    fragment1 = context.get_fragment(fragment_name1)
-    fragment2 = context.get_fragment(fragment_name2)
+    fragment1 = validation_context.get_fragment(fragment_name1)
+    fragment2 = validation_context.get_fragment(fragment_name2)
     if not fragment1 or not fragment2:
         return None
 
     field_map1, referenced_fragment_names1 = get_referenced_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, fragment1
+        validation_context, rule_context, fragment1
     )
 
     field_map2, referenced_fragment_names2 = get_referenced_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, fragment2
+        validation_context, rule_context, fragment2
     )
 
     # (F) First, collect all conflicts between these two collections of fields
     # (not including any nested fragments)
     collect_conflicts_between(
-        context,
+        validation_context,
         conflicts,
-        cached_fields_and_fragment_names,
-        compared_fields_and_fragment_pairs,
-        compared_fragment_pairs,
+        rule_context,
         are_mutually_exclusive,
         field_map1,
         field_map2,
@@ -400,11 +402,9 @@ def collect_conflicts_between_fragments(
     # spread in the second fragment.
     for referenced_fragment_name2 in referenced_fragment_names2:
         collect_conflicts_between_fragments(
-            context,
+            validation_context,
             conflicts,
-            cached_fields_and_fragment_names,
-            compared_fields_and_fragment_pairs,
-            compared_fragment_pairs,
+            rule_context,
             are_mutually_exclusive,
             fragment_name1,
             referenced_fragment_name2,
@@ -414,11 +414,9 @@ def collect_conflicts_between_fragments(
     # spread in the first fragment.
     for referenced_fragment_name1 in referenced_fragment_names1:
         collect_conflicts_between_fragments(
-            context,
+            validation_context,
             conflicts,
-            cached_fields_and_fragment_names,
-            compared_fields_and_fragment_pairs,
-            compared_fragment_pairs,
+            rule_context,
             are_mutually_exclusive,
             referenced_fragment_name1,
             fragment_name2,
@@ -426,10 +424,8 @@ def collect_conflicts_between_fragments(
 
 
 def find_conflicts_between_sub_selection_sets(
-    context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    validation_context: ValidationContext,
+    rule_context: "RuleContext",
     are_mutually_exclusive: bool,
     parent_type1: Optional[GraphQLNamedType],
     selection_set1: SelectionSetNode,
@@ -445,19 +441,17 @@ def find_conflicts_between_sub_selection_sets(
     conflicts: List[Conflict] = []
 
     field_map1, fragment_names1 = get_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, parent_type1, selection_set1
+        validation_context, rule_context, parent_type1, selection_set1
     )
     field_map2, fragment_names2 = get_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, parent_type2, selection_set2
+        validation_context, rule_context, parent_type2, selection_set2
     )
 
     # (H) First, collect all conflicts between these two collections of field.
     collect_conflicts_between(
-        context,
+        validation_context,
         conflicts,
-        cached_fields_and_fragment_names,
-        compared_fields_and_fragment_pairs,
-        compared_fragment_pairs,
+        rule_context,
         are_mutually_exclusive,
         field_map1,
         field_map2,
@@ -468,11 +462,9 @@ def find_conflicts_between_sub_selection_sets(
     if fragment_names2:
         for fragment_name2 in fragment_names2:
             collect_conflicts_between_fields_and_fragment(
-                context,
+                validation_context,
                 conflicts,
-                cached_fields_and_fragment_names,
-                compared_fields_and_fragment_pairs,
-                compared_fragment_pairs,
+                rule_context,
                 are_mutually_exclusive,
                 field_map1,
                 fragment_name2,
@@ -483,11 +475,9 @@ def find_conflicts_between_sub_selection_sets(
     if fragment_names1:
         for fragment_name1 in fragment_names1:
             collect_conflicts_between_fields_and_fragment(
-                context,
+                validation_context,
                 conflicts,
-                cached_fields_and_fragment_names,
-                compared_fields_and_fragment_pairs,
-                compared_fragment_pairs,
+                rule_context,
                 are_mutually_exclusive,
                 field_map2,
                 fragment_name1,
@@ -499,11 +489,9 @@ def find_conflicts_between_sub_selection_sets(
     for fragment_name1 in fragment_names1:
         for fragment_name2 in fragment_names2:
             collect_conflicts_between_fragments(
-                context,
+                validation_context,
                 conflicts,
-                cached_fields_and_fragment_names,
-                compared_fields_and_fragment_pairs,
-                compared_fragment_pairs,
+                rule_context,
                 are_mutually_exclusive,
                 fragment_name1,
                 fragment_name2,
@@ -513,11 +501,9 @@ def find_conflicts_between_sub_selection_sets(
 
 
 def collect_conflicts_within(
-    context: ValidationContext,
+    validation_context: ValidationContext,
     conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    rule_context: "RuleContext",
     field_map: NodeAndDefCollection,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
@@ -533,10 +519,8 @@ def collect_conflicts_within(
             for i, field in enumerate(fields):
                 for other_field in fields[i + 1 :]:
                     conflict = find_conflict(
-                        context,
-                        cached_fields_and_fragment_names,
-                        compared_fields_and_fragment_pairs,
-                        compared_fragment_pairs,
+                        validation_context,
+                        rule_context,
                         # within one collection is never mutually exclusive
                         False,
                         response_name,
@@ -548,11 +532,9 @@ def collect_conflicts_within(
 
 
 def collect_conflicts_between(
-    context: ValidationContext,
+    validation_context: ValidationContext,
     conflicts: List[Conflict],
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    rule_context: "RuleContext",
     parent_fields_are_mutually_exclusive: bool,
     field_map1: NodeAndDefCollection,
     field_map2: NodeAndDefCollection,
@@ -575,10 +557,8 @@ def collect_conflicts_between(
             for field1 in fields1:
                 for field2 in fields2:
                     conflict = find_conflict(
-                        context,
-                        cached_fields_and_fragment_names,
-                        compared_fields_and_fragment_pairs,
-                        compared_fragment_pairs,
+                        validation_context,
+                        rule_context,
                         parent_fields_are_mutually_exclusive,
                         response_name,
                         field1,
@@ -589,10 +569,8 @@ def collect_conflicts_between(
 
 
 def find_conflict(
-    context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
-    compared_fields_and_fragment_pairs: "OrderedPairSet",
-    compared_fragment_pairs: "PairSet",
+    validation_context: ValidationContext,
+    rule_context: "RuleContext",
     parent_fields_are_mutually_exclusive: bool,
     response_name: str,
     field1: NodeAndDef,
@@ -605,8 +583,8 @@ def find_conflict(
     """
     # Charge this comparison against the document-wide budget and abort validation once
     # it is exhausted, guarding against quadratic-blowup denial of service.
-    compared_fields_and_fragment_pairs.comparisons += 1
-    if compared_fields_and_fragment_pairs.comparisons > MAX_FIELD_COMPARISONS:
+    rule_context.field_comparisons += 1
+    if rule_context.field_comparisons > MAX_FIELD_COMPARISONS:
         raise ComparisonBudgetExceededError
 
     parent_type1, node1, def1 = field1
@@ -657,10 +635,8 @@ def find_conflict(
     selection_set2 = node2.selection_set
     if selection_set1 and selection_set2:
         conflicts = find_conflicts_between_sub_selection_sets(
-            context,
-            cached_fields_and_fragment_names,
-            compared_fields_and_fragment_pairs,
-            compared_fragment_pairs,
+            validation_context,
+            rule_context,
             are_mutually_exclusive,
             get_named_type(type1),
             selection_set1,
@@ -735,23 +711,28 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
 
 
 def get_fields_and_fragment_names(
-    context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
+    validation_context: ValidationContext,
+    rule_context: "RuleContext",
     parent_type: Optional[GraphQLNamedType],
     selection_set: SelectionSetNode,
-) -> Tuple[NodeAndDefCollection, List[str]]:
+) -> FieldsAndFragmentNames:
     """Get fields and referenced fragment names
 
     Given a selection set, return the collection of fields (a mapping of response name
     to field nodes and definitions) as well as a list of fragment names referenced via
     fragment spreads.
     """
+    cached_fields_and_fragment_names = rule_context.cached_fields_and_fragment_names
     cached = cached_fields_and_fragment_names.get(selection_set)
     if not cached:
         node_and_defs: NodeAndDefCollection = {}
         fragment_names: Dict[str, bool] = {}
         collect_fields_and_fragment_names(
-            context, parent_type, selection_set, node_and_defs, fragment_names
+            validation_context,
+            parent_type,
+            selection_set,
+            node_and_defs,
+            fragment_names,
         )
         cached = (node_and_defs, list(fragment_names))
         cached_fields_and_fragment_names[selection_set] = cached
@@ -759,28 +740,29 @@ def get_fields_and_fragment_names(
 
 
 def get_referenced_fields_and_fragment_names(
-    context: ValidationContext,
-    cached_fields_and_fragment_names: Dict,
+    validation_context: ValidationContext,
+    rule_context: "RuleContext",
     fragment: FragmentDefinitionNode,
-) -> Tuple[NodeAndDefCollection, List[str]]:
+) -> FieldsAndFragmentNames:
     """Get referenced fields and nested fragment names
 
     Given a reference to a fragment, return the represented collection of fields as well
     as a list of nested fragment names referenced via fragment spreads.
     """
+    cached_fields_and_fragment_names = rule_context.cached_fields_and_fragment_names
     # Short-circuit building a type from the node if possible.
     cached = cached_fields_and_fragment_names.get(fragment.selection_set)
     if cached:
         return cached
 
-    fragment_type = type_from_ast(context.schema, fragment.type_condition)
+    fragment_type = type_from_ast(validation_context.schema, fragment.type_condition)
     return get_fields_and_fragment_names(
-        context, cached_fields_and_fragment_names, fragment_type, fragment.selection_set
+        validation_context, rule_context, fragment_type, fragment.selection_set
     )
 
 
 def collect_fields_and_fragment_names(
-    context: ValidationContext,
+    validation_context: ValidationContext,
     parent_type: Optional[GraphQLNamedType],
     selection_set: SelectionSetNode,
     node_and_defs: NodeAndDefCollection,
@@ -805,12 +787,12 @@ def collect_fields_and_fragment_names(
         elif isinstance(selection, InlineFragmentNode):  # pragma: no cover else
             type_condition = selection.type_condition
             inline_fragment_type = (
-                type_from_ast(context.schema, type_condition)
+                type_from_ast(validation_context.schema, type_condition)
                 if type_condition
                 else parent_type
             )
             collect_fields_and_fragment_names(
-                context,
+                validation_context,
                 inline_fragment_type,
                 selection.selection_set,
                 node_and_defs,
@@ -845,19 +827,14 @@ class OrderedPairSet:
 
     The first element is matched by object identity (its ``id``), since field maps
     are unhashable mappings that are kept alive for the duration of the validation.
-
-    Also carries a running count of the pairwise field comparisons performed with
-    this set, used to enforce the OverlappingFieldsCanBeMerged comparison budget.
     """
 
-    __slots__ = ("_data", "comparisons")
+    __slots__ = ("_data",)
 
     _data: Dict[int, Dict[str, bool]]
-    comparisons: int
 
     def __init__(self) -> None:
         self._data = {}
-        self.comparisons = 0
 
     def has(self, a: NodeAndDefCollection, b: str, weakly_present: bool) -> bool:
         map_ = self._data.get(id(a))
