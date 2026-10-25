@@ -2537,7 +2537,6 @@ def describe_execute_defer_directive():
             },
         ]
 
-    @pytest.mark.xfail(strict=True, reason="lost shared result")
     @pytest.mark.parametrize("early_execution", [False, True])
     async def delivers_a_buffered_shared_value_after_its_other_fragment_fails(
         early_execution,
@@ -2612,8 +2611,299 @@ def describe_execute_defer_directive():
             "hasNext": False,
         }
 
-        with pytest.raises(StopAsyncIteration):  # pragma: no cover
+        with pytest.raises(StopAsyncIteration):
             await anext(iterator)
+
+    async def delivers_a_shared_value_before_another_fragment_finishes_its_field():
+        """Delivers a shared value before another fragment finishes its field
+
+        Delivers a shared value before another fragment finishes its separate field.
+        """
+        document = parse(
+            """
+            {
+              hero {
+                ... @defer(label: "R") {
+                  nonNullName
+                  id
+                }
+                ... @defer(label: "P") {
+                  name
+                  ... @defer(label: "C") {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+        name_future: Future[str] = Future()
+        non_null_name_future: Future[str] = Future()
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "hero": {
+                    "id": 1,
+                    "name": name_future,
+                    "nonNullName": non_null_name_future,
+                }
+            },
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result.formatted == {
+            "data": {"hero": {}},
+            "pending": [
+                {"id": "0", "path": ["hero"], "label": "R"},
+                {"id": "1", "path": ["hero"], "label": "P"},
+            ],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        name_future.set_result("Luke")
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [{"id": "2", "path": ["hero"], "label": "C"}],
+            "incremental": [
+                {"data": {"name": "Luke"}, "id": "1"},
+                {"data": {"id": "1"}, "id": "2"},
+            ],
+            "completed": [{"id": "1"}, {"id": "2"}],
+            "hasNext": True,
+        }
+
+        non_null_name_future.set_result("Luke")
+
+        assert (await anext(iterator)).formatted == {
+            "incremental": [{"data": {"nonNullName": "Luke"}, "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def delivers_shared_child_data_when_second_parent_finishes_first():
+        """Delivers shared child data when second parent finishes before first child
+
+        Delivers shared child data when the second parent finishes before the first
+        child.
+        """
+        document = parse(
+            """
+            {
+              hero {
+                ... @defer(label: "P1") {
+                  name
+                  ... @defer(label: "C1") {
+                    id
+                    friends { name }
+                  }
+                }
+                ... @defer(label: "P2") {
+                  nonNullName
+                  ... @defer(label: "C2") {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+        name_future: Future[str] = Future()
+        friends_future: Future[list[Friend]] = Future()
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "hero": {
+                    "id": 1,
+                    "name": "Luke",
+                    "nonNullName": name_future,
+                    "friends": friends_future,
+                }
+            },
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result.formatted == {
+            "data": {"hero": {}},
+            "pending": [
+                {"id": "0", "path": ["hero"], "label": "P1"},
+                {"id": "1", "path": ["hero"], "label": "P2"},
+            ],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [{"id": "2", "path": ["hero"], "label": "C1"}],
+            "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": True,
+        }
+
+        name_future.set_result("Luke")
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [{"id": "3", "path": ["hero"], "label": "C2"}],
+            "incremental": [
+                {"data": {"nonNullName": "Luke"}, "id": "1"},
+                {"data": {"id": "1"}, "id": "3"},
+            ],
+            "completed": [{"id": "1"}, {"id": "3"}],
+            "hasNext": True,
+        }
+
+        friends_future.set_result(friends)
+
+        assert (await anext(iterator)).formatted == {
+            "incremental": [
+                {
+                    "data": {
+                        "friends": [
+                            {"name": "Han"},
+                            {"name": "Leia"},
+                            {"name": "C-3PO"},
+                        ]
+                    },
+                    "id": "2",
+                },
+            ],
+            "completed": [{"id": "2"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def finishes_a_later_shared_owner_without_repeating_delivered_data():
+        """Finishes a later shared owner without repeating data
+
+        Finishes a later shared owner without repeating data delivered after
+        another owner failed.
+        """
+        document = parse(
+            """
+            {
+              hero {
+                ... @defer(label: "R") {
+                  nonNullName
+                  id
+                }
+                ... @defer(label: "P1") {
+                  name
+                  ... @defer(label: "C1") {
+                    id
+                  }
+                }
+                ... @defer(label: "P2") {
+                  nestedObject { name }
+                  ... @defer(label: "C2") {
+                    id
+                    friends { name }
+                  }
+                }
+              }
+            }
+            """
+        )
+        name_future: Future[str] = Future()
+        object_future: Future[dict[str, str]] = Future()
+        id_calls = 0
+
+        def id_(_info):
+            nonlocal id_calls
+            id_calls += 1
+            return 1
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "hero": {
+                    "id": id_,
+                    "name": name_future,
+                    "nonNullName": None,
+                    "nestedObject": object_future,
+                    "friends": friends,
+                }
+            },
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result.formatted == {
+            "data": {"hero": {}},
+            "pending": [
+                {"id": "0", "path": ["hero"], "label": "R"},
+                {"id": "1", "path": ["hero"], "label": "P1"},
+                {"id": "2", "path": ["hero"], "label": "P2"},
+            ],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        assert (await anext(iterator)).formatted == {
+            "completed": [
+                {
+                    "id": "0",
+                    "errors": [
+                        {
+                            "message": "Cannot return null"
+                            " for non-nullable field Hero.nonNullName.",
+                            "locations": [{"line": 5, "column": 19}],
+                            "path": ["hero", "nonNullName"],
+                        },
+                    ],
+                },
+            ],
+            "hasNext": True,
+        }
+
+        name_future.set_result("Luke")
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [{"id": "3", "path": ["hero"], "label": "C1"}],
+            "incremental": [
+                {"data": {"name": "Luke"}, "id": "1"},
+                {"data": {"id": "1"}, "id": "3"},
+            ],
+            "completed": [{"id": "1"}, {"id": "3"}],
+            "hasNext": True,
+        }
+
+        object_future.set_result({"name": "parent"})
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [{"id": "4", "path": ["hero"], "label": "C2"}],
+            "incremental": [
+                {"data": {"nestedObject": {"name": "parent"}}, "id": "2"},
+                {
+                    "data": {
+                        "friends": [
+                            {"name": "Han"},
+                            {"name": "Leia"},
+                            {"name": "C-3PO"},
+                        ]
+                    },
+                    "id": "4",
+                },
+            ],
+            "completed": [{"id": "2"}, {"id": "4"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+        assert id_calls == 1
 
     async def handles_cancelling_child_deferred_fragments_if_parent_fragment_fails():
         """Handles cancelling child deferred fragments if parent fragment fails"""

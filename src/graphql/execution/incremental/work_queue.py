@@ -437,7 +437,8 @@ class WorkQueue:
         for new_group in new_groups:
             new_group_node = group_nodes.get(new_group)
             if new_group_node:
-                if new_group_node.pending:
+                # Settled tasks can still hold values that have not been published.
+                if new_group_node.tasks:
                     non_empty_new_groups.append(new_group)
                 else:
                     del group_nodes[new_group]
@@ -448,14 +449,29 @@ class WorkQueue:
 
     def _start_new_work(
         self, new_groups: Sequence[Group], new_streams: Sequence[Stream]
-    ) -> None:
-        """Promote new groups and streams to root and start them."""
-        for group in new_groups:
+    ) -> list[GroupValuesEvent | GroupSuccessEvent]:
+        """Promote new groups and streams to root and start them.
+
+        Returns the events for groups that could be finished right away.
+        """
+        group_events: list[GroupValuesEvent | GroupSuccessEvent] = []
+        # Completing a released group can append more groups and streams to start.
+        groups_to_start = list(new_groups)
+        streams_to_start = list(new_streams)
+        for group in groups_to_start:
             self._root_groups[group] = None
             self._start_group(group)
-        for stream in new_streams:
+            group_node = self._group_nodes.get(group)
+            # defensive guard mirroring the JS version; starting a group
+            # never removes its node
+            if group_node:  # pragma: no branch
+                self._maybe_finish_group(
+                    group, group_node, group_events, groups_to_start, streams_to_start
+                )
+        for stream in streams_to_start:
             self._root_streams[stream] = None
             self._start_stream(stream)
+        return group_events
 
     def _start_group(self, group: Group) -> None:
         """Start all tasks of a group."""
@@ -559,8 +575,7 @@ class WorkQueue:
                     group, group_node, group_events, new_groups, new_streams
                 )
 
-        self._start_new_work(new_groups, new_streams)
-        return group_events
+        return [*group_events, *self._start_new_work(new_groups, new_streams)]
 
     def _maybe_finish_group(
         self,
@@ -610,6 +625,9 @@ class WorkQueue:
         for value, work in items:
             item_new_groups, item_new_streams = self._maybe_integrate_work(work)
             non_empty_new_groups = self._prune_empty_groups(item_new_groups)
+            # These groups are newly introduced, so their task outcomes have not yet
+            # been processed. Even synchronous task results are queued as graph
+            # events. Therefore, no group events can be returned here.
             self._start_new_work(non_empty_new_groups, item_new_streams)
             values.append(value)
             new_groups.extend(non_empty_new_groups)

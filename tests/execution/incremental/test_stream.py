@@ -2151,7 +2151,6 @@ def describe_execute_stream_directive():
             await sleep(0)
         assert name_future.cancelled()
 
-    @pytest.mark.xfail(strict=True, reason="lost shared result")
     async def releases_a_buffered_shared_stream_after_its_other_fragment_fails():
         """Releases a buffered shared stream after its other fragment fails"""
         document = parse(
@@ -2246,7 +2245,99 @@ def describe_execute_stream_directive():
             "hasNext": False,
         }
 
-        with pytest.raises(StopAsyncIteration):  # pragma: no cover
+        with pytest.raises(StopAsyncIteration):
+            await anext(iterator)
+
+    async def starts_a_shared_stream_before_another_fragment_finishes_its_field():
+        """Starts a shared stream before another fragment finishes its field
+
+        Starts a shared stream before another fragment finishes its separate field.
+        """
+        document = parse(
+            """
+            {
+              nestedObject {
+                ... @defer(label: "R") {
+                  nonNullScalarField
+                  ...Friends
+                }
+                ... @defer(label: "P") {
+                  scalarField
+                  ... @defer(label: "C") {
+                    ...Friends
+                  }
+                }
+              }
+            }
+            fragment Friends on NestedObject {
+              nestedFriendList @stream(initialCount: 0) {
+                name
+              }
+            }
+            """
+        )
+        scalar_future: Future[str] = Future()
+        non_null_scalar_future: Future[str] = Future()
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "nestedObject": {
+                    "nonNullScalarField": non_null_scalar_future,
+                    "scalarField": scalar_future,
+                    "nestedFriendList": friends,
+                }
+            },
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result.formatted == {
+            "data": {"nestedObject": {}},
+            "pending": [
+                {"id": "0", "path": ["nestedObject"], "label": "R"},
+                {"id": "1", "path": ["nestedObject"], "label": "P"},
+            ],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        scalar_future.set_result("parent")
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [
+                {"id": "2", "path": ["nestedObject"], "label": "C"},
+                {"id": "3", "path": ["nestedObject", "nestedFriendList"]},
+            ],
+            "incremental": [
+                {"data": {"scalarField": "parent"}, "id": "1"},
+                {"data": {"nestedFriendList": []}, "id": "2"},
+            ],
+            "completed": [{"id": "1"}, {"id": "2"}],
+            "hasNext": True,
+        }
+
+        assert (await anext(iterator)).formatted == {
+            "incremental": [
+                {
+                    "items": [{"name": "Luke"}, {"name": "Han"}, {"name": "Leia"}],
+                    "id": "3",
+                },
+            ],
+            "completed": [{"id": "3"}],
+            "hasNext": True,
+        }
+
+        non_null_scalar_future.set_result("root")
+
+        assert (await anext(iterator)).formatted == {
+            "incremental": [{"data": {"nonNullScalarField": "root"}, "id": "0"}],
+            "completed": [{"id": "0"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):
             await anext(iterator)
 
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():

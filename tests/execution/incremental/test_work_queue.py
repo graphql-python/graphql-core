@@ -419,7 +419,6 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    @pytest.mark.xfail(strict=True, reason="lost shared result")
     async def releases_buffered_shared_work_and_stream_when_its_group_is_announced():
         root = Group(name="root")
         parent = Group(name="parent")
@@ -561,10 +560,10 @@ def describe_work_queue():
             GroupValuesEvent(parent1, ["parent1"]),
             GroupSuccessEvent(parent1, [child1], []),
             GroupValuesEvent(parent2, ["parent2-slow"]),
-            # FIXME: Announce child2 and deliver its buffered shared value here.
-            GroupSuccessEvent(parent2, [], []),
-            # FIXME: child2 should deliver the shared value before this slow task.
-            GroupValuesEvent(child1, ["child-shared", "child1-slow"]),
+            GroupSuccessEvent(parent2, [child2], []),
+            GroupValuesEvent(child2, ["child-shared"]),
+            GroupSuccessEvent(child2, [], []),
+            GroupValuesEvent(child1, ["child1-slow"]),
             GroupSuccessEvent(child1, [], []),
             WorkQueueTerminationEvent(),
         ]
@@ -626,15 +625,14 @@ def describe_work_queue():
         assert initial_streams == []
         assert events == [
             GroupValuesEvent(parent, ["parent"]),
-            # FIXME: Announce child here; its shared value is ready to deliver.
-            GroupSuccessEvent(parent, [], []),
-            # FIXME: Deliver the shared value through child before this work ends.
-            GroupValuesEvent(other_root, ["shared", "other-root"]),
+            GroupSuccessEvent(parent, [child], []),
+            GroupValuesEvent(child, ["shared"]),
+            GroupSuccessEvent(child, [], []),
+            GroupValuesEvent(other_root, ["other-root"]),
             GroupSuccessEvent(other_root, [], []),
             WorkQueueTerminationEvent(),
         ]
 
-    @pytest.mark.xfail(strict=True, reason="lost shared result")
     async def accounts_for_shared_work_delivered_before_another_owner_is_announced():
         root = Group(name="root")
         first_parent = Group(name="first_parent")
@@ -711,7 +709,6 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    @pytest.mark.xfail(run=False, reason="hangs")  # pragma: no cover
     async def does_not_promote_children_when_final_shared_task_completes_the_parent():
         parent = Group(name="parent")
         child = Group(parent, name="child")
