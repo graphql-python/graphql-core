@@ -982,7 +982,7 @@ class GraphQLField:
 class GraphQLResolveInfo(NamedTuple):
     """Collection of information passed to the resolvers.
 
-    This is always passed as the first argument to the resolvers.
+    This is always passed as the second argument to the resolvers.
 
     Note that contrary to the JavaScript implementation, the context (commonly used to
     represent an authenticated user, or request-specific caches) is included here and

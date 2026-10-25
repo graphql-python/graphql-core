@@ -1433,13 +1433,13 @@ def execute_sync(
     ...             schema, document, {'greeting': greeting}, check_sync=True
     ...         )
     ...     except RuntimeError as error:
-    ...         return error
+    ...         return str(error)
     >>> with warnings.catch_warnings():
     ...     warnings.simplefilter('ignore', RuntimeWarning)
-    ...     error = asyncio.run(main())
+    ...     message = asyncio.run(main())
     ...     _ = gc.collect()
-    >>> error
-    RuntimeError('GraphQL execution failed to complete synchronously.')
+    >>> message
+    'GraphQL execution failed to complete synchronously.'
     """
     is_awaitable = (
         check_sync
