@@ -937,6 +937,87 @@ def describe_validate_overlapping_fields_can_be_merged():
             ],
         )
 
+    def does_not_compare_subfields_of_incompatible_parent_calls():
+        assert_errors(
+            """
+            fragment incompatibleParents on Dog {
+              parent: mother {
+                value: name
+              }
+              parent: father {
+                value: mother { name }
+              }
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'parent' conflict because"
+                    " 'mother' and 'father' are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (6, 15)],
+                }
+            ],
+        )
+
+    def still_compares_subfields_of_each_compatible_parent_call_group():
+        assert_errors(
+            """
+            fragment mixedParents on Dog {
+              parent: mother {
+                value: name
+              }
+              parent: mother {
+                value: mother { name }
+              }
+              parent: father { name }
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'parent' conflict because"
+                    " subfields 'value' conflict because"
+                    " 'name' and 'mother' are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 17), (6, 15), (7, 17)],
+                },
+                {
+                    "message": "Fields 'parent' conflict because"
+                    " 'mother' and 'father' are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (9, 15)],
+                },
+                {
+                    "message": "Fields 'parent' conflict because"
+                    " 'mother' and 'father' are different fields."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(6, 15), (9, 15)],
+                },
+            ],
+        )
+
+    def does_not_compare_subfields_after_a_stream_conflict():
+        assert_errors(
+            """
+            fragment streamBarrier on Dog {
+              parent: mother @stream { value: name }
+              parent: mother { value: father }
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'parent' conflict because"
+                    " they have differing stream directives."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
+        )
+
     def very_deep_conflict():
         assert_errors(
             """
@@ -1149,6 +1230,7 @@ def describe_validate_overlapping_fields_can_be_merged():
               scalar: String
               deepBox: StringBox
               unrelatedField: String
+              listNode: [Node]
               listStringBox: [StringBox]
               stringBox: StringBox
               intBox: IntBox
@@ -1158,6 +1240,7 @@ def describe_validate_overlapping_fields_can_be_merged():
               scalar: Int
               deepBox: IntBox
               unrelatedField: String
+              node: Node
               listStringBox: [StringBox]
               stringBox: StringBox
               intBox: IntBox
@@ -1275,6 +1358,32 @@ def describe_validate_overlapping_fields_can_be_merged():
                     {
                         "message": "Fields 'scalar' conflict because"
                         " they return conflicting types 'Int' and 'String'."
+                        " Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(5, 23), (8, 23)],
+                    }
+                ],
+                schema,
+            )
+
+        def does_not_compare_subfields_after_a_response_type_conflict():
+            assert_errors(
+                """
+                {
+                  someBox {
+                    ... on StringBox {
+                      parent: listNode { value: name }
+                    }
+                    ... on IntBox {
+                      parent: node { value: id }
+                    }
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Fields 'parent' conflict because"
+                        " they return conflicting types '[Node]' and 'Node'."
                         " Use different aliases on the fields"
                         " to fetch both if this was intentional.",
                         "locations": [(5, 23), (8, 23)],
