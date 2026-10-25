@@ -302,6 +302,9 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
+    if not field_map:
+        return
+
     compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
@@ -546,6 +549,9 @@ def collect_conflicts_between(
     already been called on each provided collection of fields. This is true because
     this validator traverses each individual selection set.
     """
+    if not field_map1 or not field_map2:
+        return
+
     # A field map is a keyed collection, where each key represents a response name and
     # the value at that key is a list of all fields which provide that response name.
     # For any response name which appears in both provided field maps, each field from
