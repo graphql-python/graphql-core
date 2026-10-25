@@ -2733,7 +2733,9 @@ class GraphQLEnumType(GraphQLNamedType):
         >>> rgb_type = GraphQLEnumType('RGB', {'RED': 0, 'GREEN': 1, 'BLUE': 2})
         >>> print_ast(rgb_type.value_to_literal('BLUE'))
         'BLUE'
-        >>> rgb_type.value_to_literal(3) is None
+        >>> rgb_type.value_to_literal(2) is None
+        True
+        >>> rgb_type.value_to_literal('PURPLE') is None
         True
         """
         if isinstance(value, str) and self.values.get(value):

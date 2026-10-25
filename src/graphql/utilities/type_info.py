@@ -548,7 +548,7 @@ class TypeInfo:
             method(node)
 
     def leave(self, node: Node) -> None:
-        """Update this TypeInfo instance for a left AST node.
+        """Update this TypeInfo instance when leaving an AST node.
 
         :param node: AST node being left.
 

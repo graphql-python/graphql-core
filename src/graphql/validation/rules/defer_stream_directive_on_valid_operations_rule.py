@@ -88,9 +88,9 @@ def can_be_skipped_via_include_directive(node: DirectiveNode) -> bool:
 class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
     """Defer and stream directives are used on valid operations
 
-    A GraphQL document is only valid if defer and stream directives are not used
-    in subscription operations, unless they can be disabled via their ``if``
-    argument or the selection can be skipped via ``@skip`` or ``@include``.
+    Subscription operations must not use unconditional ``@defer`` or ``@stream``.
+    Their ``if`` argument must be ``false`` or a variable, unless the selection or
+    an enclosing selection can be skipped via ``@skip`` or ``@include``.
 
     :param context: The validation context used while checking the document.
 
