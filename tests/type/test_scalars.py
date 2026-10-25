@@ -1,4 +1,6 @@
 import pickle
+from decimal import Decimal
+from fractions import Fraction
 from math import inf, nan, pi
 from typing import Any
 
@@ -6,7 +8,7 @@ from pytest import raises
 
 from graphql.error import GraphQLError
 from graphql.language import parse_value as parse_value_to_ast
-from graphql.pyutils import Undefined
+from graphql.pyutils import Undefined, inspect
 from graphql.type import (
     GraphQLInt,
     GraphQLFloat,
@@ -173,6 +175,37 @@ def describe_type_system_specified_scalar_types():
             with raises(GraphQLError) as exc_info:
                 serialize([5])
             assert str(exc_info.value) == "Int cannot represent non-integer value: [5]"
+
+        def serializes_other_numeric_types_without_truncation():
+            serialize = GraphQLInt.serialize
+
+            result = serialize(Decimal(123))
+            assert result == 123
+            assert type(result) is int
+            assert serialize(Decimal("-1.0")) == -1
+            assert serialize(Fraction(4, 2)) == 2
+
+            # Non-integer numbers are not truncated.
+            for value in (
+                Decimal("2.5"),
+                Decimal("-0.9"),
+                Decimal("1.0000000000000000000001"),
+                Fraction(1, 2),
+                Decimal("NaN"),
+                Decimal("Infinity"),
+            ):
+                with raises(GraphQLError) as exc_info:
+                    serialize(value)
+                assert str(exc_info.value) == (
+                    "Int cannot represent non-integer value: " + inspect(value)
+                )
+
+            # Objects that are not numbers, but can be converted to an int,
+            # are still accepted.
+            int_only = type("IntOnly", (), {"__int__": lambda _self: 5})()
+            assert serialize(int_only) == 5
+            index_only = type("IndexOnly", (), {"__index__": lambda _self: 7})()
+            assert serialize(index_only) == 7
 
         def cannot_be_redefined():
             with raises(TypeError, match="Redefinition of reserved type 'Int'"):

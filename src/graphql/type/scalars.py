@@ -1,6 +1,7 @@
 """GraphQL scalar types"""
 
 from math import isfinite
+from numbers import Number
 from typing import Any, Mapping
 
 from ..error import GraphQLError
@@ -56,6 +57,10 @@ def serialize_int(output_value: Any) -> int:
             raise ValueError
         else:
             num = int(output_value)  # raises ValueError if not an integer
+            # do not truncate non-integer numbers such as Decimal("2.5"), but still
+            # accept other objects that can be converted to an int
+            if isinstance(output_value, Number) and num != output_value:
+                raise ValueError
     except (OverflowError, ValueError, TypeError):
         raise GraphQLError(
             "Int cannot represent non-integer value: " + inspect(output_value)
