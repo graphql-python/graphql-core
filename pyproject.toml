@@ -1,6 +1,6 @@
 [project]
 name = "graphql-core"
-version = "3.3.0"
+version = "3.3.1"
 description = "GraphQL-core is a Python port of GraphQL.js, the JavaScript reference implementation for GraphQL."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -313,7 +313,7 @@ filterwarnings = "ignore::pytest.PytestConfigWarning"
 testpaths = ["tests"]
 
 [tool.bumpversion]
-current_version = "3.3.0"
+current_version = "3.3.1"
 commit = false
 tag = false
 parse = '''(?x)
