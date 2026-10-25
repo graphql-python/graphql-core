@@ -1,8 +1,9 @@
 from contextlib import contextmanager
 from functools import partial
 
+from graphql.language import parse
 from graphql.utilities import build_schema
-from graphql.validation import OverlappingFieldsCanBeMergedRule
+from graphql.validation import OverlappingFieldsCanBeMergedRule, validate
 from graphql.validation.rules import (
     overlapping_fields_can_be_merged as overlapping_module,
 )
@@ -1223,6 +1224,22 @@ def describe_validate_overlapping_fields_can_be_merged():
             """)
 
     def describe_comparison_budget():
+        def error_does_not_keep_the_exceeded_budget_alive():
+            # The error is created while the internal budget signal is handled,
+            # but must not adopt its traceback, which keeps the comparison alive.
+            query = "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+            with budget_of(5):
+                errors = validate(
+                    budget_schema,
+                    parse(query, no_location=True),
+                    [OverlappingFieldsCanBeMergedRule],
+                )
+            assert len(errors) == 1
+            error = errors[0]
+            assert error.message.startswith("Query is too complex to validate")
+            assert error.__traceback__ is None
+            assert error.__context__ is None
+
         def aborts_validation_when_the_comparison_budget_is_exceeded():
             # Repeated inline fragments select the same response name, forcing O(n^2)
             # pairwise comparisons. Once the budget is exhausted the rule aborts with

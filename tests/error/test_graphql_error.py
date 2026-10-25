@@ -27,6 +27,18 @@ field_node = operation_node.selection_set.selections[0]
 assert field_node
 
 
+def assert_raised_with_new_traceback(error: GraphQLError, handled_error: Exception):
+    # In Python, an error gets its traceback when it is raised, and an error that
+    # is being handled at this time becomes its context, not part of its traceback.
+    with raises(GraphQLError) as exc_info:
+        raise error
+    assert exc_info.value is error
+    assert error.__traceback__ is not None
+    assert error.__traceback__ is not handled_error.__traceback__
+    assert error.__traceback__.tb_next is None
+    assert error.__context__ is handled_error
+
+
 def describe_graphql_error():
     def is_a_class_and_is_a_subclass_of_exception():
         assert type(GraphQLError) is type
@@ -111,14 +123,14 @@ def describe_graphql_error():
     def creates_new_stack_if_original_error_has_no_stack():
         try:
             raise RuntimeError
-        except RuntimeError as original_with_traceback:
-            original_traceback = original_with_traceback.__traceback__
+        except RuntimeError as handled_error:
             original = RuntimeError("original")
             e = GraphQLError("msg", original_error=original)
+            # the traceback of the handled error is not adopted
+            assert e.__traceback__ is None
+            assert_raised_with_new_traceback(e, handled_error)
         assert e.__class__.__name__ == "GraphQLError"
         assert original.__traceback__ is None
-        assert original_traceback is not None
-        assert e.__traceback__ is original_traceback
         assert e.message == "msg"
         assert e.original_error is original
         assert str(e.original_error) == "original"
