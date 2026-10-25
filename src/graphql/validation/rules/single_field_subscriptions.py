@@ -94,7 +94,19 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                     )
                 )
                 return
-            if len(grouped_field_set) > 1:
+            if not grouped_field_set:
+                self.report_error(
+                    GraphQLError(
+                        (
+                            "Anonymous Subscription"
+                            if operation_name is None
+                            else f"Subscription '{operation_name}'"
+                        )
+                        + " must select one top level field.",
+                        node.selection_set,
+                    )
+                )
+            elif len(grouped_field_set) > 1:
                 field_details_lists = list(grouped_field_set.values())
                 extra_field_details_lists = field_details_lists[1:]
                 extra_field_selection = [

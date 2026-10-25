@@ -62,7 +62,10 @@ class ScalarLeafsRule(ValidationRule):
                         node,
                     )
                 )
-            elif not selection_set.selections:
+            elif (
+                not selection_set.selections
+                and not self.context.allow_empty_selection_sets
+            ):
                 field_name = node.name.value
                 self.report_error(
                     GraphQLError(

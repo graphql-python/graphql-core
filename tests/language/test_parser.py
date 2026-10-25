@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeAlias, cast
+from typing import Any, TypeAlias, cast
 
 import pytest
 
@@ -49,9 +49,11 @@ from ..utils import dedent
 Location: TypeAlias = tuple[int, int] | None
 
 
-def assert_syntax_error(text: str, message: str, location: Location) -> None:
+def assert_syntax_error(
+    text: str, message: str, location: Location, **options: Any
+) -> None:
     with pytest.raises(GraphQLSyntaxError) as exc_info:
-        parse(text)
+        parse(text, **options)
     error = exc_info.value
     assert error.message == f"Syntax Error: {message}"
     assert error.description == message
@@ -502,6 +504,52 @@ def describe_parser():
         document = "fragment a on t { ...b(v: $v) }"
         with pytest.raises(GraphQLSyntaxError):
             parse(document)
+
+    def allows_parsing_empty_selection_sets():
+        document = parse("{ node { } }", no_location=True)
+
+        assert document == DocumentNode(
+            definitions=(
+                OperationDefinitionNode(
+                    description=None,
+                    operation=OperationType.QUERY,
+                    name=None,
+                    variable_definitions=None,
+                    directives=None,
+                    selection_set=SelectionSetNode(
+                        selections=(
+                            FieldNode(
+                                alias=None,
+                                name=NameNode(value="node"),
+                                arguments=None,
+                                directives=None,
+                                selection_set=SelectionSetNode(selections=()),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+    def allows_parsing_an_empty_operation_selection_set():
+        document = parse("{ }", no_location=True)
+        operation = cast("OperationDefinitionNode", document.definitions[0])
+
+        assert operation.selection_set.selections == ()
+
+    def allows_parsing_an_empty_fragment_selection_set():
+        document = parse("fragment a on t { }", no_location=True)
+        fragment = cast("FragmentDefinitionNode", document.definitions[0])
+
+        assert fragment.selection_set.selections == ()
+
+    def disallows_parsing_empty_selection_sets_when_disabled():
+        assert_syntax_error(
+            "{ node { } }",
+            "Expected Name, found '}'.",
+            (1, 10),
+            allow_empty_selection_sets=False,
+        )
 
     def contains_location_information_that_only_stringifies_start_end():
         result = parse("{ id }")

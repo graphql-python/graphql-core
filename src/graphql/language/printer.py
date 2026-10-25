@@ -113,7 +113,7 @@ class PrintAstVisitor(Visitor):
 
     @staticmethod
     def leave_selection_set(node: PrintedNode, *_args: Any) -> str:
-        return block(node.selections)
+        return block(node.selections) if node.selections else "{}"
 
     @staticmethod
     def leave_field(node: PrintedNode, *_args: Any) -> str:

@@ -97,6 +97,7 @@ def parse(
     no_location: bool = False,
     max_tokens: int | None = None,
     experimental_fragment_arguments: bool = False,
+    allow_empty_selection_sets: bool = True,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -132,6 +133,17 @@ def parse(
           ...B(x: $var)
         }
 
+    If ``allow_empty_selection_sets`` is set to ``True`` (the default), the parser
+    accepts selection sets that contain no selections, changing the grammar from
+    ``SelectionSet : { Selection+ }`` to ``SelectionSet : { Selection* }``.
+    See https://github.com/graphql/graphql-spec/pull/1227
+
+    For example::
+
+        {
+          viewer { }
+        }
+
     :param source: A GraphQL source string or source object.
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
@@ -143,6 +155,9 @@ def parse(
         number of tokens allowed within a document.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
+    :param allow_empty_selection_sets: Allows selection sets without selections
+        (the default). Deprecated, since empty selection sets are now always allowed;
+        this option will be removed in a future version.
     :returns: The parsed GraphQL document AST.
 
     Parse a GraphQL document with the default parser options:
@@ -176,6 +191,7 @@ def parse(
         no_location=no_location,
         max_tokens=max_tokens,
         experimental_fragment_arguments=experimental_fragment_arguments,
+        allow_empty_selection_sets=allow_empty_selection_sets,
     )
     return parser.parse_document()
 
@@ -375,6 +391,7 @@ class Parser:
     _no_location: bool
     _max_tokens: int | None
     _experimental_fragment_arguments: bool
+    _allow_empty_selection_sets: bool
     _lexer: Lexer
     _token_counter: int
 
@@ -385,6 +402,7 @@ class Parser:
         max_tokens: int | None = None,
         experimental_fragment_arguments: bool = False,
         lexer: Lexer | None = None,
+        allow_empty_selection_sets: bool = True,
     ) -> None:
         if not is_source(source):
             source = Source(cast("str", source))
@@ -392,6 +410,7 @@ class Parser:
         self._no_location = no_location
         self._max_tokens = max_tokens
         self._experimental_fragment_arguments = experimental_fragment_arguments
+        self._allow_empty_selection_sets = allow_empty_selection_sets
         # You may override the lexer used to lex the source; this is used by schema
         # coordinates to introduce a lexer with a restricted syntax.
         self._lexer = lexer if lexer is not None else Lexer(source)
@@ -562,11 +581,23 @@ class Parser:
         return VariableNode(name=self.parse_name(), loc=self.loc(start))
 
     def parse_selection_set(self) -> SelectionSetNode:
-        """SelectionSet: {Selection+}"""
+        """SelectionSet: {Selection+}
+
+        With ``allow_empty_selection_sets`` enabled (the default):
+
+        SelectionSet: {Selection*}
+
+        The ``allow_empty_selection_sets`` option is deprecated and will be removed in
+        a future version, at which point this will be the only grammar.
+        """
         start = self._lexer.token
         return SelectionSetNode(
-            selections=self.many(
-                TokenKind.BRACE_L, self.parse_selection, TokenKind.BRACE_R
+            selections=(
+                self.any(TokenKind.BRACE_L, self.parse_selection, TokenKind.BRACE_R)
+                if self._allow_empty_selection_sets
+                else self.many(
+                    TokenKind.BRACE_L, self.parse_selection, TokenKind.BRACE_R
+                )
             ),
             loc=self.loc(start),
         )

@@ -346,6 +346,9 @@ class ValidationContext(ASTValidationContext):
     :param type_info: TypeInfo instance used to track traversal state.
     :param on_error: Callback invoked for each validation error.
     :param hide_suggestions: Whether suggestion text should be omitted from errors.
+    :param allow_empty_selection_sets: Whether selection sets on composite types may
+        be empty (the default). Deprecated, since empty selection sets are now always
+        allowed.
 
     >>> from graphql import GraphQLError, TypeInfo, build_schema, parse
     >>> from graphql.validation import ValidationContext
@@ -367,6 +370,7 @@ class ValidationContext(ASTValidationContext):
     _variable_usages: dict[NodeWithSelectionSet, list[VariableUsage]]
     _recursive_variable_usages: dict[OperationDefinitionNode, list[VariableUsage]]
     _hide_suggestions: bool
+    _allow_empty_selection_sets: bool
 
     def __init__(
         self,
@@ -375,6 +379,7 @@ class ValidationContext(ASTValidationContext):
         type_info: TypeInfo,
         on_error: Callable[[GraphQLError], None],
         hide_suggestions: bool = False,
+        allow_empty_selection_sets: bool = True,
     ) -> None:
         super().__init__(ast, on_error)
         self.schema = schema
@@ -382,11 +387,20 @@ class ValidationContext(ASTValidationContext):
         self._variable_usages = {}
         self._recursive_variable_usages = {}
         self._hide_suggestions = hide_suggestions
+        self._allow_empty_selection_sets = allow_empty_selection_sets
 
     @property
     def hide_suggestions(self) -> bool:
         """Whether validation error suggestions are hidden."""
         return self._hide_suggestions
+
+    @property
+    def allow_empty_selection_sets(self) -> bool:
+        """Whether empty selection sets on composite types are allowed.
+
+        Deprecated, since empty selection sets are now always allowed.
+        """
+        return self._allow_empty_selection_sets
 
     def get_variable_usages(self, node: NodeWithSelectionSet) -> list[VariableUsage]:
         """Get variable usages found directly within the given node.

@@ -49,6 +49,54 @@ def describe_validate_subscriptions_with_single_field():
             """
         )
 
+    def fails_with_no_root_field():
+        assert_errors(
+            """
+            subscription NoRootField {
+            }
+            """,
+            [
+                {
+                    "message": "Subscription 'NoRootField'"
+                    " must select one top level field.",
+                    "locations": [(2, 38)],
+                }
+            ],
+        )
+
+    def fails_with_no_root_field_in_anonymous_subscription():
+        assert_errors(
+            """
+            subscription {
+            }
+            """,
+            [
+                {
+                    "message": "Anonymous Subscription"
+                    " must select one top level field.",
+                    "locations": [(2, 26)],
+                }
+            ],
+        )
+
+    def fails_with_no_root_field_through_empty_fragment():
+        assert_errors(
+            """
+            subscription {
+              ...Empty
+            }
+            fragment Empty on SubscriptionRoot {
+            }
+            """,
+            [
+                {
+                    "message": "Anonymous Subscription"
+                    " must select one top level field.",
+                    "locations": [(2, 26)],
+                }
+            ],
+        )
+
     def valid_subscription_with_fragment():
         assert_valid(
             """
@@ -204,7 +252,13 @@ def describe_validate_subscriptions_with_single_field():
               ...A
             }
             """,
-            [],
+            [
+                {
+                    "message": "Subscription 'NoInfiniteLoop'"
+                    " must select one top level field.",
+                    "locations": [(2, 41)],
+                }
+            ],
         )
 
     def fails_with_more_than_one_root_field_via_fragments_anonymous():

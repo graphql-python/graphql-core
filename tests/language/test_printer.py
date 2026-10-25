@@ -20,6 +20,24 @@ def describe_printer_query_document():
         ast = FieldNode(name=NameNode(value="foo"))
         assert print_ast(ast) == "foo"
 
+    def prints_empty_selection_sets():
+        ast = parse(
+            "{ foo { } bar { ... on Baz { } } }", allow_empty_selection_sets=True
+        )
+        assert print_ast(ast) == dedent(
+            """
+            {
+              foo {}
+              bar {
+                ... on Baz {}
+              }
+            }
+            """
+        )
+
+        empty_operation_ast = parse("{ }", allow_empty_selection_sets=True)
+        assert print_ast(empty_operation_ast) == "{}"
+
     def produces_helpful_error_messages():
         bad_ast = {"random": "Data"}
         with pytest.raises(TypeError) as exc_info:

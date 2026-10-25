@@ -7,6 +7,7 @@ from graphql.language import (
     OperationDefinitionNode,
     OperationType,
     SelectionSetNode,
+    parse,
 )
 from graphql.validation import ScalarLeafsRule
 from graphql.validation.validate import validate
@@ -44,6 +45,53 @@ def describe_validate_scalar_leafs():
                 },
             ],
         )
+
+    def object_type_having_only_one_selection():
+        # We can't leverage assert_errors since it doesn't support passing in the
+        # document node directly. We have to do this because this is technically
+        # an invalid document.
+        doc = DocumentNode(
+            definitions=(
+                OperationDefinitionNode(
+                    operation=OperationType.QUERY,
+                    selection_set=SelectionSetNode(
+                        selections=(
+                            FieldNode(
+                                name=NameNode(value="human"),
+                                selection_set=SelectionSetNode(selections=()),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        errors = validate(
+            test_schema, doc, [ScalarLeafsRule], allow_empty_selection_sets=False
+        )
+        assert errors == [
+            {
+                "message": "Field 'human' of type 'Human'"
+                " must have at least one field selected.",
+            },
+        ]
+
+    def object_type_having_no_selections_is_allowed_by_default():
+        doc = parse("{ human { } }")
+
+        errors = validate(test_schema, doc, [ScalarLeafsRule])
+        assert errors == []
+
+    def scalar_selection_is_still_rejected_with_allow_empty_selection_sets():
+        doc = parse("{ human { name { } } }")
+
+        errors = validate(test_schema, doc, [ScalarLeafsRule])
+        assert errors == [
+            {
+                "message": "Field 'name' must not have a selection"
+                " since type 'String' has no subfields.",
+                "locations": [(1, 16)],
+            },
+        ]
 
     def interface_type_missing_selection():
         assert_errors(
@@ -150,30 +198,3 @@ def describe_validate_scalar_leafs():
                 },
             ],
         )
-
-    def object_type_having_only_one_selection():
-        # We can't leverage assert_errors since it doesn't support passing in the
-        # document node directly. We have to do this because this is technically
-        # an invalid document.
-        doc = DocumentNode(
-            definitions=(
-                OperationDefinitionNode(
-                    operation=OperationType.QUERY,
-                    selection_set=SelectionSetNode(
-                        selections=(
-                            FieldNode(
-                                name=NameNode(value="human"),
-                                selection_set=SelectionSetNode(selections=()),
-                            ),
-                        ),
-                    ),
-                ),
-            ),
-        )
-        errors = validate(test_schema, doc, [ScalarLeafsRule])
-        assert errors == [
-            {
-                "message": "Field 'human' of type 'Human'"
-                " must have at least one field selected.",
-            },
-        ]

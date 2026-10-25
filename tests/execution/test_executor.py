@@ -256,6 +256,27 @@ def describe_execute_handles_basic_execution_tasks():
             None,
         )
 
+    def executes_empty_selection_sets():
+        Type = GraphQLObjectType(
+            "Type",
+            lambda: {
+                "a": GraphQLField(GraphQLString, resolve=lambda *_args: "Apple"),
+                "deep": GraphQLField(Type, resolve=lambda *_args: {}),
+            },
+        )
+        schema = GraphQLSchema(Type)
+
+        document = parse(
+            "{ a deep { } ...Frag } fragment Frag on Type { }",
+            allow_empty_selection_sets=True,
+        )
+
+        result = execute_sync(schema, document)
+        assert result == ({"a": "Apple", "deep": {}}, None)
+
+        empty_document = parse("{ }", allow_empty_selection_sets=True)
+        assert execute_sync(schema, empty_document) == ({}, None)
+
     def provides_info_about_current_execution_state():
         resolved_infos = []
 

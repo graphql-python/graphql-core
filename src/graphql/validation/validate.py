@@ -44,6 +44,7 @@ def validate(
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
     hide_suggestions: bool = False,
+    allow_empty_selection_sets: bool = True,
 ) -> list[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -69,6 +70,11 @@ def validate(
         Defaults to 100.
     :param hide_suggestions: Whether suggestion text should be omitted from
         validation errors.
+    :param allow_empty_selection_sets: If enabled (the default), a selection set on
+        an object, interface or union type is only required to be present, rather
+        than to be non-empty. Pair this with the ``allow_empty_selection_sets``
+        parse option. See https://github.com/graphql/graphql-spec/pull/1227.
+        Deprecated, since empty selection sets are now always allowed.
     :returns: Validation errors, or an empty list when the document is valid.
 
     Validate with the default specified rules:
@@ -115,7 +121,12 @@ def validate(
         errors.append(error)
 
     context = ValidationContext(
-        schema, document_ast, type_info, on_error, hide_suggestions
+        schema,
+        document_ast,
+        type_info,
+        on_error,
+        hide_suggestions,
+        allow_empty_selection_sets,
     )
 
     # This uses a specialized visitor which runs multiple visitors in parallel,
