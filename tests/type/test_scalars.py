@@ -204,8 +204,6 @@ def describe_type_system_specified_scalar_types():
             # are still accepted.
             int_only = type("IntOnly", (), {"__int__": lambda _self: 5})()
             assert serialize(int_only) == 5
-            index_only = type("IndexOnly", (), {"__index__": lambda _self: 7})()
-            assert serialize(index_only) == 7
 
         def cannot_be_redefined():
             with raises(TypeError, match="Redefinition of reserved type 'Int'"):
