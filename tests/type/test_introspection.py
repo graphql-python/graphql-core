@@ -1724,6 +1724,66 @@ def describe_introspection():
             None,
         )
 
+    def returns_null_for_descriptions_of_wrapping_types():
+        schema = build_schema(
+            '''
+            """Object description"""
+            type SomeObject {
+              listField: [SomeObject]
+              nonNullField: SomeObject!
+            }
+
+            schema {
+              query: SomeObject
+            }
+            '''
+        )
+
+        source = """
+            {
+              __type(name: "SomeObject") {
+                description
+                fields {
+                  name
+                  type {
+                    kind
+                    description
+                    ofType {
+                      description
+                    }
+                  }
+                }
+              }
+            }
+            """
+
+        assert graphql_sync(schema=schema, source=source) == (
+            {
+                "__type": {
+                    "description": "Object description",
+                    "fields": [
+                        {
+                            "name": "listField",
+                            "type": {
+                                "kind": "LIST",
+                                "description": None,
+                                "ofType": {"description": "Object description"},
+                            },
+                        },
+                        {
+                            "name": "nonNullField",
+                            "type": {
+                                "kind": "NON_NULL",
+                                "description": None,
+                                "ofType": {"description": "Object description"},
+                            },
+                        },
+                    ],
+                },
+            },
+            None,
+        )
+
     def executes_introspection_query_without_calling_global_resolvers():
         schema = build_schema(
             """
