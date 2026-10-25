@@ -218,6 +218,247 @@ def describe_work_queue():
         assert grandchild_ran_spy.call_count == 0
         assert child_ran_spy.call_count == 1
 
+    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
+    async def replays_the_first_cached_shared_failure_when_its_group_is_announced():
+        failing_root = Group(name="failing_root")
+        second_root = Group(name="second_root")
+        other_root = Group(name="other_root")
+        child = Group(other_root, name="child")
+
+        error = RuntimeError("shared failure")
+        second_error = RuntimeError("second shared failure")
+
+        def fail() -> WorkResult:
+            raise error
+
+        def fail_second() -> WorkResult:
+            raise second_error
+
+        shared_task = make_task([failing_root, child], fail)
+
+        async def other() -> WorkResult:
+            await sleep(0)
+            return WorkResult("other")
+
+        other_task = make_task([other_root], other)
+        second_task = make_task([second_root, child], fail_second)
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[failing_root, second_root, other_root, child],
+                tasks=[
+                    shared_task,
+                    second_task,
+                    other_task,
+                    make_task([child], "child"),
+                ],
+            )
+        )
+
+        assert initial_groups == [failing_root, second_root, other_root]
+        assert initial_streams == []
+        assert events == [
+            GroupFailureEvent(failing_root, error),
+            GroupFailureEvent(second_root, second_error),
+            GroupValuesEvent(other_root, ["other"]),
+            GroupSuccessEvent(other_root, [child], []),
+            GroupFailureEvent(child, error),
+            WorkQueueTerminationEvent(),
+        ]
+
+    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
+    async def replays_cached_failures_in_task_order_when_earlier_child_work_succeeds():
+        first_root = Group(name="first_root")
+        second_root = Group(name="second_root")
+        parent = Group(name="parent")
+        child = Group(parent, name="child")
+
+        first_error = RuntimeError("first task")
+        second_error = RuntimeError("first failure")
+
+        async def fail_first() -> WorkResult:
+            await sleep(0)
+            raise first_error
+
+        first_task_spy = Spy(fail_first)
+
+        def fail_second() -> WorkResult:
+            raise second_error
+
+        async def slow_parent() -> WorkResult:
+            await sleep(0)
+            await sleep(0)
+            return WorkResult("parent")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[first_root, second_root, parent, child],
+                tasks=[
+                    make_task([child], "child"),
+                    make_task([first_root, child], first_task_spy),
+                    make_task([second_root, child], fail_second),
+                    make_task([parent], slow_parent),
+                ],
+            )
+        )
+
+        assert initial_groups == [first_root, second_root, parent]
+        assert initial_streams == []
+        assert events == [
+            GroupFailureEvent(second_root, second_error),
+            GroupFailureEvent(first_root, first_error),
+            GroupValuesEvent(parent, ["parent"]),
+            GroupSuccessEvent(parent, [child], []),
+            GroupFailureEvent(child, first_error),
+            WorkQueueTerminationEvent(),
+        ]
+        assert first_task_spy.call_count == 1
+
+    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
+    async def discards_children_discovered_after_their_parent_fails():
+        root = Group(name="root")
+        other_root = Group(name="other_root")
+        parent = Group(name="parent")
+        child = Group(parent, name="child")
+        late_child = Group(child, name="late_child")
+        empty_child = Group(root, name="empty_child")
+        late_grandchild = Group(empty_child, name="late_grandchild")
+
+        error = RuntimeError("shared failure")
+        other_error = RuntimeError("other failure")
+
+        def fail() -> WorkResult:
+            raise error
+
+        def fail_other() -> WorkResult:
+            raise other_error
+
+        def fail_cancelled() -> WorkResult:
+            raise RuntimeError("cancelled failure")
+
+        async def slow_parent() -> WorkResult:
+            await sleep(0)
+            await sleep(0)
+            return WorkResult("parent")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[root, other_root, parent, child],
+                tasks=[
+                    make_task([root, child], fail),
+                    make_task(
+                        [root, other_root],
+                        "producer",
+                        Work(
+                            groups=[late_child, late_grandchild, empty_child],
+                            tasks=[
+                                make_task([other_root], fail_other),
+                                make_task(
+                                    [other_root, late_child, late_grandchild, child],
+                                    fail_cancelled,
+                                ),
+                            ],
+                        ),
+                    ),
+                    make_task([parent], slow_parent),
+                ],
+            )
+        )
+
+        assert initial_groups == [root, other_root, parent]
+        assert initial_streams == []
+        assert events == [
+            GroupFailureEvent(root, error),
+            GroupFailureEvent(other_root, other_error),
+            GroupValuesEvent(parent, ["parent"]),
+            GroupSuccessEvent(parent, [child], []),
+            GroupFailureEvent(child, error),
+            WorkQueueTerminationEvent(),
+        ]
+
+    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
+    async def ignores_late_outcomes_owned_only_by_failed_groups_and_their_descendants():
+        root = Group(name="root")
+        parent = Group(name="parent")
+        child = Group(parent, name="child")
+        descendant = Group(child, name="descendant")
+
+        error = RuntimeError("shared failure")
+
+        def fail() -> WorkResult:
+            raise error
+
+        def fail_cancelled() -> WorkResult:
+            raise RuntimeError("cancelled failure")
+
+        async def slow_parent() -> WorkResult:
+            await sleep(0)
+            return WorkResult("parent")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[root, parent, child, descendant],
+                tasks=[
+                    make_task([root, child], fail),
+                    make_task([root], "cancelled root"),
+                    make_task([root, child], "cancelled child"),
+                    make_task([root, descendant], "cancelled descendant"),
+                    make_task([root, descendant], fail_cancelled),
+                    make_task([parent], slow_parent),
+                ],
+            )
+        )
+
+        assert initial_groups == [root, parent]
+        assert initial_streams == []
+        assert events == [
+            GroupFailureEvent(root, error),
+            GroupValuesEvent(parent, ["parent"]),
+            GroupSuccessEvent(parent, [child], []),
+            GroupFailureEvent(child, error),
+            WorkQueueTerminationEvent(),
+        ]
+
+    @pytest.mark.xfail(strict=True, reason="lost shared result")
+    async def releases_buffered_shared_work_and_stream_when_its_group_is_announced():
+        root = Group(name="root")
+        parent = Group(name="parent")
+        child = Group(parent, name="child")
+        stream = stream_from([WorkResult(1)])
+
+        error = RuntimeError("root failure")
+
+        def fail() -> WorkResult:
+            raise error
+
+        async def slow_parent() -> WorkResult:
+            await sleep(0)
+            return WorkResult("parent")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[root, parent, child],
+                tasks=[
+                    make_task([root], fail),
+                    make_task([root, child], "shared", Work(streams=[stream])),
+                    make_task([parent], slow_parent),
+                ],
+            )
+        )
+
+        assert initial_groups == [root, parent]
+        assert initial_streams == []
+        assert events == [
+            GroupFailureEvent(root, error),
+            GroupValuesEvent(parent, ["parent"]),
+            GroupSuccessEvent(parent, [child], []),
+            GroupValuesEvent(child, ["shared"]),
+            GroupSuccessEvent(child, [], [stream]),
+            StreamValuesEvent(stream, [1], [], []),
+            StreamSuccessEvent(stream),
+            WorkQueueTerminationEvent(),
+        ]
+
     async def integrates_work_object_returned_by_task():
         root = Group(name="root")
         child = Group(root, name="child")
@@ -279,7 +520,7 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    async def skips_child_groups_with_only_completed_tasks_when_parent_finishes_later():
+    async def handles_shared_child_tasks_settled_before_second_parent_completes():
         parent1 = Group(name="parent1")
         parent2 = Group(name="parent2")
         child1 = Group(parent1, name="child1")
@@ -316,14 +557,13 @@ def describe_work_queue():
 
         assert initial_groups == [parent1, parent2]
         assert initial_streams == []
-        # Note: the upstream test expects these events for `child2`, but its
-        # deep equality cannot distinguish the structurally identical groups;
-        # the events are actually emitted for `child1` (`child2` is pruned).
         assert events == [
             GroupValuesEvent(parent1, ["parent1"]),
             GroupSuccessEvent(parent1, [child1], []),
             GroupValuesEvent(parent2, ["parent2-slow"]),
+            # FIXME: Announce child2 and deliver its buffered shared value here.
             GroupSuccessEvent(parent2, [], []),
+            # FIXME: child2 should deliver the shared value before this slow task.
             GroupValuesEvent(child1, ["child-shared", "child1-slow"]),
             GroupSuccessEvent(child1, [], []),
             WorkQueueTerminationEvent(),
@@ -353,7 +593,7 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    async def skips_child_groups_with_shared_tasks_completed_by_a_parent():
+    async def handles_a_ready_child_whose_shared_co_owner_still_has_pending_tasks():
         parent = Group(name="parent")
         child = Group(parent, name="child")
         other_root = Group(name="other_root")
@@ -386,11 +626,66 @@ def describe_work_queue():
         assert initial_streams == []
         assert events == [
             GroupValuesEvent(parent, ["parent"]),
+            # FIXME: Announce child here; its shared value is ready to deliver.
             GroupSuccessEvent(parent, [], []),
+            # FIXME: Deliver the shared value through child before this work ends.
             GroupValuesEvent(other_root, ["shared", "other-root"]),
             GroupSuccessEvent(other_root, [], []),
             WorkQueueTerminationEvent(),
         ]
+
+    @pytest.mark.xfail(strict=True, reason="lost shared result")
+    async def accounts_for_shared_work_delivered_before_another_owner_is_announced():
+        root = Group(name="root")
+        first_parent = Group(name="first_parent")
+        second_parent = Group(name="second_parent")
+        first_child = Group(first_parent, name="first_child")
+        second_child = Group(second_parent, name="second_child")
+
+        error = RuntimeError("root failure")
+
+        def fail() -> WorkResult:
+            raise error
+
+        shared_task_spy = Spy(lambda: WorkResult("shared"))
+
+        async def slow_first_parent() -> WorkResult:
+            await sleep(0)
+            return WorkResult("first parent")
+
+        async def slower_second_parent() -> WorkResult:
+            await sleep(0)
+            await sleep(0)
+            return WorkResult("second parent")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[root, first_parent, second_parent, first_child, second_child],
+                tasks=[
+                    make_task([root], fail),
+                    make_task([root, first_child, second_child], shared_task_spy),
+                    make_task([first_parent], slow_first_parent),
+                    make_task([second_parent], slower_second_parent),
+                    make_task([second_child], "second child"),
+                ],
+            )
+        )
+
+        assert initial_groups == [root, first_parent, second_parent]
+        assert initial_streams == []
+        assert events == [
+            GroupFailureEvent(root, error),
+            GroupValuesEvent(first_parent, ["first parent"]),
+            GroupSuccessEvent(first_parent, [first_child], []),
+            GroupValuesEvent(first_child, ["shared"]),
+            GroupSuccessEvent(first_child, [], []),
+            GroupValuesEvent(second_parent, ["second parent"]),
+            GroupSuccessEvent(second_parent, [second_child], []),
+            GroupValuesEvent(second_child, ["second child"]),
+            GroupSuccessEvent(second_child, [], []),
+            WorkQueueTerminationEvent(),
+        ]
+        assert shared_task_spy.call_count == 1
 
     async def does_not_promote_child_groups_that_only_share_work_with_the_parent():
         parent = Group(name="parent")
@@ -412,6 +707,26 @@ def describe_work_queue():
         assert initial_streams == []
         assert events == [
             GroupValuesEvent(parent, ["shared", "parent-only"]),
+            GroupSuccessEvent(parent, [], []),
+            WorkQueueTerminationEvent(),
+        ]
+
+    @pytest.mark.xfail(run=False, reason="hangs")  # pragma: no cover
+    async def does_not_promote_children_when_final_shared_task_completes_the_parent():
+        parent = Group(name="parent")
+        child = Group(parent, name="child")
+
+        shared_task = make_task([parent, child], "shared")
+        parent_only_task = make_task([parent], "parent-only")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(groups=[parent, child], tasks=[parent_only_task, shared_task])
+        )
+
+        assert initial_groups == [parent]
+        assert initial_streams == []
+        assert events == [
+            GroupValuesEvent(parent, ["parent-only", "shared"]),
             GroupSuccessEvent(parent, [], []),
             WorkQueueTerminationEvent(),
         ]

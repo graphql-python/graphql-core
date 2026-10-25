@@ -2151,6 +2151,104 @@ def describe_execute_stream_directive():
             await sleep(0)
         assert name_future.cancelled()
 
+    @pytest.mark.xfail(strict=True, reason="lost shared result")
+    async def releases_a_buffered_shared_stream_after_its_other_fragment_fails():
+        """Releases a buffered shared stream after its other fragment fails"""
+        document = parse(
+            """
+            {
+              nestedObject {
+                ... @defer(label: "R") {
+                  nonNullScalarField
+                  ...Friends
+                }
+                ... @defer(label: "P") {
+                  scalarField
+                  ... @defer(label: "C") {
+                    ...Friends
+                  }
+                }
+              }
+            }
+            fragment Friends on NestedObject {
+              nestedFriendList @stream(initialCount: 0) {
+                name
+              }
+            }
+            """
+        )
+        scalar_future: Future[str] = Future()
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            {
+                "nestedObject": {
+                    "nonNullScalarField": None,
+                    "scalarField": scalar_future,
+                    "nestedFriendList": friends,
+                }
+            },
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result.formatted == {
+            "data": {"nestedObject": {}},
+            "pending": [
+                {"id": "0", "path": ["nestedObject"], "label": "R"},
+                {"id": "1", "path": ["nestedObject"], "label": "P"},
+            ],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        assert (await anext(iterator)).formatted == {
+            "completed": [
+                {
+                    "id": "0",
+                    "errors": [
+                        {
+                            "message": "Cannot return null for non-nullable field"
+                            " NestedObject.nonNullScalarField.",
+                            "locations": [{"line": 5, "column": 19}],
+                            "path": ["nestedObject", "nonNullScalarField"],
+                        },
+                    ],
+                },
+            ],
+            "hasNext": True,
+        }
+
+        scalar_future.set_result("parent")
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [
+                {"id": "2", "path": ["nestedObject"], "label": "C"},
+                {"id": "3", "path": ["nestedObject", "nestedFriendList"]},
+            ],
+            "incremental": [
+                {"data": {"scalarField": "parent"}, "id": "1"},
+                {"data": {"nestedFriendList": []}, "id": "2"},
+            ],
+            "completed": [{"id": "1"}, {"id": "2"}],
+            "hasNext": True,
+        }
+
+        assert (await anext(iterator)).formatted == {
+            "incremental": [
+                {
+                    "items": [{"name": "Luke"}, {"name": "Han"}, {"name": "Leia"}],
+                    "id": "3",
+                },
+            ],
+            "completed": [{"id": "3"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):  # pragma: no cover
+            await anext(iterator)
+
     async def filters_stream_payloads_that_are_nulled_in_a_deferred_payload():
         """Filters stream payloads that are nulled in a deferred payload"""
         document = parse(

@@ -2376,6 +2376,245 @@ def describe_execute_defer_directive():
             },
         ]
 
+    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
+    async def announces_a_nested_fragment_before_completing_its_shared_failure():
+        """Announces a nested fragment before completing its shared failure"""
+        document = parse(
+            """
+            {
+              hero {
+                ... @defer(label: "R") {
+                  nonNullName
+                }
+                ... @defer(label: "P") {
+                  name
+                  ... @defer(label: "C") {
+                    nonNullName
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document, {"hero": {"name": "Luke", "nonNullName": None}}
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "pending": [
+                    {"id": "0", "path": ["hero"], "label": "R"},
+                    {"id": "1", "path": ["hero"], "label": "P"},
+                ],
+                "hasNext": True,
+            },
+            {
+                "pending": [{"id": "2", "path": ["hero"], "label": "C"}],
+                "incremental": [{"data": {"name": "Luke"}, "id": "1"}],
+                "completed": [
+                    {
+                        "id": "0",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field Hero.nonNullName.",
+                                "locations": [
+                                    {"line": 5, "column": 19},
+                                    {"line": 10, "column": 21},
+                                ],
+                                "path": ["hero", "nonNullName"],
+                            },
+                        ],
+                    },
+                    {"id": "1"},
+                    {
+                        "id": "2",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field Hero.nonNullName.",
+                                "locations": [
+                                    {"line": 5, "column": 19},
+                                    {"line": 10, "column": 21},
+                                ],
+                                "path": ["hero", "nonNullName"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
+    async def reports_one_cached_shared_failure_when_a_nested_fragment_is_announced():
+        """Reports one cached shared failure when a nested fragment is announced"""
+        document = parse(
+            """
+            {
+              hero {
+                ... @defer(label: "R1") {
+                  first: nonNullName
+                }
+                ... @defer(label: "R2") {
+                  second: nonNullName
+                }
+                ... @defer(label: "P") {
+                  name
+                  ... @defer(label: "C") {
+                    first: nonNullName
+                    second: nonNullName
+                  }
+                }
+              }
+            }
+            """
+        )
+        result = await complete(
+            document, {"hero": {"name": "Luke", "nonNullName": None}}
+        )
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "pending": [
+                    {"id": "0", "path": ["hero"], "label": "R1"},
+                    {"id": "1", "path": ["hero"], "label": "R2"},
+                    {"id": "2", "path": ["hero"], "label": "P"},
+                ],
+                "hasNext": True,
+            },
+            {
+                "pending": [{"id": "3", "path": ["hero"], "label": "C"}],
+                "incremental": [{"data": {"name": "Luke"}, "id": "2"}],
+                "completed": [
+                    {
+                        "id": "0",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field Hero.nonNullName.",
+                                "locations": [
+                                    {"line": 5, "column": 19},
+                                    {"line": 13, "column": 21},
+                                ],
+                                "path": ["hero", "first"],
+                            },
+                        ],
+                    },
+                    {
+                        "id": "1",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field Hero.nonNullName.",
+                                "locations": [
+                                    {"line": 8, "column": 19},
+                                    {"line": 14, "column": 21},
+                                ],
+                                "path": ["hero", "second"],
+                            },
+                        ],
+                    },
+                    {"id": "2"},
+                    {
+                        "id": "3",
+                        "errors": [
+                            {
+                                "message": "Cannot return null"
+                                " for non-nullable field Hero.nonNullName.",
+                                "locations": [
+                                    {"line": 5, "column": 19},
+                                    {"line": 13, "column": 21},
+                                ],
+                                "path": ["hero", "first"],
+                            },
+                        ],
+                    },
+                ],
+                "hasNext": False,
+            },
+        ]
+
+    @pytest.mark.xfail(strict=True, reason="lost shared result")
+    @pytest.mark.parametrize("early_execution", [False, True])
+    async def delivers_a_buffered_shared_value_after_its_other_fragment_fails(
+        early_execution,
+    ):
+        """Delivers a buffered shared value after its other fragment fails"""
+        document = parse(
+            """
+            {
+              hero {
+                ... @defer(label: "R") {
+                  nonNullName
+                  id
+                }
+                ... @defer(label: "P") {
+                  name
+                  ... @defer(label: "C") {
+                    id
+                  }
+                }
+              }
+            }
+            """
+        )
+        name_future: Future[str] = Future()
+
+        result = experimental_execute_incrementally(
+            schema,
+            document,
+            {"hero": {"id": 1, "name": name_future, "nonNullName": None}},
+            enable_early_execution=early_execution,
+        )
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+
+        assert result.initial_result.formatted == {
+            "data": {"hero": {}},
+            "pending": [
+                {"id": "0", "path": ["hero"], "label": "R"},
+                {"id": "1", "path": ["hero"], "label": "P"},
+            ],
+            "hasNext": True,
+        }
+
+        iterator = result.subsequent_results
+
+        assert (await anext(iterator)).formatted == {
+            "completed": [
+                {
+                    "id": "0",
+                    "errors": [
+                        {
+                            "message": "Cannot return null"
+                            " for non-nullable field Hero.nonNullName.",
+                            "locations": [{"line": 5, "column": 19}],
+                            "path": ["hero", "nonNullName"],
+                        },
+                    ],
+                },
+            ],
+            "hasNext": True,
+        }
+
+        # The shared id has settled, but C still waits for P's name.
+        name_future.set_result("Luke")
+
+        assert (await anext(iterator)).formatted == {
+            "pending": [{"id": "2", "path": ["hero"], "label": "C"}],
+            "incremental": [
+                {"data": {"name": "Luke"}, "id": "1"},
+                {"data": {"id": "1"}, "id": "2"},
+            ],
+            "completed": [{"id": "1"}, {"id": "2"}],
+            "hasNext": False,
+        }
+
+        with pytest.raises(StopAsyncIteration):  # pragma: no cover
+            await anext(iterator)
+
     async def handles_cancelling_child_deferred_fragments_if_parent_fragment_fails():
         """Handles cancelling child deferred fragments if parent fragment fails"""
         document = parse(
