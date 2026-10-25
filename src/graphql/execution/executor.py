@@ -1024,7 +1024,7 @@ class Executor(Generic[TContext]):
 
         :meta private:
         """
-        # The resolve function's first argument is a collection of information about
+        # The resolve function's second argument is a collection of information about
         # the current execution state.
         return GraphQLResolveInfo(
             field_nodes[0].name.value,
