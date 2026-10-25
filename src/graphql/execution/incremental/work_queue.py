@@ -551,26 +551,40 @@ class WorkQueue:
         group_events: list[GroupValuesEvent | GroupSuccessEvent] = []
         new_groups: list[Group] = []
         new_streams: list[Stream] = []
-        root_groups = self._root_groups
         for group in task.groups:
             group_node = self._group_nodes.get(group)
             if group_node:
                 group_node.pending -= 1
-                if group in root_groups and not group_node.pending:
-                    (
-                        group_values_event,
-                        group_success_event,
-                        child_new_groups,
-                        child_new_streams,
-                    ) = self._finish_group_success(group, group_node)
-                    if group_values_event:
-                        group_events.append(group_values_event)
-                    group_events.append(group_success_event)
-                    new_groups.extend(child_new_groups)
-                    new_streams.extend(child_new_streams)
+                self._maybe_finish_group(
+                    group, group_node, group_events, new_groups, new_streams
+                )
 
         self._start_new_work(new_groups, new_streams)
         return group_events
+
+    def _maybe_finish_group(
+        self,
+        group: Group,
+        group_node: _GroupNode,
+        group_events: list[GroupValuesEvent | GroupSuccessEvent],
+        new_groups: list[Group],
+        new_streams: list[Stream],
+    ) -> None:
+        """Finish a root group if it has no pending tasks left."""
+        if group not in self._root_groups:
+            return
+        if not group_node.pending:
+            (
+                group_values_event,
+                group_success_event,
+                child_new_groups,
+                child_new_streams,
+            ) = self._finish_group_success(group, group_node)
+            if group_values_event:
+                group_events.append(group_values_event)
+            group_events.append(group_success_event)
+            new_groups.extend(child_new_groups)
+            new_streams.extend(child_new_streams)
 
     def _task_failure(self, graph_event: _TaskFailure) -> Sequence[GroupFailureEvent]:
         """Handle a task failure, removing all groups it belongs to."""
