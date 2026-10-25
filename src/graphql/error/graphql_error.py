@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from sys import exc_info
 from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict
 
 from ..pyutils import Undefined
@@ -316,8 +315,6 @@ class GraphQLError(Exception):
             if isinstance(original_extensions, dict):
                 extensions = original_extensions
         self.extensions = extensions or {}
-        if not self.__traceback__:
-            self.__traceback__ = exc_info()[2]
 
     def __str__(self) -> str:
         """Get this error as a human-readable message with source locations.

@@ -1672,6 +1672,22 @@ def describe_validate_overlapping_fields_can_be_merged():
                     schema=budget_schema,
                 )
 
+        def error_does_not_keep_the_exceeded_budget_alive():
+            # The error is created while the internal budget signal is handled,
+            # but must not adopt its traceback, which keeps the comparison alive.
+            query = "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+            with budget_of(5):
+                errors = validate(
+                    budget_schema,
+                    parse(query, no_location=True),
+                    [OverlappingFieldsCanBeMergedRule],
+                )
+            assert len(errors) == 1
+            error = errors[0]
+            assert error.message.startswith("Query is too complex to validate")
+            assert error.__traceback__ is None
+            assert error.__context__ is None
+
         def aborted_error_does_not_keep_the_exceeded_budget_alive():
             # The unknown field reaches the error limit, so reporting the exceeded
             # budget aborts the validation. This happens while the internal budget

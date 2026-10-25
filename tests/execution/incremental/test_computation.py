@@ -9,6 +9,7 @@ from graphql.execution.incremental import Computation
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from types import TracebackType
 
 pytestmark = pytest.mark.anyio
 
@@ -23,6 +24,15 @@ class Spy:
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         self.call_count += 1
         return self.fn(*args, **kwargs)
+
+
+def traceback_entries(error: BaseException) -> list[TracebackType]:
+    entries = []
+    traceback = error.__traceback__
+    while traceback:
+        entries.append(traceback)
+        traceback = traceback.tb_next
+    return entries
 
 
 def describe_computation():
@@ -94,6 +104,56 @@ def describe_computation():
         with pytest.raises(RuntimeError, match="failure"):
             computation.result()
         assert run_spy.call_count == 1
+
+    def raises_a_sync_error_again_with_its_original_traceback():
+        def run() -> None:
+            raise RuntimeError("failure")
+
+        computation = Computation(run)
+
+        lengths = []
+        for _ in range(3):
+            with pytest.raises(RuntimeError, match="failure") as exc_info:
+                computation.result()
+            lengths.append(len(traceback_entries(exc_info.value)))
+        assert lengths[0] > 1
+        assert lengths[1] == lengths[2] == lengths[0]
+
+    async def raises_an_async_error_again_with_its_original_traceback():
+        async def run() -> None:
+            await sleep(0)
+            raise RuntimeError("failure")
+
+        computation = Computation(Spy(run))
+
+        computation.prime()
+        with pytest.raises(RuntimeError, match="failure"):
+            await computation.result()
+        lengths = []
+        for _ in range(3):
+            with pytest.raises(RuntimeError, match="failure") as exc_info:
+                computation.result()
+            lengths.append(len(traceback_entries(exc_info.value)))
+        assert lengths[1] == lengths[2] == lengths[0]
+
+    def raises_an_abort_reason_again_with_its_original_traceback():
+        try:
+            raise RuntimeError("aborted")
+        except RuntimeError as error:
+            abort_reason = error
+        original_traceback = abort_reason.__traceback__
+        computation = Computation(lambda: {"value": 123})
+
+        computation.abort(abort_reason)
+        lengths = []
+        for _ in range(3):
+            with pytest.raises(RuntimeError, match="aborted") as exc_info:
+                computation.result()
+            assert exc_info.value is abort_reason
+            entries = traceback_entries(abort_reason)
+            assert entries[-1] is original_traceback
+            lengths.append(len(entries))
+        assert lengths[1] == lengths[2] == lengths[0]
 
     def can_be_aborted_before_running():
         on_abort_spy = Spy(lambda _reason: None)

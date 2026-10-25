@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from asyncio import Event
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 __all__ = ["AbortController", "AbortError", "AbortSignal"]
 
@@ -42,6 +45,7 @@ class AbortSignal:
     def __init__(self) -> None:
         self.aborted = False
         self.reason = None
+        self._reason_traceback: TracebackType | None = None
         self._event = Event()
 
     async def wait(self) -> Any:
@@ -110,4 +114,6 @@ class AbortController:
         signal.reason = (
             AbortError("This operation was aborted") if reason is None else reason
         )
+        if isinstance(reason, BaseException):
+            signal._reason_traceback = reason.__traceback__  # noqa: SLF001
         signal._event.set()  # noqa: SLF001
