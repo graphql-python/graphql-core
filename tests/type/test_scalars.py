@@ -1,8 +1,10 @@
 import pickle
 from decimal import Decimal
 from fractions import Fraction
+from ipaddress import IPv4Address
 from math import inf, nan, pi
 from typing import Any
+from uuid import UUID
 
 import pytest
 
@@ -40,6 +42,19 @@ class NumPyLikeScalar:  # noqa: PLW1641
 
     def __eq__(self, other: object) -> bool:
         return self.value == other
+
+
+class IntegerLike:
+    """Mimic a type that is not a number, but can be used as an integer.
+
+    It implements ``__index__``, but not ``__float__``.
+    """
+
+    def __init__(self, value: int) -> None:
+        self.value = value
+
+    def __index__(self) -> int:
+        return self.value
 
 
 class NumPyLikeFloat64(float):
@@ -291,6 +306,36 @@ def describe_type_system_specified_scalar_types():
                 5 + 0j, "Int cannot represent non-integer value: (5+0j)"
             )
 
+        def coerce_output_value_from_integer_objects():
+            coerce_output_value = GraphQLInt.coerce_output_value
+
+            def _coerce_output_value_raises(value: Any, message: str):
+                with pytest.raises(GraphQLError) as exc_info:
+                    coerce_output_value(value)
+                assert str(exc_info.value) == message
+
+            result = coerce_output_value(IntegerLike(5))
+            assert result == 5
+            assert type(result) is int
+            assert coerce_output_value(IntegerLike(-(2**31))) == -(2**31)
+            _coerce_output_value_raises(
+                IntegerLike(2**31),
+                "Int cannot represent non 32-bit signed integer value:"
+                " <IntegerLike instance>",
+            )
+            bad_index = type("BadIndex", (), {"__index__": lambda _self: 1.5})()
+            _coerce_output_value_raises(
+                bad_index, "Int cannot represent non-integer value: <BadIndex instance>"
+            )
+            # Objects that only implement __int__ are not converted, since __int__
+            # also truncates non-integer numbers and converts values that are not
+            # numbers, such as UUIDs or IP addresses.
+            int_only = type("IntOnly", (), {"__int__": lambda _self: 5})()
+            for value in (int_only, UUID(int=5), IPv4Address("10.0.0.1")):
+                _coerce_output_value_raises(
+                    value, "Int cannot represent non-integer value: " + inspect(value)
+                )
+
         def cannot_be_redefined():
             with pytest.raises(TypeError, match="Redefinition of reserved type 'Int'"):
                 GraphQLScalarType(name="Int")
@@ -513,6 +558,42 @@ def describe_type_system_specified_scalar_types():
             _coerce_output_value_raises(
                 1.5 + 0j, "Float cannot represent non numeric value: (1.5+0j)"
             )
+
+        def coerce_output_value_from_integer_objects():
+            coerce_output_value = GraphQLFloat.coerce_output_value
+
+            def _coerce_output_value_raises(value: Any, message: str):
+                with pytest.raises(GraphQLError) as exc_info:
+                    coerce_output_value(value)
+                assert str(exc_info.value) == message
+
+            result = coerce_output_value(IntegerLike(5))
+            assert result == 5.0
+            assert type(result) is float
+            assert coerce_output_value(IntegerLike(-(2**53))) == -(2**53)
+            # Like Python ints, these values must not lose precision.
+            _coerce_output_value_raises(
+                IntegerLike(2**53 + 1),
+                "Float cannot represent non numeric value: 9007199254740993"
+                " (value would lose precision)",
+            )
+            _coerce_output_value_raises(
+                IntegerLike(2**1024),
+                "Float cannot represent non numeric value: "
+                + inspect(2**1024)
+                + " (value is too large)",
+            )
+            bad_index = type("BadIndex", (), {"__index__": lambda _self: 1.5})()
+            _coerce_output_value_raises(
+                bad_index,
+                "Float cannot represent non numeric value: <BadIndex instance>",
+            )
+            # Objects that only implement __int__ are not converted.
+            int_only = type("IntOnly", (), {"__int__": lambda _self: 5})()
+            for value in (int_only, UUID(int=5), IPv4Address("10.0.0.1")):
+                _coerce_output_value_raises(
+                    value, "Float cannot represent non numeric value: " + inspect(value)
+                )
 
         def cannot_be_redefined():
             with pytest.raises(
