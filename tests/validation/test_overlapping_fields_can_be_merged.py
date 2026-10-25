@@ -114,8 +114,8 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """
             )
 
-        def allows_overlapping_fields_with_identical_variable_args_via_fragment():
-            assert_valid(
+        def rejects_overlapping_fields_whose_variables_have_different_definitions():
+            assert_errors(
                 """
                 query ($y: Int = 1) {
                   a(x: $y)
@@ -124,11 +124,19 @@ def describe_validate_overlapping_fields_can_be_merged():
                 fragment WithArgs($x: Int) on Type {
                   a(x: $x)
                 }
-                """
+                """,
+                [
+                    {
+                        "message": "Fields 'a' conflict because they have"
+                        " differing arguments. Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(3, 19), (7, 19)],
+                    },
+                ],
             )
 
-        def allows_overlapping_fields_with_identical_args_via_nested_fragment():
-            assert_valid(
+        def rejects_overlapping_fields_with_different_nested_variable_definitions():
+            assert_errors(
                 """
                 query ($z: Int = 1) {
                   a(x: $z)
@@ -140,11 +148,19 @@ def describe_validate_overlapping_fields_can_be_merged():
                 fragment NestedWithArgs($x: Int) on Type {
                   a(x: $x)
                 }
-                """
+                """,
+                [
+                    {
+                        "message": "Fields 'a' conflict because they have"
+                        " differing arguments. Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(3, 19), (10, 19)],
+                    },
+                ],
             )
 
-        def allows_overlapping_fields_with_identical_args_via_fragment_defaults():
-            assert_valid(
+        def rejects_a_fragment_variable_even_when_its_default_matches_a_literal():
+            assert_errors(
                 """
                 query {
                   a(x: 1)
@@ -153,7 +169,36 @@ def describe_validate_overlapping_fields_can_be_merged():
                 fragment WithArgs($x: Int = 1) on Type {
                   a(x: $x)
                 }
+                """,
+                [
+                    {
+                        "message": "Fields 'a' conflict because they have"
+                        " differing arguments. Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(3, 19), (7, 19)],
+                    },
+                ],
+            )
+
+        def keeps_omitted_fragment_variable_distinct_from_shadowed_operation_variable():
+            assert_errors(
                 """
+                query ($x: Int) {
+                  a(x: $x)
+                  ...WithArgs
+                }
+                fragment WithArgs($x: Int) on Type {
+                  a(x: $x)
+                }
+                """,
+                [
+                    {
+                        "message": "Fields 'a' conflict because they have"
+                        " differing arguments. Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(3, 19), (7, 19)],
+                    },
+                ],
             )
 
         def raises_errors_with_conflicting_args_via_operation_variables():
@@ -177,8 +222,8 @@ def describe_validate_overlapping_fields_can_be_merged():
                 ],
             )
 
-        def allows_overlapping_list_fields_with_identical_variable_args():
-            assert_valid(
+        def rejects_fields_using_list_variables_with_different_definitions():
+            assert_errors(
                 """
                 query Query($stringListVarY: [String]) {
                   complicatedArgs {
@@ -189,26 +234,42 @@ def describe_validate_overlapping_fields_can_be_merged():
                 fragment WithArgs($stringListVarX: [String]) on Type {
                   stringListArgField(stringListArg: $stringListVarX)
                 }
-                """
+                """,
+                [
+                    {
+                        "message": "Fields 'stringListArgField' conflict because"
+                        " they have differing arguments. Use different aliases"
+                        " on the fields to fetch both if this was intentional.",
+                        "locations": [(4, 21), (9, 19)],
+                    },
+                ],
             )
 
-        def allows_overlapping_list_fields_with_identical_item_variable_args():
-            assert_valid(
+        def rejects_nested_list_values_with_different_variable_definitions():
+            assert_errors(
                 """
                 query Query($stringListVarY: [String]) {
                   complicatedArgs {
-                    stringListArgField(stringListArg: [$stringListVarY])
+                    stringListArgField(stringListArg: [$stringListVarY, "fixed"])
                     ...WithArgs(stringListVarX: $stringListVarY)
                   }
                 }
                 fragment WithArgs($stringListVarX: [String]) on Type {
-                  stringListArgField(stringListArg: [$stringListVarX])
+                  stringListArgField(stringListArg: [$stringListVarX, "fixed"])
                 }
-                """
+                """,
+                [
+                    {
+                        "message": "Fields 'stringListArgField' conflict because"
+                        " they have differing arguments. Use different aliases"
+                        " on the fields to fetch both if this was intentional.",
+                        "locations": [(4, 21), (9, 19)],
+                    },
+                ],
             )
 
-        def allows_overlapping_input_object_fields_with_identical_variable_args():
-            assert_valid(
+        def rejects_fields_using_input_object_variables_with_different_definitions():
+            assert_errors(
                 """
                 query Query($complexVarY: ComplexInput) {
                   complicatedArgs {
@@ -219,11 +280,19 @@ def describe_validate_overlapping_fields_can_be_merged():
                 fragment WithArgs($complexVarX: ComplexInput) on Type {
                   complexArgField(complexArg: $complexVarX)
                 }
-                """
+                """,
+                [
+                    {
+                        "message": "Fields 'complexArgField' conflict because they have"
+                        " differing arguments. Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(4, 21), (9, 19)],
+                    },
+                ],
             )
 
-        def allows_overlapping_input_object_fields_with_identical_field_var_args():
-            assert_valid(
+        def rejects_nested_input_values_with_different_variable_definitions():
+            assert_errors(
                 """
                 query Query($boolVarY: Boolean) {
                   complicatedArgs {
@@ -233,6 +302,54 @@ def describe_validate_overlapping_fields_can_be_merged():
                 }
                 fragment WithArgs($boolVarX: Boolean) on Type {
                   complexArgField(complexArg: {requiredArg: $boolVarX})
+                }
+                """,
+                [
+                    {
+                        "message": "Fields 'complexArgField' conflict because they have"
+                        " differing arguments. Use different aliases on the fields"
+                        " to fetch both if this was intentional.",
+                        "locations": [(4, 21), (9, 19)],
+                    },
+                ],
+            )
+
+        def rejects_fragment_spreads_whose_variables_have_different_definitions():
+            assert_errors(
+                """
+                query Query($value: Int) {
+                  ...A(value: $value)
+                  ...B(value: $value)
+                }
+                fragment A($value: Int) on Type {
+                  ...Shared(size: $value)
+                }
+                fragment B($value: Int) on Type {
+                  ...Shared(size: $value)
+                }
+                fragment Shared($size: Int) on Type {
+                  a(x: $size)
+                }
+                """,
+                [
+                    {
+                        "message": "Spreads 'Shared' conflict because"
+                        " Shared(size: $value) and Shared(size: $value)"
+                        " have different fragment arguments.",
+                        "locations": [(7, 19), (10, 19)],
+                    },
+                ],
+            )
+
+        def allows_repeated_spreads_with_the_same_local_variable_definitions():
+            assert_valid(
+                """
+                query Query($size: Int) {
+                  ...Wrapper(size: $size)
+                  ...Wrapper(size: $size)
+                }
+                fragment Wrapper($size: Int) on Type {
+                  a(x: $size)
                 }
                 """
             )
