@@ -605,9 +605,9 @@ class ValidationContext(ASTValidationContext):
         return self._type_info.get_argument()
 
     def get_fragment_signature(self) -> FragmentSignature | None:
-        """Get the fragment signature at the current traversal position.
+        """Get the fragment signature referenced by the current fragment spread.
 
-        :returns: The current fragment signature, if one is active.
+        :returns: The referenced fragment signature, if available.
 
         >>> from graphql import (
         ...     TypeInfo, TypeInfoVisitor, Visitor, build_schema, parse, visit)

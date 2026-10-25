@@ -387,9 +387,9 @@ class TypeInfo:
         return self._argument
 
     def get_fragment_signature(self) -> FragmentSignature | None:
-        """Get the current fragment signature.
+        """Get the fragment signature referenced by the current fragment spread.
 
-        :returns: The fragment signature for the current fragment spread.
+        :returns: The referenced fragment signature, if available.
 
         >>> from graphql import (
         ...     TypeInfo, TypeInfoVisitor, Visitor, build_schema, parse, visit)

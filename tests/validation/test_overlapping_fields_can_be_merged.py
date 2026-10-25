@@ -101,6 +101,37 @@ def describe_validate_overlapping_fields_can_be_merged():
                 ],
             )
 
+        def checks_fragment_arguments_in_each_variable_scope():
+            assert_errors(
+                """
+                fragment Outer($x: Int, $y: Int) on Type {
+                  ...WithArgs(x: $x)
+                  ...WithArgs(x: $y)
+                }
+                fragment WithArgs($x: Int) on Type {
+                  a(x: $x)
+                }
+                query Example($x: Int, $y: Int) {
+                  ...WithArgs(x: $x)
+                  ...WithArgs(x: $y)
+                }
+                """,
+                [
+                    {
+                        "message": "Spreads 'WithArgs' conflict because"
+                        " WithArgs(x: $x) and WithArgs(x: $y)"
+                        " have different fragment arguments.",
+                        "locations": [(3, 19), (4, 19)],
+                    },
+                    {
+                        "message": "Spreads 'WithArgs' conflict because"
+                        " WithArgs(x: $x) and WithArgs(x: $y)"
+                        " have different fragment arguments.",
+                        "locations": [(10, 19), (11, 19)],
+                    },
+                ],
+            )
+
         def allows_overlapping_fields_with_identical_operation_variables():
             assert_valid(
                 """

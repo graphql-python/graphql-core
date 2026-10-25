@@ -114,10 +114,31 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # selection set. Selection sets may be asked for this information multiple
         # times, so this improves the performance of this validator.
         self.cached_fields_and_fragment_spreads: FieldsAndFragmentSpreadsCache = {}
+        self.fragment_var_map: VarMap = None
 
         # Set once the comparison budget is exhausted. Further selection sets are then
         # skipped, since validation has already been aborted with an error.
         self._budget_exceeded = False
+
+    def enter_fragment_definition(
+        self, node: FragmentDefinitionNode, *_args: Any
+    ) -> None:
+        """Called when entering a fragment definition node.
+
+        :meta private:
+        """
+        fragment_name = node.name.value
+        fragment_signature = self.context.get_fragment_signature_by_name()(
+            fragment_name
+        )
+        self.fragment_var_map = get_var_map(fragment_signature, fragment_name)
+
+    def leave_fragment_definition(self, *_args: Any) -> None:
+        """Called when leaving a fragment definition node.
+
+        :meta private:
+        """
+        self.fragment_var_map = None
 
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
         """Called when entering a selection set node.
@@ -134,6 +155,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
                 self.compared_fragment_pairs,
                 self.context.get_parent_type(),
                 selection_set,
+                self.fragment_var_map,
             )
         except ComparisonBudgetExceededError:
             self._budget_exceeded = True
@@ -245,6 +267,7 @@ def find_conflicts_within_selection_set(
     compared_fragment_pairs: PairSet,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
+    var_map: VarMap,
 ) -> list[Conflict]:
     """Find conflicts within selection set.
 
@@ -254,7 +277,6 @@ def find_conflicts_within_selection_set(
     Called when visiting each SelectionSet in the GraphQL Document.
     """
     conflicts: list[Conflict] = []
-    var_map = get_var_map(context.get_fragment_signature())
 
     field_map, fragment_spreads = get_fields_and_fragment_spreads(
         context, cached_fields_and_fragment_spreads, parent_type, selection_set, var_map
