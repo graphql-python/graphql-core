@@ -990,6 +990,72 @@ def describe_execute_defer_directive():
 
         assert result == {"data": {"hero": {"name": "Luke"}}}
 
+    async def can_defer_same_fragment_with_different_labels():
+        """Can defer same fragment with different labels"""
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ...TopFragment @defer(label: "DeferTop1")
+                ...TopFragment @defer(label: "DeferTop2")
+              }
+            }
+            fragment TopFragment on Hero {
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "pending": [
+                    {"id": "0", "path": ["hero"], "label": "DeferTop1"},
+                    {"id": "1", "path": ["hero"], "label": "DeferTop2"},
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
+                "hasNext": False,
+            },
+        ]
+
+    async def can_defer_same_fragment_with_unlabeled_sibling_defers():
+        """Can defer same fragment with unlabeled sibling defers"""
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ...TopFragment @defer
+                ...TopFragment @defer
+              }
+            }
+            fragment TopFragment on Hero {
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == [
+            {
+                "data": {"hero": {}},
+                "pending": [
+                    {"id": "0", "path": ["hero"]},
+                    {"id": "1", "path": ["hero"]},
+                ],
+                "hasNext": True,
+            },
+            {
+                "incremental": [{"data": {"name": "Luke"}, "id": "0"}],
+                "completed": [{"id": "0"}, {"id": "1"}],
+                "hasNext": False,
+            },
+        ]
+
     async def can_defer_an_inline_fragment():
         """Can defer an inline fragment"""
         document = parse(
@@ -1250,6 +1316,31 @@ def describe_execute_defer_directive():
                 "hasNext": False,
             },
         ]
+
+    async def does_not_skip_non_deferred_fragments_when_deferred_by_parent_defer():
+        """Does not skip non-deferred fragments when deferred by parent defer
+
+        Does not skip non-deferred fragments when a fragment is deferred by parent
+        defer.
+        """
+        document = parse(
+            """
+            query HeroNameQuery {
+              hero {
+                ... @defer(label: "DeferID") {
+                  ...F
+                }
+                ...F
+              }
+            }
+            fragment F on Hero {
+              name
+            }
+            """
+        )
+        result = await complete(document)
+
+        assert result == {"data": {"hero": {"name": "Luke"}}}
 
     async def separately_emits_nested_defer_frags_var_subfields_same_prio_diff_level():
         """Separately emits nested defer frags, var subfields, same prio, diff level

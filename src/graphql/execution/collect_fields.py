@@ -14,6 +14,7 @@ from ..language import (
     OperationDefinitionNode,
     SelectionSetNode,
 )
+from ..pyutils import RefSet
 from ..type import (
     GraphQLDeferDirective,
     GraphQLIncludeDirective,
@@ -27,7 +28,6 @@ from .values import (
     FragmentVariableValues,
     VariableValues,
     get_argument_values,
-    get_directive_values,
     get_fragment_variable_values,
 )
 
@@ -50,6 +50,7 @@ __all__ = [
 class DeferUsage(NamedTuple):
     """An optionally labelled linked list of defer usages."""
 
+    directive_node: DirectiveNode
     label: str | None
     parent_defer_usage: DeferUsage | None
 
@@ -72,6 +73,8 @@ class FragmentDetails(NamedTuple):
 FieldDetailsList: TypeAlias = list[FieldDetails]
 GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
 
+VisitedFragmentNames: TypeAlias = dict[str, RefSet[DirectiveNode | None]]
+
 
 class CollectFieldsContext(NamedTuple):
     """Context for collecting fields."""
@@ -81,7 +84,7 @@ class CollectFieldsContext(NamedTuple):
     variable_values: VariableValues
     operation: OperationDefinitionNode
     runtime_type: GraphQLObjectType
-    visited_fragment_names: dict[str, bool]
+    visited_fragment_names: VisitedFragmentNames
     hide_suggestions: bool
     forbidden_directive_instances: list[DirectiveNode]
     forbid_skip_and_include: bool
@@ -271,24 +274,27 @@ def collect_fields_impl(
                 defer_usage,
             )
 
-            visited_as_deferred = visited_fragment_names.get(frag_name)
+            maybe_new_defer_usage = (
+                defer_usage if new_defer_usage is None else new_defer_usage
+            )
+            visited_defer_set = visited_fragment_names.get(frag_name)
+            if visited_defer_set is None:
+                visited_defer_set = visited_fragment_names[frag_name] = RefSet()
 
-            if new_defer_usage is None:
-                # If this spread is not deferred, it may be skipped when already
-                # visited as a non-deferred spread. If it was previously visited as
-                # a deferred spread, it must be revisited.
-                if visited_as_deferred is False:
-                    continue
-                visited_fragment_names[frag_name] = False
-                maybe_new_defer_usage = defer_usage
-            else:
-                # If this spread is deferred, it can be skipped if it has already
-                # been visited.
-                if visited_as_deferred is not None:
-                    continue
-                visited_fragment_names[frag_name] = True
+            if None in visited_defer_set or (
+                maybe_new_defer_usage is not None
+                and maybe_new_defer_usage.directive_node in visited_defer_set
+            ):
+                continue
+
+            if new_defer_usage is not None:
                 new_defer_usages.append(new_defer_usage)
-                maybe_new_defer_usage = new_defer_usage
+
+            visited_defer_set.add(
+                None
+                if maybe_new_defer_usage is None
+                else maybe_new_defer_usage.directive_node
+            )
 
             fragment_variable_signatures = fragment.variable_signatures
             new_fragment_variable_values: FragmentVariableValues | None = None
@@ -323,14 +329,30 @@ def get_defer_usage(
     deferred based on the experimental flag, defer directive present and
     not disabled by the "if" argument.
     """
-    defer = get_directive_values(
-        GraphQLDeferDirective, node, variable_values, fragment_variable_values
+    defer_name = GraphQLDeferDirective.name
+    directive_node = next(
+        (
+            directive
+            for directive in node.directives or ()
+            if directive.name.value == defer_name
+        ),
+        None,
     )
 
-    if not defer or defer.get("if") is False:
+    if directive_node is None:
         return None
 
-    return DeferUsage(defer.get("label"), parent_defer_usage)
+    defer = get_argument_values(
+        GraphQLDeferDirective,
+        directive_node,
+        variable_values,
+        fragment_variable_values,
+    )
+
+    if defer.get("if") is False:
+        return None
+
+    return DeferUsage(directive_node, defer.get("label"), parent_defer_usage)
 
 
 def should_include_node(
