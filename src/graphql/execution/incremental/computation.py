@@ -10,6 +10,7 @@ from ...pyutils.is_awaitable import is_awaitable
 if TYPE_CHECKING:
     from asyncio import Future
     from collections.abc import Callable
+    from types import TracebackType
 
     from ...pyutils import AwaitableOrValue
 
@@ -40,9 +41,10 @@ class Computation(Generic[T]):
     For internal use only.
     """
 
-    __slots__ = "_fn", "_on_abort", "_status", "_value"
+    __slots__ = "_fn", "_on_abort", "_status", "_traceback", "_value"
 
     _status: str | None
+    _traceback: TracebackType | None
     _value: Any
 
     def __init__(
@@ -55,6 +57,7 @@ class Computation(Generic[T]):
         self._fn = fn
         self._on_abort = on_abort
         self._status = None
+        self._traceback = None
         self._value = None
 
     def prime(self) -> None:
@@ -64,8 +67,7 @@ class Computation(Generic[T]):
         try:
             result = self._fn()
         except Exception as reason:
-            self._status = _REJECTED
-            self._value = reason
+            self._reject(reason)
             return
         if is_awaitable(result):
             future = ensure_future(result)
@@ -95,7 +97,9 @@ class Computation(Generic[T]):
             reason = self._value
             if reason is None:
                 raise CancelledError
-            raise reason
+            # Restore the original traceback, which would grow otherwise,
+            # since the same reason is raised every time the result is requested.
+            raise reason.with_traceback(self._traceback)
         return self._value  # the pending future
 
     def abort(self, reason: BaseException | None = None) -> AwaitableOrValue[None]:
@@ -106,12 +110,10 @@ class Computation(Generic[T]):
         """
         status = self._status
         if status is None:
-            self._status = _REJECTED
-            self._value = reason
+            self._reject(reason)
         elif status is _PENDING:
             future = self._value
-            self._status = _REJECTED
-            self._value = reason
+            self._reject(reason)
             future.cancel()
             on_abort = self._on_abort
             if on_abort is not None:
@@ -123,15 +125,19 @@ class Computation(Generic[T]):
         if future.cancelled():
             if self._status is _PENDING:
                 # cancelled externally, not via abort
-                self._status = _REJECTED
-                self._value = CancelledError()
+                self._reject(CancelledError())
             return
         reason = future.exception()  # always retrieve, avoiding warnings
         if self._status is not _PENDING:
             return  # aborted after the future had already completed
         if reason is not None:
-            self._status = _REJECTED
-            self._value = reason
+            self._reject(reason)
         else:
             self._status = _FULFILLED
             self._value = future.result()
+
+    def _reject(self, reason: BaseException | None) -> None:
+        """Memoize the reason why the computation failed or was aborted."""
+        self._status = _REJECTED
+        self._value = reason
+        self._traceback = None if reason is None else reason.__traceback__

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import Event, Future, ensure_future, sleep
 from collections.abc import AsyncIterator, Awaitable
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -25,6 +26,9 @@ from graphql.execution import (
 )
 from graphql.language import parse
 from graphql.pyutils import AbortController, AbortError, is_awaitable
+
+if TYPE_CHECKING:
+    from types import TracebackType
 
 pytestmark = [
     pytest.mark.anyio,
@@ -63,6 +67,15 @@ schema = build_schema(
     }
     """
 )
+
+
+def traceback_entries(error: BaseException) -> list[TracebackType]:
+    entries = []
+    traceback = error.__traceback__
+    while traceback:
+        entries.append(traceback)
+        traceback = traceback.tb_next
+    return entries
 
 
 def must_not_be_called(*_args, **_kwargs):
@@ -1236,3 +1249,40 @@ def describe_execute_cancellation():
         # wait for the partial result so that the cleanup has settled
         await exc_info.value.aborted_result
         assert return_called is True
+
+
+def describe_abort_reason_traceback():
+    def does_not_extend_the_traceback_of_the_default_reason():
+        abort_controller = AbortController()
+        abort_controller.abort()
+        reason = abort_controller.signal.reason
+        document = parse("{ todo { id } }")
+
+        lengths = []
+        for _ in range(3):
+            with pytest.raises(AbortError) as exc_info:
+                execute(schema, document, abort_signal=abort_controller.signal)
+            assert exc_info.value is reason
+            lengths.append(len(traceback_entries(reason)))
+        assert lengths[0] > 0
+        assert lengths[1] == lengths[2] == lengths[0]
+
+    def does_not_extend_the_traceback_of_a_provided_reason():
+        try:
+            raise RuntimeError("Custom abort error")
+        except RuntimeError as error:
+            reason = error
+        original_traceback = reason.__traceback__
+        abort_controller = AbortController()
+        abort_controller.abort(reason)
+        document = parse("{ todo { id } }")
+
+        lengths = []
+        for _ in range(3):
+            with pytest.raises(RuntimeError, match=r"^Custom abort error$") as exc_info:
+                execute(schema, document, abort_signal=abort_controller.signal)
+            assert exc_info.value is reason
+            entries = traceback_entries(reason)
+            assert entries[-1] is original_traceback
+            lengths.append(len(entries))
+        assert lengths[1] == lengths[2] == lengths[0]

@@ -1211,9 +1211,14 @@ class Executor(Generic[TContext]):
 
         :meta private:
         """
-        reason = self.abort_signal.reason  # type: ignore[union-attr]
+        abort_signal = self.abort_signal
+        reason = abort_signal.reason  # type: ignore[union-attr]
         if isinstance(reason, Exception):
-            return reason
+            # Restore the traceback the reason had when the signal was aborted,
+            # since raising the same reason again and again would extend it.
+            return reason.with_traceback(
+                getattr(abort_signal, "_reason_traceback", reason.__traceback__)
+            )
         msg = f"Unexpected error value: {inspect(reason)}"
         return TypeError(msg)
 
