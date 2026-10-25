@@ -554,6 +554,28 @@ def describe_validate_input_value():
                 ],
             )
 
+        def returns_an_error_for_an_invalid_iterable_input():
+            def list_generator():
+                yield 1
+                yield "b"
+                yield True
+                yield 4
+
+            _test(
+                list_generator(),
+                TestList,
+                [
+                    {
+                        "error": "Int cannot represent non-integer value: 'b'",
+                        "path": [1],
+                    },
+                    {
+                        "error": "Int cannot represent non-integer value: True",
+                        "path": [2],
+                    },
+                ],
+            )
+
         def no_error_for_a_list_for_a_non_list_value():
             _test(42, TestList, [])
 
