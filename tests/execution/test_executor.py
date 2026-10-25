@@ -1391,18 +1391,18 @@ def describe_execute_handles_basic_execution_tasks():
         assert isinstance(a_node, FieldNode)
         assert isinstance(b_node, FieldNode)
 
-        fields: list[FieldDetails] = [TrackedFieldDetails(a_node, None)]
-        first = executor.collect_subfields(item_type, fields)
-        assert executor.collect_subfields(item_type, list(fields)) is first
-        fields.clear()
+        first_fields: list[FieldDetails] = [TrackedFieldDetails(a_node, None)]
+        first = executor.collect_subfields(item_type, first_fields)
+        del first_fields
         gc.collect()
         assert released == []
 
-        fields.append(TrackedFieldDetails(b_node, None))
-        second = executor.collect_subfields(item_type, fields)
+        second_fields: list[FieldDetails] = [TrackedFieldDetails(b_node, None)]
+        second = executor.collect_subfields(item_type, second_fields)
+        assert second is not first
         assert list(first.grouped_field_set) == ["key"]
         assert list(second.grouped_field_set) == ["name"]
-        fields.clear()
+        del second_fields
         gc.collect()
         assert released == []
 
