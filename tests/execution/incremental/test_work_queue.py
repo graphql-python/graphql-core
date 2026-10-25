@@ -218,7 +218,6 @@ def describe_work_queue():
         assert grandchild_ran_spy.call_count == 0
         assert child_ran_spy.call_count == 1
 
-    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
     async def replays_the_first_cached_shared_failure_when_its_group_is_announced():
         failing_root = Group(name="failing_root")
         second_root = Group(name="second_root")
@@ -266,7 +265,6 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
     async def replays_cached_failures_in_task_order_when_earlier_child_work_succeeds():
         first_root = Group(name="first_root")
         second_root = Group(name="second_root")
@@ -314,7 +312,6 @@ def describe_work_queue():
         ]
         assert first_task_spy.call_count == 1
 
-    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
     async def discards_children_discovered_after_their_parent_fails():
         root = Group(name="root")
         other_root = Group(name="other_root")
@@ -376,7 +373,6 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    @pytest.mark.xfail(strict=True, reason="unannounced error completion")
     async def ignores_late_outcomes_owned_only_by_failed_groups_and_their_descendants():
         root = Group(name="root")
         parent = Group(name="parent")
@@ -1383,7 +1379,7 @@ def describe_work_queue():
             WorkQueueTerminationEvent(),
         ]
 
-    async def removes_failed_subtrees_with_already_removed_children():
+    async def removes_unannounced_children_with_the_failed_subtree():
         parent = Group(name="parent")
         child_a = Group(parent, name="child_a")
         child_b = Group(parent, name="child_b")
@@ -1407,11 +1403,50 @@ def describe_work_queue():
         assert initial_groups == [parent]
         assert initial_streams == []
         assert events == [
-            GroupFailureEvent(child_a, boom),
             GroupFailureEvent(parent, boom),
             WorkQueueTerminationEvent(),
         ]
         assert child_b_ran_spy.call_count == 0
+
+    async def replays_a_cancelled_shared_task_when_its_group_is_announced():
+        root = Group(name="root")
+        parent = Group(name="parent")
+        child = Group(parent, name="child")
+
+        async def cancelled() -> WorkResult:
+            raise CancelledError
+
+        async def slow_parent() -> WorkResult:
+            await sleep(0)
+            await sleep(0)
+            return WorkResult("parent")
+
+        initial_groups, initial_streams, events = await collect_work_run(
+            Work(
+                groups=[root, parent, child],
+                tasks=[
+                    make_task([root, child], cancelled),
+                    make_task([parent], slow_parent),
+                ],
+            )
+        )
+
+        assert initial_groups == [root, parent]
+        assert initial_streams == []
+        assert [type(event) for event in events] == [
+            GroupFailureEvent,
+            GroupValuesEvent,
+            GroupSuccessEvent,
+            GroupFailureEvent,
+            WorkQueueTerminationEvent,
+        ]
+        root_failure, parent_values, parent_success, child_failure = events[:4]
+        assert root_failure.group is root
+        assert isinstance(root_failure.error, CancelledError)
+        assert parent_values == GroupValuesEvent(parent, ["parent"])
+        assert parent_success == GroupSuccessEvent(parent, [child], [])
+        assert child_failure.group is child
+        assert isinstance(child_failure.error, CancelledError)
 
     async def integrates_late_work_referencing_dead_groups_gracefully():
         dead1 = Group(name="dead1")
