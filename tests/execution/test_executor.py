@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import gc
 from collections.abc import Awaitable
 from typing import Any, cast
 
@@ -1366,6 +1367,48 @@ def describe_execute_handles_basic_execution_tasks():
         )
 
         assert third is not first
+
+    def retains_memoization_keys_until_execution_finishes():
+        released: list[str] = []
+
+        class TrackedFieldDetails(FieldDetails):
+            def __del__(self) -> None:
+                released.append(self.node.name.value)
+
+        item_type = GraphQLObjectType(
+            "Item",
+            {"key": GraphQLField(GraphQLString), "name": GraphQLField(GraphQLString)},
+        )
+        schema = GraphQLSchema(
+            GraphQLObjectType(
+                "Query", {"a": GraphQLField(item_type), "b": GraphQLField(item_type)}
+            )
+        )
+        document = parse("{ a { key } b { name } }")
+        executor = Executor.build(schema, document)
+        assert isinstance(executor, Executor)
+        a_node, b_node = executor.operation.selection_set.selections
+        assert isinstance(a_node, FieldNode)
+        assert isinstance(b_node, FieldNode)
+
+        first_fields: list[FieldDetails] = [TrackedFieldDetails(a_node, None)]
+        first = executor.collect_subfields(item_type, first_fields)
+        del first_fields
+        gc.collect()
+        assert released == []
+
+        second_fields: list[FieldDetails] = [TrackedFieldDetails(b_node, None)]
+        second = executor.collect_subfields(item_type, second_fields)
+        assert second is not first
+        assert list(first.grouped_field_set) == ["key"]
+        assert list(second.grouped_field_set) == ["name"]
+        del second_fields
+        gc.collect()
+        assert released == []
+
+        del executor
+        gc.collect()
+        assert sorted(released) == ["a", "b"]
 
 
 def describe_base_executor_without_incremental_delivery():

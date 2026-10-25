@@ -399,7 +399,9 @@ class Executor(Generic[TContext]):
         self.pending_incremental_futures = set()
         self.background_futures = set()
         self.async_work_finished_hook_task = None
-        self._relevant_sub_fields: dict[tuple, CollectedFields] = {}
+        self._relevant_sub_fields: dict[
+            tuple[GraphQLObjectType, int], tuple[FieldDetailsList, CollectedFields]
+        ] = {}
         self._stream_usages: RefMap[FieldDetailsList, StreamUsage] = RefMap()
 
     @classmethod
@@ -2122,30 +2124,23 @@ class Executor(Generic[TContext]):
         :meta private:
         """
         relevant_sub_fields = self._relevant_sub_fields
-        # We cannot use the field_details_list itself as key for the cache, since it
-        # is not hashable as a list. We also do not want to use the field_details_list
-        # itself (converted to a tuple) as keys, since hashing them is slow.
-        # Therefore, we use the ids of the field_details_list items as keys. Note that
-        # we do not use the id of the list, since we want to hit the cache for all
-        # lists of the same nodes, not only for the same list of nodes. Also, the list
-        # id may even be reused, in which case we would get wrong results from cache.
-        key = (
-            (return_type, id(field_details_list[0]))
-            if len(field_details_list) == 1  # optimize most frequent case
-            else (return_type, *map(id, field_details_list))
+        # Like GraphQL.js, we memoize on the identity of the field_details_list.
+        # Since lists cannot be weakly referenced, we keep the list alive together
+        # with the cached value, so that its id cannot be reused during execution.
+        key = (return_type, id(field_details_list))
+        cached = relevant_sub_fields.get(key)
+        if cached is not None:
+            return cached[1]
+        collected_fields = collect_subfields(
+            self.schema,
+            self.fragments,
+            self.variable_values,
+            self.operation,
+            return_type,
+            field_details_list,
+            self.hide_suggestions,
         )
-        collected_fields: CollectedFields | None = relevant_sub_fields.get(key)
-        if collected_fields is None:
-            collected_fields = collect_subfields(
-                self.schema,
-                self.fragments,
-                self.variable_values,
-                self.operation,
-                return_type,
-                field_details_list,
-                self.hide_suggestions,
-            )
-            relevant_sub_fields[key] = collected_fields
+        relevant_sub_fields[key] = (field_details_list, collected_fields)
         return collected_fields
 
 
