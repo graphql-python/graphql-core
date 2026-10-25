@@ -1,9 +1,13 @@
+import gc
+import weakref
+
 import pytest
 
 from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.utilities import build_schema
-from graphql.validation import ValidationRule, validate
+from graphql.validation import FieldsOnCorrectTypeRule, ValidationRule, validate
+from graphql.validation.validate import ValidationAbortedError
 
 from .harness import test_schema
 
@@ -127,6 +131,84 @@ def describe_validate_limit_maximum_number_of_validation_errors():
             "message": "Too many validation errors, error limit reached."
             " Validation aborted."
         }
+
+    class ReportWhileHandlingErrorRule(ValidationRule):
+        def enter_field(self, node, *_args):
+            try:
+                raise RuntimeError("Handled error from custom rule!")
+            except RuntimeError:
+                self.report_error(GraphQLError("Error from custom rule!", node))
+
+    def _validate_and_track(rules, count=3):
+        # Run aborted validations with fresh documents, keep the aborted errors,
+        # and track the documents and contexts with weak references. The other
+        # errors are dropped, since errors created while handling an exception
+        # keep its traceback on purpose.
+        aborted_errors, refs = [], []
+
+        class TrackContextRule(ValidationRule):
+            def __init__(self, context):
+                super().__init__(context)
+                refs.append(weakref.ref(context))
+
+        for _ in range(count):
+            document = parse(query, no_location=True)
+            refs.append(weakref.ref(document))
+            errors = validate(
+                test_schema, document, [TrackContextRule, *rules], max_errors=1
+            )
+            assert len(errors) == 2
+            aborted_errors.append(errors[-1])
+            del document, errors
+        gc.collect()
+        return aborted_errors, refs
+
+    def creates_a_new_error_for_every_aborted_validation():
+        first_error = _validate_document(max_errors=1)[-1]
+        second_error = _validate_document(max_errors=1)[-1]
+        assert type(first_error) is ValidationAbortedError
+        assert type(second_error) is ValidationAbortedError
+        assert first_error == second_error
+        assert first_error is not second_error
+
+    def returns_the_aborted_error_without_traceback_and_context():
+        error = _validate_document(max_errors=1)[-1]
+        assert isinstance(error, ValidationAbortedError)
+        assert error.__traceback__ is None
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    def returns_the_aborted_error_without_context_of_a_handled_error():
+        errors = validate(
+            test_schema, doc, [ReportWhileHandlingErrorRule], max_errors=1
+        )
+        assert len(errors) == 2
+        error = errors[-1]
+        assert isinstance(error, ValidationAbortedError)
+        assert error.__traceback__ is None
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    def does_not_keep_aborted_validations_alive():
+        aborted_errors, refs = _validate_and_track([FieldsOnCorrectTypeRule])
+        assert all(isinstance(e, ValidationAbortedError) for e in aborted_errors)
+        assert len(refs) == 6
+        assert all(ref() is None for ref in refs)
+
+    def does_not_keep_validations_alive_that_were_aborted_while_handling_errors():
+        aborted_errors, refs = _validate_and_track([ReportWhileHandlingErrorRule])
+        assert all(isinstance(e, ValidationAbortedError) for e in aborted_errors)
+        assert len(refs) == 6
+        assert all(ref() is None for ref in refs)
+
+    def aborted_error_accepts_the_arguments_of_graphql_error():
+        node = doc.definitions[0]
+        error = ValidationAbortedError(
+            "Validation aborted.", node, extensions={"code": "ABORTED"}
+        )
+        assert error.message == "Validation aborted."
+        assert error.nodes == [node]
+        assert error.extensions == {"code": "ABORTED"}
 
     def pass_through_exceptions_from_rules():
         class CustomRule(ValidationRule):

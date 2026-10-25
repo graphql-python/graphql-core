@@ -1,11 +1,17 @@
 from contextlib import contextmanager
 from functools import partial
 
+from graphql.language import parse
 from graphql.utilities import build_schema
-from graphql.validation import OverlappingFieldsCanBeMergedRule
+from graphql.validation import (
+    FieldsOnCorrectTypeRule,
+    OverlappingFieldsCanBeMergedRule,
+    validate,
+)
 from graphql.validation.rules import (
     overlapping_fields_can_be_merged as overlapping_module,
 )
+from graphql.validation.validate import ValidationAbortedError
 
 from .harness import assert_validation_errors
 
@@ -1665,6 +1671,30 @@ def describe_validate_overlapping_fields_can_be_merged():
                     ],
                     schema=budget_schema,
                 )
+
+        def aborted_error_does_not_keep_the_exceeded_budget_alive():
+            # The unknown field reaches the error limit, so reporting the exceeded
+            # budget aborts the validation. This happens while the internal budget
+            # signal is handled, which must not stay attached to the aborted error.
+            query = "{ unknown field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+            with budget_of(5):
+                errors = validate(
+                    budget_schema,
+                    parse(query, no_location=True),
+                    [FieldsOnCorrectTypeRule, OverlappingFieldsCanBeMergedRule],
+                    max_errors=1,
+                )
+            assert errors == [
+                {"message": "Cannot query field 'unknown' on type 'Query'."},
+                {
+                    "message": "Too many validation errors, error limit reached."
+                    " Validation aborted."
+                },
+            ]
+            error = errors[-1]
+            assert isinstance(error, ValidationAbortedError)
+            assert error.__traceback__ is None
+            assert error.__context__ is None
 
         def deduplication_alone_would_not_bound_this_query():
             # Each `f` selection shares the response name `f` but wraps a distinct

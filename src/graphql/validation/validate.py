@@ -30,11 +30,6 @@ class ValidationAbortedError(GraphQLError):
     """Error when a validation has been aborted (error limit reached)."""
 
 
-validation_aborted_error = ValidationAbortedError(
-    "Too many validation errors, error limit reached. Validation aborted."
-)
-
-
 # Per the specification, descriptions must not affect validation.
 # See https://spec.graphql.org/draft/#sec-Descriptions
 query_document_keys_to_validate: dict[str, tuple[str, ...]] = {
@@ -113,7 +108,10 @@ def validate(
 
     def on_error(error: GraphQLError) -> None:
         if len(errors) >= max_errors:
-            raise validation_aborted_error
+            # Unlike GraphQL.js, create a new error each time, because raising a
+            # shared error would add the frames of every validation to its traceback.
+            msg = "Too many validation errors, error limit reached. Validation aborted."
+            raise ValidationAbortedError(msg)
         errors.append(error)
 
     context = ValidationContext(
@@ -131,8 +129,11 @@ def validate(
             TypeInfoVisitor(type_info, ParallelVisitor(visitors)),
             query_document_keys_to_validate,
         )
-    except ValidationAbortedError:
-        errors.append(validation_aborted_error)
+    except ValidationAbortedError as error:
+        # Do not keep the frames of the validation alive with the returned error,
+        # also not via the context of an error that was handled while aborting.
+        error.__context__ = None
+        errors.append(error.with_traceback(None))
     return errors
 
 
