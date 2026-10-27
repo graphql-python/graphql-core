@@ -374,6 +374,20 @@ def describe_validate_variables_are_in_allowed_positions():
             )
 
     def describe_fragment_arguments_are_validated():
+        def int_to_non_null_int_when_field_argument_provides_default_value():
+            assert_valid(
+                """
+                query Query {
+                  complicatedArgs {
+                    ...A
+                  }
+                }
+                fragment A($intVar: Int) on ComplicatedArgs {
+                  nonNullFieldWithDefault(arg: $intVar)
+                }
+                """
+            )
+
         def validates_fragment_variables_defined_before_the_operation():
             assert_errors(
                 """
@@ -505,7 +519,22 @@ def describe_validate_variables_are_in_allowed_positions():
             """
             query Query($intVar: Int) {
               complicatedArgs {
-                nonNullFieldWithDefault(nonNullIntArg: $intVar)
+                nonNullFieldWithDefault(arg: $intVar)
+              }
+            }
+            """
+        )
+
+    def int_to_non_null_int_when_argument_default_is_inside_fragment():
+        assert_valid(
+            """
+            fragment defaultArgFrag on ComplicatedArgs {
+              nonNullFieldWithDefault(arg: $intVar)
+            }
+
+            query Query($intVar: Int) {
+              complicatedArgs {
+                ...defaultArgFrag
               }
             }
             """
