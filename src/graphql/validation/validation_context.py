@@ -21,7 +21,6 @@ from ..language import (
     VisitorAction,
     visit,
 )
-from ..pyutils import Undefined
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 if TYPE_CHECKING:
@@ -85,33 +84,24 @@ class VariableUsageVisitor(Visitor):
     def enter_variable(self, node: VariableNode, *_args: Any) -> VisitorAction:
         type_info = self._type_info
         fragment_definition = self._fragment_definition
+        fragment_variable_definition = None
         if fragment_definition:
             fragment_signature = type_info.get_fragment_signature_by_name()(
                 fragment_definition.name.value
             )
-            fragment_variable_definition = (
-                fragment_signature.variable_definitions.get(node.name.value)
-                if fragment_signature
-                else None
-            )
-            # Fragment variables have a variable default but no location default,
-            # which is what this default value represents.
-            usage = VariableUsage(
-                node,
-                type_info.get_input_type(),
-                type_info.get_parent_input_type(),
-                Undefined,
-                fragment_variable_definition,
-            )
-        else:
-            usage = VariableUsage(
+            if fragment_signature:
+                fragment_variable_definition = (
+                    fragment_signature.variable_definitions.get(node.name.value)
+                )
+        self._append_usage(
+            VariableUsage(
                 node,
                 type_info.get_input_type(),
                 type_info.get_parent_input_type(),
                 type_info.get_default_value(),
-                None,
+                fragment_variable_definition,
             )
-        self._append_usage(usage)
+        )
         return None
 
 
