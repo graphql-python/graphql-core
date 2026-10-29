@@ -465,6 +465,14 @@ def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
     return False
 
 
+def assume_not_async_iterable(_value: Any) -> TypeGuard[AsyncIterable]:
+    """Replacement for is_async_iterable if everything is assumed to be synchronous.
+
+    :meta private:
+    """
+    return False
+
+
 def execute_sync(
     schema: GraphQLSchema,
     document: DocumentNode,
@@ -549,6 +557,7 @@ def execute_sync(
         if callable(check_sync)
         else (None if check_sync else assume_not_awaitable)
     )
+    is_async_iterable = assume_not_async_iterable if not check_sync else None
 
     result = experimental_execute_incrementally(
         schema,
@@ -565,6 +574,7 @@ def execute_sync(
         middleware,
         executor_class,
         is_awaitable,
+        is_async_iterable,
         hide_suggestions=hide_suggestions,
         abort_signal=abort_signal,
         hooks=hooks,
