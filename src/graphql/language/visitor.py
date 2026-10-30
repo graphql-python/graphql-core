@@ -289,7 +289,7 @@ def visit(
     in_array = False
     keys: tuple[Node, ...] = (root,)
     idx = -1
-    edits: list[Any] = []
+    edits: list[Any] | None = None
     node: Any = root
     key: Any = None
     parent: Any = None
@@ -303,12 +303,13 @@ def visit(
     while True:
         idx += 1
         is_leaving = idx == len(keys)
-        is_edited = is_leaving and edits
         if is_leaving:
+            is_edited = edits
+            node_is_array = in_array
             key = path[-1] if ancestors else None
             node = parent
             parent = ancestors_pop() if ancestors else None
-            if is_edited:
+            if edits:
                 if in_array:
                     node = list(node)
                     edit_offset = 0
@@ -324,23 +325,22 @@ def visit(
                     # Create new node with edited values (immutable-friendly)
                     values = {k: getattr(node, k) for k in node.keys} | dict(edits)
                     node = node.__class__(**values)
-            idx = stack.idx
-            keys = stack.keys
-            edits = stack.edits
-            in_array = stack.in_array
-            stack = stack.prev
-        elif parent:
-            if in_array:
-                key = idx
-                node = parent[key]
-            else:
-                key = keys[idx]
-                node = getattr(parent, key, None)
-            if node is None:
-                continue
-            path_append(key)
+                    node_is_array = isinstance(node, tuple)
+            in_array, idx, keys, edits, stack = stack
+        else:
+            if parent:
+                if in_array:
+                    key = idx
+                    node = parent[key]
+                else:
+                    key = keys[idx]
+                    node = getattr(parent, key, None)
+                if node is None:
+                    continue
+                path_append(key)
+            node_is_array = isinstance(node, tuple)
 
-        if isinstance(node, tuple):
+        if node_is_array:
             result = None
         else:
             if not isinstance(node, Node):
@@ -351,37 +351,42 @@ def visit(
             if visit_fn:
                 result = visit_fn(node, key, parent, path, ancestors)
 
-                if result is BREAK or result is True:
-                    break
+                if result is not None:
+                    if result is BREAK or result is True:
+                        break
 
-                if result is SKIP or result is False:
-                    if not is_leaving:
-                        path_pop()
-                        continue
-
-                elif result is not None:
-                    edits.append((key, result))
-                    if not is_leaving:
-                        if isinstance(result, Node):
-                            node = result
-                        else:
+                    if result is SKIP or result is False:
+                        if not is_leaving:
                             path_pop()
                             continue
+
+                    else:
+                        if edits is None:
+                            edits = []
+                        edits.append((key, result))
+                        if not is_leaving:
+                            if isinstance(result, Node):
+                                node = result
+                                node_is_array = isinstance(node, tuple)
+                            else:
+                                path_pop()
+                                continue
             else:
                 result = None
 
-        if result is None and is_edited:
-            edits.append((key, node))
-
         if is_leaving:
+            if result is None and is_edited:
+                if edits is None:
+                    edits = []
+                edits.append((key, node))
             if path:
                 path_pop()
         else:
-            stack = Stack(in_array, idx, keys, edits, stack)
-            in_array = isinstance(node, tuple)
+            stack = (in_array, idx, keys, edits, stack)
+            in_array = node_is_array
             keys = node if in_array else visitor_keys.get(node.kind, ())  # type: ignore
             idx = -1
-            edits = []
+            edits = None
             if parent:
                 ancestors_append(parent)
             parent = node
