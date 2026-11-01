@@ -152,6 +152,25 @@ def describe_parser():
         ):
             parse("{ a }" + "\n# c" * 1000, max_tokens=5)
 
+    def aborts_a_run_of_comments_as_soon_as_the_maximum_is_exceeded():
+        # The limit must be enforced while the lexer skips over a run of comments,
+        # not only after the whole run has been read and allocated.
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("#\n" * 10_000 + "{ a }", max_tokens=5)
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Document contains more than 5 tokens. Parsing aborted."
+        )
+        assert error.positions == [10]  # the sixth comment
+
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("{ a }" + "\n#" * 10_000, max_tokens=5)
+        assert exc_info.value.positions == [10]  # the third comment
+
+        # Comments that fit into the limit are still accepted.
+        assert parse("#\n" * 2 + "{ a }", max_tokens=5).token_count == 5
+        assert parse("{ a }" + "\n#" * 2, max_tokens=5).token_count == 5
+
     def parses_variable_inline_values():
         parse("{ field(complex: { a: { b: [ $var ] } }) }")
 

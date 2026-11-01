@@ -57,12 +57,15 @@ class Lexer:
     """The (1-indexed) line containing the current token."""
     line_start: int
     """Character offset where the current line starts."""
+    _max_tokens: int | None
+    _comment_budget: int | None
 
     def __init__(self, source: Source) -> None:
         """Given a Source object, initialize a Lexer for that source."""
         self.source = source
         self.token = self.last_token = Token(TokenKind.SOF, 0, 0, 0, 0)
         self.line, self.line_start = 1, 0
+        self._max_tokens = self._comment_budget = None
 
     def advance(self) -> Token:
         """Advance the token stream to the next non-ignored token.
@@ -96,6 +99,7 @@ class Lexer:
         """
         token = self.token
         if token.kind != TokenKind.EOF:
+            comments = 0
             while True:
                 if token.next:
                     token = token.next
@@ -107,6 +111,18 @@ class Lexer:
                     token = next_token
                 if token.kind != TokenKind.COMMENT:
                     break
+                # Enforce the token limit of the parser already while skipping a run
+                # of comments, so that a comment-padded document is aborted before
+                # all of its comments have been read and allocated.
+                comments += 1
+                budget = self._comment_budget
+                if budget is not None and comments > budget:
+                    raise GraphQLSyntaxError(
+                        self.source,
+                        token.start,
+                        "Document contains more than"
+                        f" {self._max_tokens} tokens. Parsing aborted.",
+                    )
         return token
 
     def print_code_point_at(self, location: int) -> str:
