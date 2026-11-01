@@ -33,35 +33,28 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
 
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
-        self._visited_fragments: dict[str, None] = {}
         self._get_fragment = context.get_fragment
 
-    def _check_depth(self, node: Node, depth: int = 0) -> bool:
+    def _check_depth(
+        self, node: Node, visited_fragments: dict[str, int], depth: int = 0
+    ) -> bool:
         """Check whether the maximum introspection depth has been reached.
 
         Counts the depth of list fields in "__Type" recursively
         and returns `True` if the limit has been reached.
         """
         if isinstance(node, FragmentSpreadNode):
-            visited_fragments = self._visited_fragments
             fragment_name = node.name.value
-            if fragment_name in visited_fragments:
-                # Fragment cycles are handled by `NoFragmentCyclesRule`.
+            visited_depth = visited_fragments.get(fragment_name)
+            if visited_depth is not None and visited_depth >= depth:
                 return False
             fragment = self._get_fragment(fragment_name)
             if not fragment:
                 # Missing fragments checks are handled by the `KnownFragmentNamesRule`.
                 return False
 
-            # Rather than following an immutable programming pattern which has
-            # significant memory and garbage collection overhead, we've opted to take
-            # a mutable approach for efficiency's sake. Importantly visiting a fragment
-            # twice is fine, so long as you don't do one visit inside the other.
-            visited_fragments[fragment_name] = None
-            try:
-                return self._check_depth(fragment, depth)
-            finally:
-                del visited_fragments[fragment_name]
+            visited_fragments[fragment_name] = depth
+            return self._check_depth(fragment, visited_fragments, depth)
 
         if isinstance(node, FieldNode) and node.name.value in (
             # check all introspection lists
@@ -81,7 +74,7 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
             selection_set = None
         if selection_set:
             for child in selection_set.selections:
-                if self._check_depth(child, depth):
+                if self._check_depth(child, visited_fragments, depth):
                     return True
 
         return False
@@ -91,7 +84,7 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
 
         :meta private:
         """
-        if node.name.value in ("__schema", "__type") and self._check_depth(node):
+        if node.name.value in ("__schema", "__type") and self._check_depth(node, {}):
             self.report_error(
                 GraphQLError(
                     "Maximum introspection depth exceeded",

@@ -416,6 +416,7 @@ def describe_validate_max_introspection_nodes_rule():
             query test {
               __schema {
                 types {
+                  ...Three
                   ...One
                 }
               }
