@@ -525,3 +525,24 @@ def describe_validate_max_introspection_nodes_rule():
                 },
             ],
         )
+
+    def does_not_exceed_the_recursion_limit_on_long_fragment_chains():
+        n = 2000
+        chain = "\n".join(
+            f"fragment F{i} on __Type {{ name ...F{i + 1} }}" for i in range(n)
+        )
+        assert_valid(
+            f'{{ __type(name: "Query") {{ ...F0 }} }}\n{chain}\n'
+            f"fragment F{n} on __Type {{ name }}"
+        )
+        assert_errors(
+            f'{{ __type(name: "Query") {{ ...F0 }} }}\n{chain}\n'
+            f"fragment F{n} on __Type {{ fields {{ type {{ fields {{ type {{"
+            " fields { name } } } } } }",
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(1, 3)],
+                },
+            ],
+        )
