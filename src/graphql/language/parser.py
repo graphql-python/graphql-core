@@ -418,6 +418,8 @@ class Parser:
         self._experimental_directives_on_directive_definitions = (
             experimental_directives_on_directive_definitions
         )
+        # Let the lexer enforce max_tokens while it skips over a run of comments.
+        self._lexer._max_tokens = self._lexer._comment_budget = max_tokens
         self._token_counter = 0
 
     def parse_name(self) -> NameNode:
@@ -1478,7 +1480,9 @@ class Parser:
         and the new one. Comments are read and allocated as ``Token`` objects (and
         chained into the token list) but are not returned by the lexer, so counting
         only the returned tokens would let a comment-padded document bypass
-        ``max_tokens`` while still allocating one token per comment.
+        ``max_tokens`` while still allocating one token per comment. The lexer also
+        enforces ``max_tokens`` while it skips over a run of comments, so that such a
+        document is aborted before the whole run has been read.
         """
         lexer = self._lexer
         token = lexer.advance()
@@ -1492,12 +1496,16 @@ class Parser:
         if token.kind is not TokenKind.EOF:
             self._token_counter += 1
         max_tokens = self._max_tokens
-        if max_tokens is not None and self._token_counter > max_tokens:
-            raise GraphQLSyntaxError(
-                lexer.source,
-                token.start,
-                f"Document contains more than {max_tokens} tokens. Parsing aborted.",
-            )
+        if max_tokens is not None:
+            if self._token_counter > max_tokens:
+                raise GraphQLSyntaxError(
+                    lexer.source,
+                    token.start,
+                    f"Document contains more than {max_tokens} tokens."
+                    " Parsing aborted.",
+                )
+            # The number of comments the lexer may still skip before the next token.
+            lexer._comment_budget = max_tokens - self._token_counter
 
 
 def get_token_desc(token: Token) -> str:
