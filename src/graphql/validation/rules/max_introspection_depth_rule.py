@@ -72,7 +72,7 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
             if depth >= MAX_LIST_DEPTH:
                 return True
 
-        # hendle fields and inline fragments
+        # handle fields and inline fragments
         try:
             selection_set = node.selection_set  # type: ignore[attr-defined]
         except AttributeError:  # pragma: no cover

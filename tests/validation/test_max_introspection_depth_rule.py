@@ -14,7 +14,7 @@ def describe_validate_max_introspection_nodes_rule():
     def default_introspection_query():
         assert_valid(get_introspection_query())
 
-    def all_ptions_introspection_query():
+    def all_options_introspection_query():
         assert_valid(
             get_introspection_query(
                 descriptions=True,
