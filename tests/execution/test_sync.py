@@ -4,7 +4,13 @@ from graphql import graphql_sync
 from graphql.execution import execute, execute_sync
 from graphql.language import parse
 from graphql.pyutils import is_awaitable
-from graphql.type import GraphQLField, GraphQLObjectType, GraphQLSchema, GraphQLString
+from graphql.type import (
+    GraphQLField,
+    GraphQLList,
+    GraphQLObjectType,
+    GraphQLSchema,
+    GraphQLString,
+)
 from graphql.validation import validate
 
 from ..fixtures import cleanup
@@ -35,6 +41,29 @@ def describe_execute_synchronously_when_possible():
             {"syncMutationField": GraphQLField(GraphQLString, resolve=_resolve_sync)},
         ),
     )
+
+    list_schema = GraphQLSchema(
+        GraphQLObjectType(
+            "Query",
+            {
+                "listField": GraphQLField(
+                    GraphQLList(GraphQLString), resolve=_resolve_sync
+                )
+            },
+        )
+    )
+
+    class _SyncAndAsyncIterable:
+        """An iterable that is also an async iterable, like a Django QuerySet."""
+
+        def __iter__(self):
+            return iter(["sync"])
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):  # pragma: no cover
+            raise StopAsyncIteration
 
     def does_not_return_an_awaitable_for_initial_errors():
         doc = "fragment Example on Query { syncField }"
@@ -155,6 +184,47 @@ def describe_execute_synchronously_when_possible():
             assert msg == "GraphQL execution failed to complete synchronously."
             del exc_info
             cleanup()
+
+        def iterates_sync_and_async_iterables_synchronously_without_check_sync():
+            doc = "query Example { listField }"
+            result = execute_sync(
+                list_schema, document=parse(doc), root_value=_SyncAndAsyncIterable()
+            )
+            assert result == ({"listField": ["sync"]}, None)
+
+        async def throws_if_encountering_sync_and_async_iterable_with_check_sync():
+            doc = "query Example { listField }"
+            with pytest.raises(RuntimeError) as exc_info:
+                execute_sync(
+                    list_schema,
+                    document=parse(doc),
+                    root_value=_SyncAndAsyncIterable(),
+                    check_sync=True,
+                )
+            msg = str(exc_info.value)
+            assert msg == "GraphQL execution failed to complete synchronously."
+            del exc_info
+            cleanup()
+
+        def reports_async_iterables_as_errors_without_check_sync():
+            async def _async_iterable():
+                yield "async"  # pragma: no cover
+
+            doc = "query Example { listField }"
+            result = execute_sync(
+                list_schema, document=parse(doc), root_value=_async_iterable()
+            )
+            assert result == (
+                {"listField": None},
+                [
+                    {
+                        "message": "Expected Iterable, but did not find one"
+                        " for field 'Query.listField'.",
+                        "locations": [(1, 17)],
+                        "path": ["listField"],
+                    }
+                ],
+            )
 
     def describe_graphql_sync():
         def reports_errors_raised_during_schema_validation():
