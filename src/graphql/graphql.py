@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 from .error import GraphQLError
 from .execution import ExecutionResult, Executor, Middleware
+from .execution.execute import assume_not_async_iterable, assume_not_awaitable
 from .harness import GraphQLHarness, default_harness
 from .pyutils.is_awaitable import is_awaitable as default_is_awaitable
 from .type import (
@@ -215,22 +216,6 @@ async def graphql(  # noqa: PLR0913, PLR0917
         return await cast("Awaitable[ExecutionResult]", result)
 
     return cast("ExecutionResult", result)
-
-
-def assume_not_awaitable(_value: Any) -> TypeGuard[Awaitable]:
-    """Replacement for isawaitable if everything is assumed to be synchronous.
-
-    :meta private:
-    """
-    return False
-
-
-def assume_not_async_iterable(_value: Any) -> TypeGuard[AsyncIterable]:
-    """Replacement for is_async_iterable if everything is assumed to be synchronous.
-
-    :meta private:
-    """
-    return False
 
 
 def graphql_sync(  # noqa: PLR0913, PLR0917
