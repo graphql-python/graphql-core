@@ -1,6 +1,6 @@
 """Max introspection depth rule"""
 
-from typing import Dict, Any
+from typing import Any, Dict, Iterator, List, Tuple
 
 from ...error import GraphQLError
 from ...language import SKIP, FieldNode, FragmentSpreadNode, Node, VisitorAction
@@ -44,43 +44,52 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
         Counts the depth of list fields in "__Type" recursively
         and returns ``True`` if the limit has been reached.
         """
-        if isinstance(node, FragmentSpreadNode):
-            fragment_name = node.name.value
-            # Skip fragments already checked at this depth or deeper.
-            # This also stops fragment cycles that do not increase the depth.
-            if (
-                visited_fragments.get(fragment_name, -1) >= depth
-                or self._checked_fragments.get(fragment_name, -1) >= depth
+        # Walk depth-first with an explicit stack in the same order as a recursive
+        # walk, so that long fragment chains cannot exceed the recursion limit.
+        stack: List[Tuple[Iterator[Node], int]] = [(iter((node,)), depth)]
+        while stack:
+            nodes, depth = stack[-1]
+            next_node = next(nodes, None)
+            if next_node is None:
+                stack.pop()
+                continue
+            node = next_node
+            if isinstance(node, FragmentSpreadNode):
+                fragment_name = node.name.value
+                # Skip fragments already checked at this depth or deeper.
+                # This also stops fragment cycles that do not increase the depth.
+                if (
+                    visited_fragments.get(fragment_name, -1) >= depth
+                    or self._checked_fragments.get(fragment_name, -1) >= depth
+                ):
+                    continue
+                fragment = self._get_fragment(fragment_name)
+                if not fragment:
+                    # Missing fragments checks are handled by `KnownFragmentNamesRule`.
+                    continue
+
+                visited_fragments[fragment_name] = depth
+                stack.append((iter(fragment.selection_set.selections), depth))
+                continue
+
+            if isinstance(node, FieldNode) and node.name.value in (
+                # check all introspection lists
+                "fields",
+                "interfaces",
+                "possibleTypes",
+                "inputFields",
             ):
-                return False
-            fragment = self._get_fragment(fragment_name)
-            if not fragment:
-                # Missing fragments checks are handled by the `KnownFragmentNamesRule`.
-                return False
-
-            visited_fragments[fragment_name] = depth
-            return self._check_depth(fragment, visited_fragments, depth)
-
-        if isinstance(node, FieldNode) and node.name.value in (
-            # check all introspection lists
-            "fields",
-            "interfaces",
-            "possibleTypes",
-            "inputFields",
-        ):
-            depth += 1
-            if depth >= MAX_LIST_DEPTH:
-                return True
-
-        # handle fields and inline fragments
-        try:
-            selection_set = node.selection_set  # type: ignore[attr-defined]
-        except AttributeError:  # pragma: no cover
-            selection_set = None
-        if selection_set:
-            for child in selection_set.selections:
-                if self._check_depth(child, visited_fragments, depth):
+                depth += 1
+                if depth >= MAX_LIST_DEPTH:
                     return True
+
+            # handle fields and inline fragments
+            try:
+                selection_set = node.selection_set  # type: ignore[attr-defined]
+            except AttributeError:  # pragma: no cover
+                selection_set = None
+            if selection_set:
+                stack.append((iter(selection_set.selections), depth))
 
         return False
 
