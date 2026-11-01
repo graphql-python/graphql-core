@@ -489,3 +489,31 @@ def describe_validate_max_introspection_nodes_rule():
               ...Cycle
             }
             """)
+
+    def checks_shared_fragments_at_different_depths():
+        assert_errors(
+            """
+            {
+              first: __type(name: "Query") { ...Fields }
+              second: __type(name: "Query") { interfaces { ...Fields } }
+              third: __type(name: "Query") { ...Fields }
+              fourth: __type(name: "Query") { interfaces { interfaces { ...Fields } } }
+              fifth: __type(name: "Query") { interfaces { interfaces { ...Fields } } }
+            }
+            fragment Fields on __Type {
+              fields {
+                name
+              }
+            }
+            """,
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(6, 15)],
+                },
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(7, 15)],
+                },
+            ],
+        )

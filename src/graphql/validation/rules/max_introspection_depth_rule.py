@@ -34,6 +34,7 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         self._get_fragment = context.get_fragment
+        self._checked_fragments: Dict[str, int] = {}
 
     def _check_depth(
         self, node: Node, visited_fragments: Dict[str, int], depth: int = 0
@@ -45,8 +46,12 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
         """
         if isinstance(node, FragmentSpreadNode):
             fragment_name = node.name.value
-            visited_depth = visited_fragments.get(fragment_name)
-            if visited_depth is not None and visited_depth >= depth:
+            # Skip fragments already checked at this depth or deeper.
+            # This also stops fragment cycles that do not increase the depth.
+            if (
+                visited_fragments.get(fragment_name, -1) >= depth
+                or self._checked_fragments.get(fragment_name, -1) >= depth
+            ):
                 return False
             fragment = self._get_fragment(fragment_name)
             if not fragment:
@@ -84,12 +89,15 @@ class MaxIntrospectionDepthRule(ASTValidationRule):
 
         :meta private:
         """
-        if node.name.value in ("__schema", "__type") and self._check_depth(node, {}):
-            self.report_error(
-                GraphQLError(
-                    "Maximum introspection depth exceeded",
-                    [node],
+        if node.name.value in ("__schema", "__type"):
+            visited_fragments: Dict[str, int] = {}
+            if self._check_depth(node, visited_fragments):
+                self.report_error(
+                    GraphQLError(
+                        "Maximum introspection depth exceeded",
+                        [node],
+                    )
                 )
-            )
-            return SKIP
+                return SKIP
+            self._checked_fragments.update(visited_fragments)
         return None
