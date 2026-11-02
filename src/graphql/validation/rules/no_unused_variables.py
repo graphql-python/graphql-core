@@ -35,10 +35,10 @@ class NoUnusedVariablesRule(ValidationRule):
     []
     """
 
-    def leave_fragment_definition(
+    def enter_fragment_definition(
         self, fragment: FragmentDefinitionNode, *_args: Any
     ) -> None:
-        """Called when leaving a fragment definition node.
+        """Called when entering a fragment definition node.
 
         :meta private:
         """
@@ -55,10 +55,10 @@ class NoUnusedVariablesRule(ValidationRule):
                     )
                 )
 
-    def leave_operation_definition(
+    def enter_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
-        """Called when leaving an operation definition node.
+        """Called when entering an operation definition node.
 
         :meta private:
         """
