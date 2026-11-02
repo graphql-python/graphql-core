@@ -25,7 +25,7 @@ from ..pyutils import RefMap
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection
 
     from ..error import GraphQLError
     from ..type import (
@@ -240,6 +240,8 @@ class ASTValidationContext:
             self._fragment_spreads[node] = spreads
         return spreads
 
+    # TODO: In the next major version, accept multiple operations here and
+    # remove get_recursively_referenced_fragments_for_operations.
     def get_recursively_referenced_fragments(
         self, operation: OperationDefinitionNode
     ) -> list[FragmentDefinitionNode]:
@@ -261,9 +263,37 @@ class ASTValidationContext:
         >>> [fragment.name.value for fragment in fragments]
         ['A', 'B']
         """
+        return self.get_recursively_referenced_fragments_for_operations([operation])
+
+    def get_recursively_referenced_fragments_for_operations(
+        self, operations: Collection[OperationDefinitionNode]
+    ) -> list[FragmentDefinitionNode]:
+        """Get all fragments referenced by the operations, directly or indirectly.
+
+        :param operations: The operation definitions to inspect.
+        :returns: The fragment definitions reachable from any of the operations.
+
+        >>> from graphql import parse
+        >>> from graphql.validation import ASTValidationContext
+        >>> document = parse('''
+        ...     query One { ...A }
+        ...     query Two { ...B }
+        ...     fragment A on Query { greeting }
+        ...     fragment B on Query { farewell }
+        ...     fragment C on Query { greeting }
+        ... ''')
+        >>> context = ASTValidationContext(document, print)
+        >>> operations = document.definitions[:2]
+        >>> fragments = context.get_recursively_referenced_fragments_for_operations(
+        ...     operations)
+        >>> sorted(fragment.name.value for fragment in fragments)
+        ['A', 'B']
+        """
+        get_fragment_spreads = self.get_fragment_spreads
         fragment_names = frozenset(
             spread.name.value
-            for spread in self.get_fragment_spreads(operation.selection_set)
+            for operation in operations
+            for spread in get_fragment_spreads(operation.selection_set)
         )
         fragments = self._recursively_referenced_fragments.get(fragment_names)
         if fragments is None:
@@ -271,11 +301,10 @@ class ASTValidationContext:
             append_fragment = fragments.append
             collected_names: set[str] = set()
             add_name = collected_names.add
-            nodes_to_visit = [operation.selection_set]
+            nodes_to_visit = [operation.selection_set for operation in operations]
             append_node = nodes_to_visit.append
             pop_node = nodes_to_visit.pop
             get_fragment = self.get_fragment
-            get_fragment_spreads = self.get_fragment_spreads
             while nodes_to_visit:
                 visited_node = pop_node()
                 for spread in get_fragment_spreads(visited_node):
