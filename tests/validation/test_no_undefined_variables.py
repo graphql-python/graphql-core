@@ -1,6 +1,12 @@
 from functools import partial
 
-from graphql.validation import NoUndefinedVariablesRule
+from graphql.language import parse
+from graphql.utilities import build_schema
+from graphql.validation import (
+    FieldsOnCorrectTypeRule,
+    NoUndefinedVariablesRule,
+    validate,
+)
 
 from .harness import assert_validation_errors
 
@@ -447,3 +453,22 @@ def describe_validate_no_undefined_variables():
             }
             """
         )
+
+    def reports_before_errors_inside_the_operation():
+        # A GraphQL-core-only test: like GraphQL.js, the rule reports when entering
+        # an operation, before errors found inside of it.
+        schema = build_schema("type Query { f(arg: String): String }")
+        document = parse("query Q { unknownField f(arg: $a) }")
+        errors = validate(
+            schema, document, [FieldsOnCorrectTypeRule, NoUndefinedVariablesRule]
+        )
+        assert errors == [
+            {
+                "message": "Variable '$a' is not defined by operation 'Q'.",
+                "locations": [(1, 31), (1, 1)],
+            },
+            {
+                "message": "Cannot query field 'unknownField' on type 'Query'.",
+                "locations": [(1, 11)],
+            },
+        ]
