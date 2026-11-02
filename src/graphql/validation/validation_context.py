@@ -21,6 +21,7 @@ from ..language import (
     VisitorAction,
     visit,
 )
+from ..pyutils import RefMap
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 if TYPE_CHECKING:
@@ -132,7 +133,7 @@ class ASTValidationContext:
     _fragments: dict[str, FragmentDefinitionNode] | None
     _fragment_spreads: dict[SelectionSetNode, list[FragmentSpreadNode]]
     _recursively_referenced_fragments: dict[
-        OperationDefinitionNode, list[FragmentDefinitionNode]
+        frozenset[str], list[FragmentDefinitionNode]
     ]
 
     def __init__(
@@ -260,7 +261,11 @@ class ASTValidationContext:
         >>> [fragment.name.value for fragment in fragments]
         ['A', 'B']
         """
-        fragments = self._recursively_referenced_fragments.get(operation)
+        fragment_names = frozenset(
+            spread.name.value
+            for spread in self.get_fragment_spreads(operation.selection_set)
+        )
+        fragments = self._recursively_referenced_fragments.get(fragment_names)
         if fragments is None:
             fragments = []
             append_fragment = fragments.append
@@ -280,7 +285,7 @@ class ASTValidationContext:
                         if fragment := get_fragment(frag_name):
                             append_fragment(fragment)
                             append_node(fragment.selection_set)
-            self._recursively_referenced_fragments[operation] = fragments
+            self._recursively_referenced_fragments[fragment_names] = fragments
         return fragments
 
 
@@ -359,6 +364,7 @@ class ValidationContext(ASTValidationContext):
     _type_info: TypeInfo
     _variable_usages: dict[NodeWithSelectionSet, list[VariableUsage]]
     _recursive_variable_usages: dict[OperationDefinitionNode, list[VariableUsage]]
+    _fragment_variable_usages: RefMap[list[FragmentDefinitionNode], list[VariableUsage]]
     _hide_suggestions: bool
     _allow_empty_selection_sets: bool
 
@@ -376,6 +382,7 @@ class ValidationContext(ASTValidationContext):
         self._type_info = type_info
         self._variable_usages = {}
         self._recursive_variable_usages = {}
+        self._fragment_variable_usages = RefMap()
         self._hide_suggestions = hide_suggestions
         self._allow_empty_selection_sets = allow_empty_selection_sets
 
@@ -450,9 +457,16 @@ class ValidationContext(ASTValidationContext):
         usages = self._recursive_variable_usages.get(operation)
         if usages is None:
             get_variable_usages = self.get_variable_usages
-            usages = get_variable_usages(operation)
-            for fragment in self.get_recursively_referenced_fragments(operation):
-                usages.extend(get_variable_usages(fragment))
+            fragments = self.get_recursively_referenced_fragments(operation)
+            fragment_usages = self._fragment_variable_usages.get(fragments)
+            if fragment_usages is None:
+                fragment_usages = [
+                    usage
+                    for fragment in fragments
+                    for usage in get_variable_usages(fragment)
+                ]
+                self._fragment_variable_usages[fragments] = fragment_usages
+            usages = [*get_variable_usages(operation), *fragment_usages]
             self._recursive_variable_usages[operation] = usages
         return usages
 

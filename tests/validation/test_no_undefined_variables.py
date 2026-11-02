@@ -431,3 +431,19 @@ def describe_validate_no_undefined_variables():
                 },
             ],
         )
+
+    def keeps_operation_variables_separate_across_shared_fragments():
+        assert_valid(
+            """
+            query Foo($a: String, $b: String) {
+              field(b: $b)
+              ...FragA
+            }
+            query Bar($a: String) {
+              ...FragA
+            }
+            fragment FragA on Type {
+              field(a: $a)
+            }
+            """
+        )
