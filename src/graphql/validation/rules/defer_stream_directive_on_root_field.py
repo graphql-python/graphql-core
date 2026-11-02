@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING, Any, cast
 from ...error import GraphQLError
 from ...language import (
     FieldNode,
-    FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
     OperationType,
@@ -70,21 +69,12 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
         schema = self.context.schema
         root_type = schema.get_root_type(operation)
         if root_type:
-            document = self.context.document
-            fragments = {
-                definition.name.value: definition
-                for definition in document.definitions
-                if isinstance(definition, FragmentDefinitionNode)
-            }
-            self.forbid_defer_stream(
-                operation, root_type, fragments, node.selection_set, set()
-            )
+            self.forbid_defer_stream(operation, root_type, node.selection_set, set())
 
     def forbid_defer_stream(
         self,
         operation_type: OperationType,
         root_type: GraphQLObjectType,
-        fragments: dict[str, FragmentDefinitionNode],
         selection_set: SelectionSetNode,
         visited_fragments: set[str],
     ) -> None:
@@ -108,7 +98,7 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                 if fragment_name in visited_fragments:
                     continue
                 visited_fragments.add(fragment_name)
-                fragment = fragments.get(fragment_name)
+                fragment = self.context.get_fragment(fragment_name)
                 if fragment:
                     defer = get_directive(selection, GraphQLDeferDirective.name)
                     if defer:
@@ -122,7 +112,6 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                     self.forbid_defer_stream(
                         operation_type,
                         root_type,
-                        fragments,
                         fragment.selection_set,
                         visited_fragments,
                     )
@@ -140,7 +129,6 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                 self.forbid_defer_stream(
                     operation_type,
                     root_type,
-                    fragments,
                     inline_fragment.selection_set,
                     visited_fragments,
                 )

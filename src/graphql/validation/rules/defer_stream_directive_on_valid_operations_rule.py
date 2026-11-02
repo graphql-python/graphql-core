@@ -9,7 +9,6 @@ from ...language import (
     ArgumentNode,
     BooleanValueNode,
     DirectiveNode,
-    FragmentDefinitionNode,
     FragmentSpreadNode,
     OperationDefinitionNode,
     OperationType,
@@ -127,17 +126,10 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
         """
         if operation.operation != OperationType.SUBSCRIPTION:
             return
-        fragments: dict[str, FragmentDefinitionNode] = {}
-        for definition in self.context.document.definitions:
-            if isinstance(definition, FragmentDefinitionNode):
-                fragments[definition.name.value] = definition
-        self.forbid_unconditional_defer_stream(
-            fragments, operation.selection_set, [], set()
-        )
+        self.forbid_unconditional_defer_stream(operation.selection_set, [], set())
 
     def forbid_unconditional_defer_stream(
         self,
-        fragments: dict[str, FragmentDefinitionNode],
         selection_set: SelectionSetNode,
         parent_nodes: list[FragmentSpreadNode],
         visited_fragments: set[str],
@@ -177,10 +169,9 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
                 if fragment_name in visited_fragments:
                     continue
                 visited_fragments.add(fragment_name)
-                fragment = fragments.get(fragment_name)
+                fragment = self.context.get_fragment(fragment_name)
                 if fragment:
                     self.forbid_unconditional_defer_stream(
-                        fragments,
                         fragment.selection_set,
                         [selection, *parent_nodes],
                         visited_fragments,
@@ -189,7 +180,6 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
                 child_selection_set = getattr(selection, "selection_set", None)
                 if child_selection_set:
                     self.forbid_unconditional_defer_stream(
-                        fragments,
                         child_selection_set,
                         parent_nodes,
                         visited_fragments,
