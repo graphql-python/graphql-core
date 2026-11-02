@@ -404,3 +404,37 @@ def describe_validate_subscriptions_with_single_field():
             [],
             schema=empty_schema,
         )
+
+    def shared_fragment_in_multiple_subscriptions():
+        assert_valid(
+            """
+            subscription sub {
+              ...newMessageFields
+            }
+            subscription other {
+              ...newMessageFields
+            }
+
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage {
+                body
+                sender
+              }
+            }
+            """
+        )
+
+    def collects_fields_with_a_directive_variable():
+        assert_valid(
+            """
+            subscription S($condition: Boolean!) {
+              ...newMessageFields @defer(if: $condition)
+            }
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage {
+                body
+                sender
+              }
+            }
+            """
+        )

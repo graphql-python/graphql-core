@@ -17,7 +17,7 @@ from ...language import (
     OperationDefinitionNode,
     OperationType,
 )
-from . import ValidationRule
+from . import ValidationContext, ValidationRule
 
 __all__ = ["SingleFieldSubscriptionsRule"]
 
@@ -49,6 +49,10 @@ class SingleFieldSubscriptionsRule(ValidationRule):
     []
     """
 
+    def __init__(self, context: ValidationContext) -> None:
+        super().__init__(context)
+        self._fragments: dict[str, FragmentDetails] | None = None
+
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
@@ -63,12 +67,13 @@ class SingleFieldSubscriptionsRule(ValidationRule):
         if subscription_type:
             operation_name = node.name.value if node.name else None
             variable_values: VariableValues = VariableValues({}, {})
-            document = self.context.document
-            fragments: dict[str, FragmentDetails] = {
-                definition.name.value: FragmentDetails(definition)
-                for definition in document.definitions
-                if isinstance(definition, FragmentDefinitionNode)
-            }
+            fragments = self._fragments
+            if fragments is None:
+                fragments = self._fragments = {
+                    definition.name.value: FragmentDetails(definition)
+                    for definition in self.context.document.definitions
+                    if isinstance(definition, FragmentDefinitionNode)
+                }
             grouped_field_set, _new_defer_usages, forbidden_directive_instances = (
                 collect_fields(
                     schema,
