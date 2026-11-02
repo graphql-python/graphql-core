@@ -7,6 +7,7 @@ from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.utilities import build_schema
 from graphql.validation import FieldsOnCorrectTypeRule, ValidationRule, validate
+from graphql.validation import validation_context as validation_context_module
 from graphql.validation.validate import ValidationAbortedError
 
 from .harness import test_schema
@@ -217,6 +218,44 @@ def describe_validate_limit_maximum_number_of_validation_errors():
 
         with pytest.raises(RuntimeError, match=r"^Error from custom rule!$"):
             validate(test_schema, doc, [CustomRule], max_errors=1)
+
+
+def describe_validate_limits_fragment_work():
+    schema = build_schema("type Query { name(arg: String): String }")
+
+    def _document(num_operations: int, num_fragments: int):
+        # operations with distinct entry fragments sharing one chain of fragments
+        operations = (
+            f"query Q{i}($v: String) {{ ...A{i} }}" for i in range(num_operations)
+        )
+        entries = (f"fragment A{i} on Query {{ ...F0 }}" for i in range(num_operations))
+        chain = (
+            f"fragment F{i} on Query {{ ...F{i + 1} }}"
+            for i in range(num_fragments - 1)
+        )
+        last = f"fragment F{num_fragments - 1} on Query {{ name(arg: $v) }}"
+        return parse("\n".join([*operations, *entries, *chain, last]))
+
+    def validates_shared_fragments_within_the_budget():
+        assert validate(schema, _document(10, 10)) == []
+
+    def aborts_validation_when_the_fragment_work_is_exhausted(monkeypatch):
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 100)
+        errors = validate(schema, _document(10, 10))
+        assert len(errors) == 1
+        error = errors[0]
+        assert type(error) is ValidationAbortedError
+        assert error.message == "Validation aborted."
+        assert error.locations is None
+        assert error.__traceback__ is None
+        assert error.__context__ is None
+
+    def reads_the_budget_when_the_validation_starts(monkeypatch):
+        document = _document(10, 10)
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 100)
+        assert len(validate(schema, document)) == 1
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 10_000)
+        assert validate(schema, document) == []
 
 
 def describe_operation_and_variable_definition_descriptions():
