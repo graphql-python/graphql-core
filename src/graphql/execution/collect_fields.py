@@ -32,6 +32,8 @@ from .values import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from .get_variable_signature import GraphQLVariableSignature
 
 __all__ = [
@@ -89,6 +91,7 @@ class CollectFieldsContext(NamedTuple):
     hide_suggestions: bool
     forbidden_directive_instances: list[DirectiveNode]
     forbid_skip_and_include: bool
+    on_selection_set: Callable[[SelectionSetNode], None] | None = None
 
 
 class CollectedFields(NamedTuple):
@@ -107,6 +110,7 @@ def collect_fields(
     operation: OperationDefinitionNode,
     hide_suggestions: bool = False,
     forbid_skip_and_include: bool = False,
+    on_selection_set: Callable[[SelectionSetNode], None] | None = None,
 ) -> CollectedFields:
     """Collect fields.
 
@@ -130,6 +134,7 @@ def collect_fields(
         hide_suggestions,
         [],
         forbid_skip_and_include,
+        on_selection_set,
     )
 
     visit_selection_sets(
@@ -213,7 +218,11 @@ def visit_selection_sets(
         hide_suggestions,
         _forbidden_directive_instances,
         _forbid_skip_and_include,
+        on_selection_set,
     ) = context
+
+    if on_selection_set:
+        on_selection_set(selection_set)
 
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
