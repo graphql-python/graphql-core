@@ -44,6 +44,7 @@ __all__ = [
     "GroupedFieldSet",
     "collect_fields",
     "collect_subfields",
+    "visit_selection_sets",
 ]
 
 
@@ -131,7 +132,7 @@ def collect_fields(
         forbid_skip_and_include,
     )
 
-    collect_fields_impl(
+    visit_selection_sets(
         context, operation.selection_set, grouped_field_set, new_defer_usages
     )
     return CollectedFields(
@@ -176,7 +177,7 @@ def collect_subfields(
     for field_detail in field_details_list:
         node = field_detail.node
         if node.selection_set:
-            collect_fields_impl(
+            visit_selection_sets(
                 context,
                 node.selection_set,
                 sub_grouped_field_set,
@@ -190,7 +191,7 @@ def collect_subfields(
     )
 
 
-def collect_fields_impl(
+def visit_selection_sets(
     context: CollectFieldsContext,
     selection_set: SelectionSetNode,
     grouped_field_set: dict[str, list[FieldDetails]],
@@ -198,7 +199,10 @@ def collect_fields_impl(
     defer_usage: DeferUsage | None = None,
     fragment_variable_values: FragmentVariableValues | None = None,
 ) -> None:
-    """Collect fields (internal implementation)."""
+    """Collect the fields of a selection set and the selection sets it contains.
+
+    For internal use only.
+    """
     (
         schema,
         fragments,
@@ -235,7 +239,7 @@ def collect_fields_impl(
             )
 
             if new_defer_usage is None:
-                collect_fields_impl(
+                visit_selection_sets(
                     context,
                     selection.selection_set,
                     grouped_field_set,
@@ -245,7 +249,7 @@ def collect_fields_impl(
                 )
             else:
                 new_defer_usages.append(new_defer_usage)
-                collect_fields_impl(
+                visit_selection_sets(
                     context,
                     selection.selection_set,
                     grouped_field_set,
@@ -307,7 +311,7 @@ def collect_fields_impl(
                     hide_suggestions,
                 )
 
-            collect_fields_impl(
+            visit_selection_sets(
                 context,
                 fragment.definition.selection_set,
                 grouped_field_set,
