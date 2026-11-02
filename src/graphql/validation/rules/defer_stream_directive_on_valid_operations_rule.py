@@ -163,7 +163,9 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
                     )
                 else:
                     continue
-                self.report_error(GraphQLError(msg, [directive, *parent_nodes]))
+                self.report_error(
+                    GraphQLError(msg, [directive, *reversed(parent_nodes)])
+                )
             if isinstance(selection, FragmentSpreadNode):
                 fragment_name = selection.name.value
                 if fragment_name in visited_fragments:
@@ -171,11 +173,13 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
                 visited_fragments.add(fragment_name)
                 fragment = self.context.get_fragment(fragment_name)
                 if fragment:
+                    parent_nodes.append(selection)
                     self.forbid_unconditional_defer_stream(
                         fragment.selection_set,
-                        [selection, *parent_nodes],
+                        parent_nodes,
                         visited_fragments,
                     )
+                    parent_nodes.pop()
             else:
                 child_selection_set = getattr(selection, "selection_set", None)
                 if child_selection_set:
