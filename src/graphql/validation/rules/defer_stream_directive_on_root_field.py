@@ -12,7 +12,7 @@ from ...language import (
     OperationType,
 )
 from ...type import GraphQLDeferDirective, GraphQLStreamDirective
-from . import ValidationRule
+from . import ValidationContext, ValidationRule
 
 if TYPE_CHECKING:
     from ...language import (
@@ -56,6 +56,10 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
     []
     """
 
+    def __init__(self, context: ValidationContext) -> None:
+        super().__init__(context)
+        self.checked_fragments: set[str] = set()
+
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
@@ -69,7 +73,11 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
         schema = self.context.schema
         root_type = schema.get_root_type(operation)
         if root_type:
-            self.forbid_defer_stream(operation, root_type, node.selection_set, set())
+            visited_fragments: set[str] = set()
+            if self.forbid_defer_stream(
+                operation, root_type, node.selection_set, visited_fragments
+            ):
+                self.checked_fragments.update(visited_fragments)
 
     def forbid_defer_stream(
         self,
@@ -77,15 +85,19 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
         root_type: GraphQLObjectType,
         selection_set: SelectionSetNode,
         visited_fragments: set[str],
-    ) -> None:
+    ) -> bool:
         """Report defer and stream directives used on the root type.
+
+        Returns whether no error was found.
 
         :meta private:
         """
+        valid = True
         for selection in selection_set.selections:
             if isinstance(selection, FieldNode):
                 stream = get_directive(selection, GraphQLStreamDirective.name)
                 if stream:
+                    valid = False
                     self.report_error(
                         GraphQLError(
                             "Stream directive cannot be used on root"
@@ -102,6 +114,7 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                 if fragment:
                     defer = get_directive(selection, GraphQLDeferDirective.name)
                     if defer:
+                        valid = False
                         self.report_error(
                             GraphQLError(
                                 "Defer directive cannot be used on root"
@@ -109,16 +122,21 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                                 defer,
                             )
                         )
-                    self.forbid_defer_stream(
-                        operation_type,
-                        root_type,
-                        fragment.selection_set,
-                        visited_fragments,
-                    )
+                    if fragment_name not in self.checked_fragments:
+                        valid = (
+                            self.forbid_defer_stream(
+                                operation_type,
+                                root_type,
+                                fragment.selection_set,
+                                visited_fragments,
+                            )
+                            and valid
+                        )
             else:  # the only remaining selection kind is an inline fragment
                 inline_fragment = cast("InlineFragmentNode", selection)
                 defer = get_directive(inline_fragment, GraphQLDeferDirective.name)
                 if defer:
+                    valid = False
                     self.report_error(
                         GraphQLError(
                             "Defer directive cannot be used on root"
@@ -126,9 +144,13 @@ class DeferStreamDirectiveOnRootField(ValidationRule):
                             defer,
                         )
                     )
-                self.forbid_defer_stream(
-                    operation_type,
-                    root_type,
-                    inline_fragment.selection_set,
-                    visited_fragments,
+                valid = (
+                    self.forbid_defer_stream(
+                        operation_type,
+                        root_type,
+                        inline_fragment.selection_set,
+                        visited_fragments,
+                    )
+                    and valid
                 )
+        return valid

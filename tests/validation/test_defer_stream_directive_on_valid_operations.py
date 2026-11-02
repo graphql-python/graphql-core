@@ -675,3 +675,22 @@ def describe_defer_stream_directive_on_valid_operations():
             }
             """
         )
+
+    def defer_fragment_spread_shared_by_multiple_subscriptions():
+        assert_valid(
+            """
+            subscription First {
+              subscriptionField {
+                ...myFragment @defer(if: false)
+              }
+            }
+            subscription Second {
+              subscriptionField {
+                ...myFragment @defer(if: false)
+              }
+            }
+            fragment myFragment on Message {
+              body
+            }
+            """
+        )
