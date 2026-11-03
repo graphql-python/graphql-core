@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from sys import maxsize
 from typing import TYPE_CHECKING
 
@@ -13,6 +14,8 @@ __all__ = [
     "is_printable_as_block_string",
     "print_block_string",
 ]
+
+_re_newline = re.compile(r"\r\n|[\n\r]")
 
 
 def dedent_block_string_lines(lines: Collection[str]) -> list[str]:
@@ -120,8 +123,10 @@ def print_block_string(value: str, minimize: bool = False) -> str:
 
     escaped_value = value.replace('"""', '\\"""')
 
-    # Expand a block string's raw value into independent lines.
-    lines = escaped_value.splitlines() or [""]
+    # Expand a block string's raw value into independent lines. Split on the
+    # GraphQL line terminators only (LF, CR, CRLF) like graphql-js; Python's
+    # str.splitlines() would also split on characters like VT, FF and NEL.
+    lines = _re_newline.split(escaped_value) or [""]
     num_lines = len(lines)
     is_single_line = num_lines == 1
 

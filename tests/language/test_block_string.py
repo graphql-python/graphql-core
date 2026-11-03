@@ -216,3 +216,9 @@ def describe_print_block_string():
                 return "lazy"
 
         _assert_block_string(cast("str", LazyString()), '"""lazy"""')
+
+    def treats_non_graphql_line_breaks_as_single_line():
+        # VT, FF, NEL and U+2028/U+2029 are not GraphQL line terminators, so
+        # values containing them print as a single line (graphql-js parity).
+        for char in "\v\f\x85\u2028\u2029":
+            _assert_block_string(f"a{char}b", f'"""a{char}b"""')
