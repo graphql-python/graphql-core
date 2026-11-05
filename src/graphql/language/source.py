@@ -90,15 +90,14 @@ class Source:
         >>> Source('type Query {\n  hello: String\n}').get_location(15)
         SourceLocation(line=2, column=3)
         """
-        # Split only on GraphQL line terminators (LF, CR and CRLF), which is
-        # how graphql-js and print_source_location() count lines. Python's
-        # str.splitlines() also splits on characters like VT, FF, NEL and
-        # U+2028/U+2029, and drops a trailing empty line, which produced both
-        # wrong locations and crashes when printing error locations.
-        lines = _re_newline.split(self.body[:position])
-        line = len(lines)
-        column = len(lines[-1]) + 1
-        return SourceLocation(line, column)
+        line = 1
+        line_start = 0
+        for match in _re_newline.finditer(self.body):
+            if match.start() >= position:
+                break
+            line_start = match.end()
+            line += 1
+        return SourceLocation(line, position + 1 - line_start)
 
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__} name={self.name!r}>"
