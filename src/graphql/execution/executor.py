@@ -956,12 +956,16 @@ class Executor(Generic[TContext]):
         try:
             # Build a dictionary of arguments from the field.arguments AST, using the
             # variables scope to fulfill any variable references.
-            args = get_argument_values(
-                field_def,
-                first_field_node,
-                self.variable_values,
-                first_field_details.fragment_variable_values,
-                self.hide_suggestions,
+            args = (
+                get_argument_values(
+                    field_def,
+                    first_field_node,
+                    self.variable_values,
+                    first_field_details.fragment_variable_values,
+                    self.hide_suggestions,
+                )
+                if field_def.args or first_field_node.arguments
+                else {}
             )
 
             # Note that contrary to the JavaScript implementation, we pass the context
@@ -988,11 +992,17 @@ class Executor(Generic[TContext]):
             )
             if self.is_awaitable(completed):
 
-                async def await_completed() -> Any:
+                async def await_completed(
+                    executor: Executor,
+                    completed: Awaitable[Any],
+                    return_type: GraphQLOutputType,
+                    field_details_list: FieldDetailsList,
+                    path: Path,
+                ) -> Any:
                     try:
                         return await completed
                     except Exception as raw_error:
-                        self.handle_field_error(
+                        executor.handle_field_error(
                             raw_error,
                             return_type,
                             field_details_list,
@@ -1000,7 +1010,9 @@ class Executor(Generic[TContext]):
                         )
                         return None
 
-                return await_completed()
+                return await_completed(
+                    self, completed, return_type, field_details_list, path
+                )
 
         except Exception as raw_error:
             self.handle_field_error(
