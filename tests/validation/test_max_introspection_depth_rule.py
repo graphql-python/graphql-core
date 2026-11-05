@@ -1,4 +1,5 @@
 from functools import partial
+from typing import List
 
 from graphql.utilities import get_introspection_query
 from graphql.validation import MaxIntrospectionDepthRule
@@ -8,6 +9,21 @@ from .harness import assert_validation_errors
 assert_errors = partial(assert_validation_errors, MaxIntrospectionDepthRule)
 
 assert_valid = partial(assert_errors, errors=[])
+
+
+def assert_errors_looking_up_fragments(query, errors, looked_up_fragments):
+    class RuleLookingUpFragments(MaxIntrospectionDepthRule):
+        def __init__(self, context):
+            get_fragment = context.get_fragment
+
+            def look_up_fragment(name):
+                looked_up_fragments.append(name)
+                return get_fragment(name)
+
+            context.get_fragment = look_up_fragment
+            super().__init__(context)
+
+    assert_validation_errors(RuleLookingUpFragments, query, errors)
 
 
 def describe_validate_max_introspection_nodes_rule():
@@ -490,6 +506,49 @@ def describe_validate_max_introspection_nodes_rule():
             }
             """)
 
+    def reuses_a_successful_fragment_check():
+        looked_up_fragments: List[str] = []
+        assert_errors_looking_up_fragments(
+            """
+            {
+              first: __type(name: "Query") { ...Shared }
+              second: __type(name: "Query") { ...Shared }
+            }
+            fragment Shared on __Type {
+              interfaces { name }
+            }
+            """,
+            [],
+            looked_up_fragments,
+        )
+        assert looked_up_fragments == ["Shared"]
+
+    def reuses_a_fragment_check_exceeding_the_depth():
+        looked_up_fragments: List[str] = []
+        assert_errors_looking_up_fragments(
+            """
+            {
+              first: __type(name: "Query") { ...Shared }
+              second: __type(name: "Query") { ...Shared }
+            }
+            fragment Shared on __Type {
+              interfaces { interfaces { interfaces { name } } }
+            }
+            """,
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(4, 15)],
+                },
+            ],
+            looked_up_fragments,
+        )
+        assert looked_up_fragments == ["Shared"]
+
     def checks_shared_fragments_at_different_depths():
         assert_errors(
             """
@@ -538,3 +597,127 @@ def describe_validate_max_introspection_nodes_rule():
                 },
             ],
         )
+
+    def reuses_fragment_checks_from_fields_exceeding_the_depth():
+        looked_up_fragments: List[str] = []
+        assert_errors_looking_up_fragments(
+            """
+            {
+              first: __type(name: "Query") {
+                ...Shared
+                fields { fields { fields { name } } }
+              }
+              second: __type(name: "Query") {
+                ...Shared
+                fields { fields { fields { name } } }
+              }
+            }
+            fragment Shared on __Type {
+              ...Leaf
+            }
+            fragment Leaf on __Type {
+              name
+            }
+            """,
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(7, 15)],
+                },
+            ],
+            looked_up_fragments,
+        )
+        assert looked_up_fragments == ["Shared", "Leaf"]
+
+    def reuses_fragment_checks_exceeding_the_depth():
+        looked_up_fragments: List[str] = []
+        assert_errors_looking_up_fragments(
+            """
+            {
+              first: __type(name: "Query") { ...Outer }
+              second: __type(name: "Query") { interfaces { ...Outer } }
+              third: __type(name: "Query") { name }
+            }
+            fragment Outer on __Type {
+              ...Inner
+            }
+            fragment Inner on __Type {
+              fields { fields { fields { name } } }
+            }
+            """,
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(4, 15)],
+                },
+            ],
+            looked_up_fragments,
+        )
+        assert looked_up_fragments == ["Outer", "Inner"]
+
+    def reuses_fragment_checks_completed_inside_a_fragment_cycle():
+        assert_errors(
+            """
+            {
+              first: __type(name: "Query") { ...Outer }
+              second: __type(name: "Query") { ...Inner }
+            }
+            fragment Outer on __Type {
+              ...Inner
+              fields { fields { fields { name } } }
+            }
+            fragment Inner on __Type {
+              ...Outer
+            }
+            """,
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(3, 15)],
+                },
+            ],
+        )
+
+    def records_fragments_being_checked_when_reusing_an_exceeded_check():
+        # A GraphQL-core-only test: the walk is iterative here, so the fragments on
+        # the stack must also be recorded when the limit comes from the exceeded cache.
+        looked_up_fragments: List[str] = []
+        assert_errors_looking_up_fragments(
+            """
+            {
+              first: __type(name: "Query") { ...Inner }
+              second: __type(name: "Query") { ...Wrapper }
+              third: __type(name: "Query") { ...Wrapper }
+            }
+            fragment Wrapper on __Type {
+              ...Inner
+            }
+            fragment Inner on __Type {
+              fields { fields { fields { name } } }
+            }
+            """,
+            [
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(3, 15)],
+                },
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(4, 15)],
+                },
+                {
+                    "message": "Maximum introspection depth exceeded",
+                    "locations": [(5, 15)],
+                },
+            ],
+            looked_up_fragments,
+        )
+        assert looked_up_fragments == ["Inner", "Wrapper"]
