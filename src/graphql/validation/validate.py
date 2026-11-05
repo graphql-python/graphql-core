@@ -12,10 +12,16 @@ from .rules import ASTValidationRule
 from .specified_rules import specified_rules, specified_sdl_rules
 from .validation_context import SDLValidationContext, ValidationContext
 
-__all__ = ["assert_valid_sdl", "assert_valid_sdl_extension", "validate", "validate_sdl"]
+__all__ = [
+    "ValidationAbortedError",
+    "assert_valid_sdl",
+    "assert_valid_sdl_extension",
+    "validate",
+    "validate_sdl",
+]
 
 
-class ValidationAbortedError(RuntimeError):
+class ValidationAbortedError(GraphQLError):
     """Error when a validation has been aborted (error limit reached)."""
 
 
@@ -109,13 +115,11 @@ def validate(
 
     def on_error(error: GraphQLError) -> None:
         if len(errors) >= max_errors:
-            errors.append(
-                GraphQLError(
-                    "Too many validation errors, error limit reached."
-                    " Validation aborted."
-                )
+            # Unlike GraphQL.js, create a new error each time, because raising a
+            # shared error would add the frames of every validation to its traceback.
+            raise ValidationAbortedError(
+                "Too many validation errors, error limit reached. Validation aborted."
             )
-            raise ValidationAbortedError
         errors.append(error)
 
     context = ValidationContext(schema, document_ast, type_info, on_error)
@@ -131,8 +135,11 @@ def validate(
             TypeInfoVisitor(type_info, ParallelVisitor(visitors)),
             query_document_keys_to_validate,
         )
-    except ValidationAbortedError:
-        pass
+    except ValidationAbortedError as error:
+        # Do not keep the frames of the validation alive with the returned error,
+        # also not via the context of an error that was handled while aborting.
+        error.__context__ = None
+        errors.append(error.with_traceback(None))
     return errors
 
 
