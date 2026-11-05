@@ -298,3 +298,17 @@ def describe_validate_subscriptions_with_single_field():
             [],
             schema=empty_schema,
         )
+
+    def shared_fragment_in_multiple_subscriptions():
+        assert_valid("""
+            subscription sub {
+              ...newMessageFields
+            }
+            subscription other {
+              ...newMessageFields
+            }
+
+            fragment newMessageFields on SubscriptionRoot {
+              importantEmails
+            }
+            """)

@@ -1,6 +1,6 @@
 """Single field subscriptions rule"""
 
-from typing import Any, Dict, cast
+from typing import Any, Dict, Optional, cast
 
 from ...error import GraphQLError
 from ...execution.collect_fields import collect_fields
@@ -10,7 +10,7 @@ from ...language import (
     OperationDefinitionNode,
     OperationType,
 )
-from . import ValidationRule
+from . import ValidationContext, ValidationRule
 
 __all__ = ["SingleFieldSubscriptionsRule"]
 
@@ -38,6 +38,10 @@ class SingleFieldSubscriptionsRule(ValidationRule):
     []
     """
 
+    def __init__(self, context: ValidationContext) -> None:
+        super().__init__(context)
+        self._fragments: Optional[Dict[str, FragmentDefinitionNode]] = None
+
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
@@ -52,12 +56,13 @@ class SingleFieldSubscriptionsRule(ValidationRule):
         if subscription_type:
             operation_name = node.name.value if node.name else None
             variable_values: Dict[str, Any] = {}
-            document = self.context.document
-            fragments: Dict[str, FragmentDefinitionNode] = {
-                definition.name.value: definition
-                for definition in document.definitions
-                if isinstance(definition, FragmentDefinitionNode)
-            }
+            fragments = self._fragments
+            if fragments is None:
+                fragments = self._fragments = {
+                    definition.name.value: definition
+                    for definition in self.context.document.definitions
+                    if isinstance(definition, FragmentDefinitionNode)
+                }
             fields = collect_fields(
                 schema,
                 fragments,
