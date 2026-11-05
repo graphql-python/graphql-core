@@ -66,12 +66,10 @@ class NoUnusedFragmentsRule(ASTValidationRule):
 
         :meta private:
         """
-        fragment_names_used = set()
-        get_fragments = self.context.get_recursively_referenced_fragments
-        for operation in self.operation_defs:
-            for fragment in get_fragments(operation):
-                fragment_names_used.add(fragment.name.value)
-
+        get_fragments = self.context.get_recursively_referenced_fragments_for_operations
+        fragment_names_used = {
+            fragment.name.value for fragment in get_fragments(self.operation_defs)
+        }
         for fragment_def in self.fragment_defs:
             frag_name = fragment_def.name.value
             if frag_name not in fragment_names_used:
