@@ -9,6 +9,7 @@ from ...language import (
     FragmentDefinitionNode,
     OperationDefinitionNode,
     OperationType,
+    SelectionSetNode,
 )
 from . import ValidationContext, ValidationRule
 
@@ -42,6 +43,22 @@ class SingleFieldSubscriptionsRule(ValidationRule):
         super().__init__(context)
         self._fragments: Optional[Dict[str, FragmentDefinitionNode]] = None
 
+    def reserve_selection_set_work(self, selection_set: SelectionSetNode) -> None:
+        """Reserve traversal and directive work before visiting a selection set.
+
+        :meta private:
+        """
+        spend_fragment_work = self.context.spend_fragment_work
+        selections = selection_set.selections
+        spend_fragment_work(len(selections))
+        for selection in selections:
+            directives = selection.directives
+            if directives:
+                spend_fragment_work(len(directives))
+                for directive in directives:
+                    if directive.name.value in ("skip", "include"):
+                        spend_fragment_work(len(directive.arguments or ()))
+
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
@@ -58,9 +75,11 @@ class SingleFieldSubscriptionsRule(ValidationRule):
             variable_values: Dict[str, Any] = {}
             fragments = self._fragments
             if fragments is None:
+                definitions = self.context.document.definitions
+                self.context.spend_fragment_work(len(definitions))
                 fragments = self._fragments = {
                     definition.name.value: definition
-                    for definition in self.context.document.definitions
+                    for definition in definitions
                     if isinstance(definition, FragmentDefinitionNode)
                 }
             fields = collect_fields(
@@ -69,6 +88,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                 variable_values,
                 subscription_type,
                 node.selection_set,
+                self.reserve_selection_set_work,
             )
             if len(fields) > 1:
                 field_selection_lists = list(fields.values())

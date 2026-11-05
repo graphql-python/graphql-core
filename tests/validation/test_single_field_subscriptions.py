@@ -1,7 +1,12 @@
 from functools import partial
 
+from pytest import raises
+
+from graphql.error import GraphQLError
+from graphql.language import DirectiveNode, Visitor, parse, visit
 from graphql.utilities import build_schema
-from graphql.validation import SingleFieldSubscriptionsRule
+from graphql.validation import SingleFieldSubscriptionsRule, validate
+from graphql.validation import validation_context as validation_context_module
 
 from .harness import assert_validation_errors
 
@@ -38,6 +43,34 @@ assert_valid = partial(assert_errors, errors=[])
 
 
 def describe_validate_subscriptions_with_single_field():
+    def accounts_for_include_and_custom_subscription_directives():
+        document = parse("subscription { importantEmails @include(if: true) @custom }")
+        assert validate(schema, document, [SingleFieldSubscriptionsRule]) == []
+
+    def preserves_errors_for_directive_ast_nodes_without_argument_arrays():
+        class RemoveArguments(Visitor):
+            def enter_directive(self, node, *_args):
+                return DirectiveNode(name=node.name, arguments=None, loc=node.loc)
+
+        document = visit(
+            parse("subscription { importantEmails @include }"), RemoveArguments()
+        )
+        with raises(GraphQLError) as exc_info:
+            validate(schema, document, [SingleFieldSubscriptionsRule])
+        assert (
+            exc_info.value.message
+            == "Argument 'if' of required type 'Boolean!' was not provided."
+        )
+
+    def bounds_repeated_subscription_fragment_and_directive_work():
+        operations = "\n".join(f"subscription S{i} {{ ...F }}" for i in range(300))
+        selections = "importantEmails @skip(if: false) " * 100
+        fragment = f"fragment F on SubscriptionRoot {{ {selections} }}"
+        errors = validate(
+            schema, parse(operations + fragment), [SingleFieldSubscriptionsRule]
+        )
+        assert [error.message for error in errors] == ["Validation aborted."]
+
     def valid_subscription():
         assert_valid("""
             subscription ImportantEmails {
@@ -312,3 +345,21 @@ def describe_validate_subscriptions_with_single_field():
               importantEmails
             }
             """)
+
+    def spends_fragment_work_like_graphql_js(monkeypatch):
+        # A GraphQL-core-only test: the work counted here must equal the work counted
+        # by GraphQL.js (2 definitions, 2 root selections, 2 directives, 1 argument of
+        # @include, none of the custom directive, and 1 fragment selection).
+        document = """
+            subscription {
+              ...newMessageFields @include(if: true) @custom(arg: 1)
+              newMessage { body }
+            }
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage { body sender }
+            }
+            """
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 8)
+        assert_valid(document)
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 7)
+        assert_errors(document, [{"message": "Validation aborted."}])
