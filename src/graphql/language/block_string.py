@@ -121,7 +121,7 @@ def print_block_string(value: str, minimize: bool = False) -> str:
     # Expand a block string's raw value into independent lines. Split on the
     # GraphQL line terminators only (LF, CR, CRLF) like graphql-js; Python's
     # str.splitlines() would also split on characters like VT, FF and NEL.
-    lines = _re_newline.split(escaped_value) or [""]
+    lines = _re_newline.split(escaped_value)
     num_lines = len(lines)
     is_single_line = num_lines == 1
 
