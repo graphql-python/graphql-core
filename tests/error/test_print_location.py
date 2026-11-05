@@ -69,3 +69,15 @@ def describe_print_location():
                | ^
             10 |
             """)
+
+    def prints_locations_from_get_location_on_non_graphql_line_breaks():
+        # Characters like VT, FF, NEL or U+2028/U+2029 are not GraphQL line
+        # terminators, so Source.get_location() reports line 1 for positions
+        # after them. Rendering that location must not fail.
+        source = Source("x\vy")
+        result = print_source_location(source, source.get_location(3))
+        assert result == dedent("""
+            GraphQL request:1:4
+            1 | x\x0by
+              |    ^
+            """)

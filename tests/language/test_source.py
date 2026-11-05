@@ -44,6 +44,18 @@ def describe_source():
         assert isinstance(location, SourceLocation)
         assert location == (2, 6)
 
+    def counts_only_graphql_line_terminators_for_locations():
+        # Positions right after a line terminator are on the next line.
+        assert Source("a\nb").get_location(2) == (2, 1)
+        assert Source("a\rb").get_location(2) == (2, 1)
+        assert Source("a\r\nb").get_location(3) == (2, 1)
+        # Characters that splitlines() counts as line boundaries, but which
+        # are not GraphQL line terminators, stay on the same line (graphql-js
+        # parity).
+        for char in "\v\f\x1c\x1d\x1e\x85\u2028\u2029":
+            source = Source(f"x{char}y")
+            assert source.get_location(3) == (1, 4)
+
     def can_be_stringified():
         source = Source("")
         assert str(source) == "<Source name='GraphQL request'>"
