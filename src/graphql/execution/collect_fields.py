@@ -1,6 +1,6 @@
 """Collect fields"""
 
-from typing import Any, Dict, List, Set, Union, cast
+from typing import Any, Callable, Dict, List, Optional, Set, Union, cast
 
 from ..language import (
     FieldNode,
@@ -29,6 +29,7 @@ def collect_fields(
     variable_values: Dict[str, Any],
     runtime_type: GraphQLObjectType,
     selection_set: SelectionSetNode,
+    on_selection_set: Optional[Callable[[SelectionSetNode], None]] = None,
 ) -> Dict[str, List[FieldNode]]:
     """Collect fields.
 
@@ -44,7 +45,14 @@ def collect_fields(
     """
     fields: Dict[str, List[FieldNode]] = {}
     collect_fields_impl(
-        schema, fragments, variable_values, runtime_type, selection_set, fields, set()
+        schema,
+        fragments,
+        variable_values,
+        runtime_type,
+        selection_set,
+        fields,
+        set(),
+        on_selection_set,
     )
     return fields
 
@@ -93,11 +101,14 @@ def collect_fields_impl(
     selection_set: SelectionSetNode,
     fields: Dict[str, List[FieldNode]],
     visited_fragment_names: Set[str],
+    on_selection_set: Optional[Callable[[SelectionSetNode], None]] = None,
 ) -> None:
     """Collect fields (internal implementation).
 
     :meta private:
     """
+    if on_selection_set:
+        on_selection_set(selection_set)
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
             if not should_include_node(variable_values, selection):
@@ -117,6 +128,7 @@ def collect_fields_impl(
                 selection.selection_set,
                 fields,
                 visited_fragment_names,
+                on_selection_set,
             )
         elif isinstance(selection, FragmentSpreadNode):  # pragma: no cover else
             frag_name = selection.name.value
@@ -138,6 +150,7 @@ def collect_fields_impl(
                 fragment.selection_set,
                 fields,
                 visited_fragment_names,
+                on_selection_set,
             )
 
 
