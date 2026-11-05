@@ -39,6 +39,7 @@ from ..type import (
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 __all__ = [
+    "MAX_FRAGMENT_WORK",
     "ASTValidationContext",
     "SDLValidationContext",
     "ValidationContext",
@@ -47,6 +48,13 @@ __all__ = [
 ]
 
 NodeWithSelectionSet = Union[OperationDefinitionNode, FragmentDefinitionNode]
+
+# The maximum amount of work spent on fragments shared by the operations of a single
+# document, counted in fragment spreads and variable usages. Once it is exhausted,
+# validation is aborted with a "Validation aborted." error. Unlike GraphQL.js, the
+# budget can be raised or lowered by assigning to
+# ``graphql.validation.validation_context.MAX_FRAGMENT_WORK``.
+MAX_FRAGMENT_WORK = 50_000
 
 
 class VariableUsage(NamedTuple):
@@ -108,6 +116,7 @@ class ASTValidationContext:
     document: DocumentNode
     """The document AST being validated."""
 
+    _remaining_fragment_work: int
     _fragments: Optional[Dict[str, FragmentDefinitionNode]]
     _fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]]
     _recursively_referenced_fragments: Dict[
@@ -117,6 +126,7 @@ class ASTValidationContext:
     def __init__(
         self, ast: DocumentNode, on_error: Callable[[GraphQLError], None]
     ) -> None:
+        self._remaining_fragment_work = MAX_FRAGMENT_WORK
         self.document = ast
         self.on_error = on_error  # type: ignore
         self._fragments = None
@@ -281,9 +291,12 @@ class ASTValidationContext:
             append_node = nodes_to_visit.append
             pop_node = nodes_to_visit.pop
             get_fragment = self.get_fragment
+            spend_fragment_work = self.spend_fragment_work
             while nodes_to_visit:
                 visited_node = pop_node()
-                for spread in get_fragment_spreads(visited_node):
+                spreads = get_fragment_spreads(visited_node)
+                spend_fragment_work(len(spreads))
+                for spread in spreads:
                     frag_name = spread.name.value
                     if frag_name not in collected_names:
                         add_name(frag_name)
@@ -293,6 +306,20 @@ class ASTValidationContext:
                             append_node(fragment.selection_set)
             self._recursively_referenced_fragments[key] = fragments
         return fragments
+
+    def spend_fragment_work(self, cost: int) -> None:
+        """Spend work on shared fragments and abort validation when exhausted.
+
+        :param cost: The amount of work to spend.
+        :raises ValidationAbortedError: If the budget for fragment work is exhausted.
+
+        :meta private:
+        """
+        self._remaining_fragment_work -= cost
+        if self._remaining_fragment_work < 0:
+            from .validate import ValidationAbortedError
+
+            raise ValidationAbortedError("Validation aborted.")
 
 
 class SDLValidationContext(ASTValidationContext):
@@ -438,12 +465,17 @@ class ValidationContext(ASTValidationContext):
             get_variable_usages = self.get_variable_usages
             fragments = self.get_recursively_referenced_fragments(operation)
             fragment_usages = self._fragment_variable_usages.get(id(fragments))
+            spend_fragment_work = self.spend_fragment_work
             if fragment_usages is None:
+                spend_fragment_work(len(fragments))
                 fragment_usages = []
                 extend_usages = fragment_usages.extend
                 for fragment in fragments:
-                    extend_usages(get_variable_usages(fragment))
+                    local_usages = get_variable_usages(fragment)
+                    spend_fragment_work(len(local_usages))
+                    extend_usages(local_usages)
                 self._fragment_variable_usages[id(fragments)] = fragment_usages
+            spend_fragment_work(len(fragment_usages))
             usages = [*get_variable_usages(operation), *fragment_usages]
             self._recursive_variable_usages[operation] = usages
         return usages
