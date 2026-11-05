@@ -1,6 +1,17 @@
 """Validation context"""
 
-from typing import Any, Callable, Dict, List, NamedTuple, Optional, Set, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+    Union,
+    cast,
+)
 
 from ..error import GraphQLError
 from ..language import (
@@ -99,7 +110,7 @@ class ASTValidationContext:
     _fragments: Optional[Dict[str, FragmentDefinitionNode]]
     _fragment_spreads: Dict[SelectionSetNode, List[FragmentSpreadNode]]
     _recursively_referenced_fragments: Dict[
-        OperationDefinitionNode, List[FragmentDefinitionNode]
+        FrozenSet[str], List[FragmentDefinitionNode]
     ]
 
     def __init__(
@@ -227,7 +238,12 @@ class ASTValidationContext:
         >>> [fragment.name.value for fragment in fragments]
         ['A', 'B']
         """
-        fragments = self._recursively_referenced_fragments.get(operation)
+        get_fragment_spreads = self.get_fragment_spreads
+        key = frozenset(
+            spread.name.value
+            for spread in get_fragment_spreads(operation.selection_set)
+        )
+        fragments = self._recursively_referenced_fragments.get(key)
         if fragments is None:
             fragments = []
             append_fragment = fragments.append
@@ -237,7 +253,6 @@ class ASTValidationContext:
             append_node = nodes_to_visit.append
             pop_node = nodes_to_visit.pop
             get_fragment = self.get_fragment
-            get_fragment_spreads = self.get_fragment_spreads
             while nodes_to_visit:
                 visited_node = pop_node()
                 for spread in get_fragment_spreads(visited_node):
@@ -248,7 +263,7 @@ class ASTValidationContext:
                         if fragment:
                             append_fragment(fragment)
                             append_node(fragment.selection_set)
-            self._recursively_referenced_fragments[operation] = fragments
+            self._recursively_referenced_fragments[key] = fragments
         return fragments
 
 
@@ -321,6 +336,8 @@ class ValidationContext(ASTValidationContext):
     _type_info: TypeInfo
     _variable_usages: Dict[NodeWithSelectionSet, List[VariableUsage]]
     _recursive_variable_usages: Dict[OperationDefinitionNode, List[VariableUsage]]
+    # keyed by the id of the fragment lists cached (and so kept alive) in the context
+    _fragment_variable_usages: Dict[int, List[VariableUsage]]
 
     def __init__(
         self,
@@ -334,6 +351,7 @@ class ValidationContext(ASTValidationContext):
         self._type_info = type_info
         self._variable_usages = {}
         self._recursive_variable_usages = {}
+        self._fragment_variable_usages = {}
 
     def get_variable_usages(self, node: NodeWithSelectionSet) -> List[VariableUsage]:
         """Get variable usages found directly within the given node.
@@ -390,9 +408,15 @@ class ValidationContext(ASTValidationContext):
         usages = self._recursive_variable_usages.get(operation)
         if usages is None:
             get_variable_usages = self.get_variable_usages
-            usages = get_variable_usages(operation)
-            for fragment in self.get_recursively_referenced_fragments(operation):
-                usages.extend(get_variable_usages(fragment))
+            fragments = self.get_recursively_referenced_fragments(operation)
+            fragment_usages = self._fragment_variable_usages.get(id(fragments))
+            if fragment_usages is None:
+                fragment_usages = []
+                extend_usages = fragment_usages.extend
+                for fragment in fragments:
+                    extend_usages(get_variable_usages(fragment))
+                self._fragment_variable_usages[id(fragments)] = fragment_usages
+            usages = [*get_variable_usages(operation), *fragment_usages]
             self._recursive_variable_usages[operation] = usages
         return usages
 

@@ -354,3 +354,44 @@ def describe_validate_no_undefined_variables():
                 },
             ],
         )
+
+    def keeps_operation_variables_separate_across_shared_fragments():
+        assert_valid("""
+            query Foo($a: String, $b: String) {
+              field(b: $b)
+              ...FragA
+            }
+            query Bar($a: String) {
+              ...FragA
+            }
+            fragment FragA on Type {
+              field(a: $a)
+            }
+            """)
+
+    def keeps_variables_of_a_fragment_shared_by_different_fragment_sets():
+        # A GraphQL-core-only test: these operations do not share the cached list
+        # of referenced fragments, only the variable usages of FragA.
+        assert_errors(
+            """
+            query Foo($a: String) {
+              ...FragA
+            }
+            query Bar($b: String) {
+              ...FragA
+              ...FragB
+            }
+            fragment FragA on Type {
+              field(a: $a)
+            }
+            fragment FragB on Type {
+              field(b: $b)
+            }
+            """,
+            [
+                {
+                    "message": "Variable '$a' is not defined by operation 'Bar'.",
+                    "locations": [(10, 24), (5, 13)],
+                },
+            ],
+        )
