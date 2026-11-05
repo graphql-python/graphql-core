@@ -448,43 +448,52 @@ class ParallelVisitor(Visitor):
             return self.enter_leave_map[kind]
         except KeyError:
             has_visitor = False
-            enter_list: list[Callable[..., VisitorAction | None] | None] = []
-            leave_list: list[Callable[..., VisitorAction | None] | None] = []
-            for visitor in self.visitors:
+            enter_list: list[
+                tuple[int, Callable[..., VisitorAction | None] | None]
+            ] = []
+            leave_list: list[
+                tuple[int, Callable[..., VisitorAction | None] | None]
+            ] = []
+            for i, visitor in enumerate(self.visitors):
                 enter, leave = visitor.get_enter_leave_for_kind(kind)
                 if not has_visitor and (enter or leave):
                     has_visitor = True
-                enter_list.append(enter)
-                leave_list.append(leave)
+                enter_list.append((i, enter))
+                leave_list.append((i, leave))
+
+            enter_pairs = tuple(enter_list)
+            leave_pairs = tuple(leave_list)
 
             if has_visitor:
 
                 def enter(node: Node, *args: Any) -> VisitorAction | None:
                     skipping = self.skipping
-                    for i, fn in enumerate(enter_list):
+                    args = (node, *args)
+                    for i, fn in enter_pairs:
                         if not skipping[i] and fn:
-                            result = fn(node, *args)
+                            result = fn(*args)
+                            if result is None:
+                                continue
                             if result is SKIP or result is False:
                                 skipping[i] = node
                             elif result is BREAK or result is True:
                                 skipping[i] = BREAK
-                            elif result is not None:
+                            else:
                                 return result
                     return None
 
                 def leave(node: Node, *args: Any) -> VisitorAction | None:
                     skipping = self.skipping
-                    for i, fn in enumerate(leave_list):
+                    args = (node, *args)
+                    for i, fn in leave_pairs:
                         if not skipping[i]:
                             if fn:
-                                result = fn(node, *args)
+                                result = fn(*args)
+                                if result is None:
+                                    continue
                                 if result is BREAK or result is True:
                                     skipping[i] = BREAK
-                                elif (
-                                    result is not None
-                                    and result is not SKIP
-                                    and result is not False
-                                ):
+                                elif result is not SKIP and result is not False:
                                     return result
                         elif skipping[i] is node:
                             skipping[i] = None
