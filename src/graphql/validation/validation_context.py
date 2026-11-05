@@ -9,7 +9,6 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    Set,
     Union,
     cast,
 )
@@ -276,34 +275,37 @@ class ASTValidationContext:
         ['A', 'B']
         """
         get_fragment_spreads = self.get_fragment_spreads
-        key = frozenset(
-            spread.name.value
-            for operation in operations
-            for spread in get_fragment_spreads(operation.selection_set)
+        # keep the names in the order in which they are spread
+        fragment_names = list(
+            dict.fromkeys(
+                spread.name.value
+                for operation in operations
+                for spread in get_fragment_spreads(operation.selection_set)
+            )
         )
+        key = frozenset(fragment_names)
         fragments = self._recursively_referenced_fragments.get(key)
         if fragments is None:
             fragments = []
             append_fragment = fragments.append
-            collected_names: Set[str] = set()
-            add_name = collected_names.add
-            nodes_to_visit = [operation.selection_set for operation in operations]
-            append_node = nodes_to_visit.append
-            pop_node = nodes_to_visit.pop
-            get_fragment = self.get_fragment
             spend_fragment_work = self.spend_fragment_work
-            while nodes_to_visit:
-                visited_node = pop_node()
-                spreads = get_fragment_spreads(visited_node)
-                spend_fragment_work(len(spreads))
-                for spread in spreads:
-                    frag_name = spread.name.value
-                    if frag_name not in collected_names:
-                        add_name(frag_name)
-                        fragment = get_fragment(frag_name)
-                        if fragment:
-                            append_fragment(fragment)
-                            append_node(fragment.selection_set)
+            spend_fragment_work(len(fragment_names))
+            collected_names = set(fragment_names)
+            add_name = collected_names.add
+            # the list grows while it is iterated, like a set in JavaScript
+            append_name = fragment_names.append
+            get_fragment = self.get_fragment
+            for frag_name in fragment_names:
+                fragment = get_fragment(frag_name)
+                if fragment:
+                    append_fragment(fragment)
+                    spreads = get_fragment_spreads(fragment.selection_set)
+                    spend_fragment_work(len(spreads))
+                    for spread in spreads:
+                        spread_name = spread.name.value
+                        if spread_name not in collected_names:
+                            add_name(spread_name)
+                            append_name(spread_name)
             self._recursively_referenced_fragments[key] = fragments
         return fragments
 
