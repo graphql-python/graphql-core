@@ -291,8 +291,6 @@ def find_conflicts_within_selection_set(
     collect_fields_result = collect_fields(
         validation_context, rule_context, parent_type, selection_set
     )
-    grouped_field_set = collect_fields_result.grouped_field_set
-    fragment_names = collect_fields_result.fragment_names
 
     # (A) Find all conflicts "within" the fields of this selection set.
     # Note: this is the *only place* `collect_conflicts_within` is called.
@@ -300,9 +298,10 @@ def find_conflicts_within_selection_set(
         validation_context,
         conflicts,
         rule_context,
-        grouped_field_set,
+        collect_fields_result.grouped_field_set,
     )
 
+    fragment_names = collect_fields_result.fragment_names
     if fragment_names:
         # (B) Then collect conflicts between these fields and those represented by each
         # spread fragment name found.
@@ -312,7 +311,7 @@ def find_conflicts_within_selection_set(
                 conflicts,
                 rule_context,
                 False,
-                grouped_field_set,
+                collect_fields_result,
                 fragment_name,
             )
             # (C) Then compare this fragment with all other fragments found in this
@@ -337,7 +336,7 @@ def collect_conflicts_between_fields_and_fragment(
     conflicts: List[Conflict],
     rule_context: "RuleContext",
     are_mutually_exclusive: bool,
-    grouped_field_set: GroupedFieldSet,
+    collect_fields_result: CollectFieldsResult,
     fragment_name: str,
 ) -> None:
     """Collect conflicts between fields and fragment.
@@ -345,32 +344,30 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
-    if not grouped_field_set:
+    if not collect_fields_result.grouped_field_set:
         return
 
     compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
     if compared_fields_and_fragment_pairs.has(
-        grouped_field_set, fragment_name, are_mutually_exclusive
+        collect_fields_result, fragment_name, are_mutually_exclusive
     ):
         return
     compared_fields_and_fragment_pairs.add(
-        grouped_field_set, fragment_name, are_mutually_exclusive
+        collect_fields_result, fragment_name, are_mutually_exclusive
     )
 
     fragment = validation_context.get_fragment(fragment_name)
     if not fragment:
         return None
 
-    collect_fields_result = collect_fragment_fields(
+    collect_fields_result2 = collect_fragment_fields(
         validation_context, rule_context, fragment
     )
-    grouped_field_set2 = collect_fields_result.grouped_field_set
-    referenced_fragment_names = collect_fields_result.fragment_names
 
-    # Do not compare a fragment's grouped_field_set to itself.
-    if grouped_field_set is grouped_field_set2:
+    # Do not compare a fragment's collect_fields_result to itself.
+    if collect_fields_result is collect_fields_result2:
         return
 
     # (D) First collect any conflicts between the provided collection of fields and the
@@ -380,19 +377,19 @@ def collect_conflicts_between_fields_and_fragment(
         conflicts,
         rule_context,
         are_mutually_exclusive,
-        grouped_field_set,
-        grouped_field_set2,
+        collect_fields_result,
+        collect_fields_result2,
     )
 
     # (E) Then collect any conflicts between the provided collection of fields and any
     # fragment names found in the given fragment.
-    for referenced_fragment_name in referenced_fragment_names:
+    for referenced_fragment_name in collect_fields_result2.fragment_names:
         collect_conflicts_between_fields_and_fragment(
             validation_context,
             conflicts,
             rule_context,
             are_mutually_exclusive,
-            grouped_field_set,
+            collect_fields_result,
             referenced_fragment_name,
         )
 
@@ -430,14 +427,9 @@ def collect_conflicts_between_fragments(
     collect_fields_result1 = collect_fragment_fields(
         validation_context, rule_context, fragment1
     )
-    grouped_field_set1 = collect_fields_result1.grouped_field_set
-    referenced_fragment_names1 = collect_fields_result1.fragment_names
-
     collect_fields_result2 = collect_fragment_fields(
         validation_context, rule_context, fragment2
     )
-    grouped_field_set2 = collect_fields_result2.grouped_field_set
-    referenced_fragment_names2 = collect_fields_result2.fragment_names
 
     # (F) First, collect all conflicts between these two collections of fields
     # (not including any nested fragments)
@@ -446,13 +438,13 @@ def collect_conflicts_between_fragments(
         conflicts,
         rule_context,
         are_mutually_exclusive,
-        grouped_field_set1,
-        grouped_field_set2,
+        collect_fields_result1,
+        collect_fields_result2,
     )
 
     # (G) Then collect conflicts between the first fragment and any nested fragments
     # spread in the second fragment.
-    for referenced_fragment_name2 in referenced_fragment_names2:
+    for referenced_fragment_name2 in collect_fields_result2.fragment_names:
         collect_conflicts_between_fragments(
             validation_context,
             conflicts,
@@ -464,7 +456,7 @@ def collect_conflicts_between_fragments(
 
     # (G) Then collect conflicts between the second fragment and any nested fragments
     # spread in the first fragment.
-    for referenced_fragment_name1 in referenced_fragment_names1:
+    for referenced_fragment_name1 in collect_fields_result1.fragment_names:
         collect_conflicts_between_fragments(
             validation_context,
             conflicts,
@@ -495,13 +487,10 @@ def find_conflicts_between_sub_selection_sets(
     collect_fields_result1 = collect_fields(
         validation_context, rule_context, parent_type1, selection_set1
     )
-    grouped_field_set1 = collect_fields_result1.grouped_field_set
-    fragment_names1 = collect_fields_result1.fragment_names
-
     collect_fields_result2 = collect_fields(
         validation_context, rule_context, parent_type2, selection_set2
     )
-    grouped_field_set2 = collect_fields_result2.grouped_field_set
+    fragment_names1 = collect_fields_result1.fragment_names
     fragment_names2 = collect_fields_result2.fragment_names
 
     # (H) First, collect all conflicts between these two collections of field.
@@ -510,8 +499,8 @@ def find_conflicts_between_sub_selection_sets(
         conflicts,
         rule_context,
         are_mutually_exclusive,
-        grouped_field_set1,
-        grouped_field_set2,
+        collect_fields_result1,
+        collect_fields_result2,
     )
 
     # (I) Then collect conflicts between the first collection of fields and those
@@ -523,7 +512,7 @@ def find_conflicts_between_sub_selection_sets(
                 conflicts,
                 rule_context,
                 are_mutually_exclusive,
-                grouped_field_set1,
+                collect_fields_result1,
                 fragment_name2,
             )
 
@@ -536,7 +525,7 @@ def find_conflicts_between_sub_selection_sets(
                 conflicts,
                 rule_context,
                 are_mutually_exclusive,
-                grouped_field_set2,
+                collect_fields_result2,
                 fragment_name1,
             )
 
@@ -593,8 +582,8 @@ def collect_conflicts_between(
     conflicts: List[Conflict],
     rule_context: "RuleContext",
     parent_fields_are_mutually_exclusive: bool,
-    grouped_field_set1: GroupedFieldSet,
-    grouped_field_set2: GroupedFieldSet,
+    collect_fields_result1: CollectFieldsResult,
+    collect_fields_result2: CollectFieldsResult,
 ) -> None:
     """Collect all Conflicts between two collections of fields.
 
@@ -603,6 +592,8 @@ def collect_conflicts_between(
     already been called on each provided collection of fields. This is true because
     this validator traverses each individual selection set.
     """
+    grouped_field_set1 = collect_fields_result1.grouped_field_set
+    grouped_field_set2 = collect_fields_result2.grouped_field_set
     if not grouped_field_set1 or not grouped_field_set2:
         return
 
@@ -895,8 +886,8 @@ class OrderedPairSet:
     Provides a third argument for has/add to allow flagging the pair as weakly or
     strongly present within the collection.
 
-    The first element is matched by object identity (its ``id``), since field maps
-    are unhashable mappings that are kept alive for the duration of the validation.
+    The first element is matched by object identity (its ``id``), since collected
+    fields are kept alive for the duration of the validation.
     """
 
     __slots__ = ("_data",)
@@ -906,7 +897,7 @@ class OrderedPairSet:
     def __init__(self) -> None:
         self._data = {}
 
-    def has(self, a: GroupedFieldSet, b: str, weakly_present: bool) -> bool:
+    def has(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> bool:
         map_ = self._data.get(id(a))
         if map_ is None:
             return False
@@ -916,7 +907,7 @@ class OrderedPairSet:
 
         return True if weakly_present else weakly_present == result
 
-    def add(self, a: GroupedFieldSet, b: str, weakly_present: bool) -> None:
+    def add(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> None:
         map_ = self._data.get(id(a))
         if map_ is None:
             self._data[id(a)] = {b: weakly_present}
