@@ -222,15 +222,18 @@ class FragmentSpread(NamedTuple):
 class CollectFieldsResult:
     """The fields and fragment spreads collected from a selection set."""
 
-    __slots__ = "fragment_spreads", "grouped_field_set"
+    __slots__ = "by_scope", "grouped_field_set", "spreads"
+
+    by_scope: RefMap[VariableScope | None, list[FragmentSpread]] | None
 
     def __init__(
         self,
         grouped_field_set: GroupedFieldSet,
-        fragment_spreads: list[FragmentSpread],
+        spreads: list[FragmentSpreadNode],
     ) -> None:
         self.grouped_field_set = grouped_field_set
-        self.fragment_spreads = fragment_spreads
+        self.spreads = spreads
+        self.by_scope = None
 
 
 class RuleContext:
@@ -247,14 +250,16 @@ class RuleContext:
         # A memoization for when fields and a fragment or two fragments are compared
         # "between" each other for conflicts. Comparisons may be made many times, so
         # memoizing this can dramatically improve the performance of this validator.
-        self.compared_fields_and_fragment_pairs = OrderedPairSet()
+        self.compared_fields_and_fragment_pairs: RefMap[
+            VariableScope | None, OrderedPairSet
+        ] = RefMap()
         self.compared_fragment_pairs = PairSet()
 
         # A cache for the "field map" and list of fragment spreads found in any given
         # selection set.
         self.cached_collect_fields_results: dict[
             GraphQLNamedType | None,
-            RefMap[SelectionSetNode, RefMap[VariableScope | None, CollectFieldsResult]],
+            RefMap[SelectionSetNode, CollectFieldsResult],
         ] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
@@ -332,10 +337,8 @@ def find_conflicts_within_selection_set(
     conflicts: list[Conflict] = []
 
     collect_fields_result = collect_fields(
-        validation_context, rule_context, parent_type, selection_set, scope
+        validation_context, rule_context, parent_type, selection_set
     )
-    grouped_field_set = collect_fields_result.grouped_field_set
-    fragment_spreads = collect_fields_result.fragment_spreads
 
     # (A) Find all conflicts "within" the fields of this selection set.
     # Note: this is the *only place* `collect_conflicts_within` is called.
@@ -343,11 +346,14 @@ def find_conflicts_within_selection_set(
         validation_context,
         rule_context,
         conflicts,
-        grouped_field_set,
+        collect_fields_result,
         scope,
     )
 
-    if fragment_spreads:
+    if collect_fields_result.spreads:
+        fragment_spreads = get_fragment_spreads(
+            validation_context, collect_fields_result, scope
+        )
         # (B) Then collect conflicts between these fields and those represented by each
         # spread found.
         for i, fragment_spread in enumerate(fragment_spreads):
@@ -356,7 +362,7 @@ def find_conflicts_within_selection_set(
                 rule_context,
                 conflicts,
                 False,
-                grouped_field_set,
+                collect_fields_result,
                 scope,
                 fragment_spread,
             )
@@ -382,7 +388,7 @@ def collect_conflicts_between_fields_and_fragment(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     are_mutually_exclusive: bool,
-    grouped_field_set: GroupedFieldSet,
+    collect_fields_result: CollectFieldsResult,
     scope: VariableScope | None,
     fragment_spread: FragmentSpread,
 ) -> None:
@@ -391,37 +397,43 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
-    if not grouped_field_set:
+    if not collect_fields_result.grouped_field_set:
         return
 
-    compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
+    # Shared field collections can be compared in different variable scopes.
+    # Keep a separate pair history for each scope of the fields being compared.
+    compared_pairs = rule_context.compared_fields_and_fragment_pairs.get(scope)
+    if compared_pairs is None:
+        compared_pairs = OrderedPairSet()
+        rule_context.compared_fields_and_fragment_pairs[scope] = compared_pairs
     fragment_key = fragment_spread.key
 
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
-    if compared_fields_and_fragment_pairs.has(
-        grouped_field_set, fragment_key, are_mutually_exclusive
-    ):
+    if compared_pairs.has(collect_fields_result, fragment_key, are_mutually_exclusive):
         return
-    compared_fields_and_fragment_pairs.add(
-        grouped_field_set, fragment_key, are_mutually_exclusive
-    )
+    compared_pairs.add(collect_fields_result, fragment_key, are_mutually_exclusive)
 
     fragment = validation_context.get_fragment(fragment_spread.node.name.value)
     if not fragment:
         return
 
-    collect_fields_result = collect_fragment_fields(
+    collect_fields_result2 = collect_fragment_fields(
         validation_context,
         rule_context,
         fragment,
+    )
+    referenced_fragment_spreads = get_fragment_spreads(
+        validation_context,
+        collect_fields_result2,
         fragment_spread.scope,
     )
-    grouped_field_set2 = collect_fields_result.grouped_field_set
-    referenced_fragment_spreads = collect_fields_result.fragment_spreads
 
-    # Do not compare a fragment's grouped_field_set to itself.
-    if grouped_field_set is grouped_field_set2:
+    # Do not compare a selection set to itself in the same variable scope.
+    if (
+        collect_fields_result is collect_fields_result2
+        and scope is fragment_spread.scope
+    ):
         return
 
     # (D) First collect any conflicts between the provided collection of fields and the
@@ -431,9 +443,9 @@ def collect_conflicts_between_fields_and_fragment(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        grouped_field_set,
+        collect_fields_result,
         scope,
-        grouped_field_set2,
+        collect_fields_result2,
         fragment_spread.scope,
     )
 
@@ -445,7 +457,7 @@ def collect_conflicts_between_fields_and_fragment(
             rule_context,
             conflicts,
             are_mutually_exclusive,
-            grouped_field_set,
+            collect_fields_result,
             scope,
             referenced_fragment_spread,
         )
@@ -504,19 +516,22 @@ def collect_conflicts_between_fragments(
         validation_context,
         rule_context,
         fragment1,
+    )
+    referenced_fragment_spreads1 = get_fragment_spreads(
+        validation_context,
+        collect_fields_result1,
         fragment_spread1.scope,
     )
-    grouped_field_set1 = collect_fields_result1.grouped_field_set
-    referenced_fragment_spreads1 = collect_fields_result1.fragment_spreads
-
     collect_fields_result2 = collect_fragment_fields(
         validation_context,
         rule_context,
         fragment2,
+    )
+    referenced_fragment_spreads2 = get_fragment_spreads(
+        validation_context,
+        collect_fields_result2,
         fragment_spread2.scope,
     )
-    grouped_field_set2 = collect_fields_result2.grouped_field_set
-    referenced_fragment_spreads2 = collect_fields_result2.fragment_spreads
 
     # (F) First, collect all conflicts between these two collections of fields
     # (not including any nested fragments)
@@ -525,9 +540,9 @@ def collect_conflicts_between_fragments(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        grouped_field_set1,
+        collect_fields_result1,
         fragment_spread1.scope,
-        grouped_field_set2,
+        collect_fields_result2,
         fragment_spread2.scope,
     )
 
@@ -580,20 +595,23 @@ def find_conflicts_between_sub_selection_sets(
         rule_context,
         parent_type1,
         selection_set1,
+    )
+    fragment_spreads1 = get_fragment_spreads(
+        validation_context,
+        collect_fields_result1,
         scope1,
     )
-    grouped_field_set1 = collect_fields_result1.grouped_field_set
-    fragment_spreads1 = collect_fields_result1.fragment_spreads
-
     collect_fields_result2 = collect_fields(
         validation_context,
         rule_context,
         parent_type2,
         selection_set2,
+    )
+    fragment_spreads2 = get_fragment_spreads(
+        validation_context,
+        collect_fields_result2,
         scope2,
     )
-    grouped_field_set2 = collect_fields_result2.grouped_field_set
-    fragment_spreads2 = collect_fields_result2.fragment_spreads
 
     # (H) First, collect all conflicts between these two collections of field.
     collect_conflicts_between(
@@ -601,9 +619,9 @@ def find_conflicts_between_sub_selection_sets(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        grouped_field_set1,
+        collect_fields_result1,
         scope1,
-        grouped_field_set2,
+        collect_fields_result2,
         scope2,
     )
 
@@ -616,7 +634,7 @@ def find_conflicts_between_sub_selection_sets(
                 rule_context,
                 conflicts,
                 are_mutually_exclusive,
-                grouped_field_set1,
+                collect_fields_result1,
                 scope1,
                 fragment_spread2,
             )
@@ -630,7 +648,7 @@ def find_conflicts_between_sub_selection_sets(
                 rule_context,
                 conflicts,
                 are_mutually_exclusive,
-                grouped_field_set2,
+                collect_fields_result2,
                 scope2,
                 fragment_spread1,
             )
@@ -656,7 +674,7 @@ def collect_conflicts_within(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     conflicts: list[Conflict],
-    grouped_field_set: GroupedFieldSet,
+    collect_fields_result: CollectFieldsResult,
     scope: VariableScope | None,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
@@ -664,6 +682,7 @@ def collect_conflicts_within(
     # the value at that key is a list of all fields which provide that response name.
     # For every response name, if there are multiple fields, they must be compared to
     # find a potential conflict.
+    grouped_field_set = collect_fields_result.grouped_field_set
     for response_name, field_details_list in grouped_field_set.items():
         # This compares every field in the list to every other field in this list
         # (except to itself). If the list only has one item, nothing needs to be
@@ -691,9 +710,9 @@ def collect_conflicts_between(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     parent_fields_are_mutually_exclusive: bool,
-    grouped_field_set1: GroupedFieldSet,
+    collect_fields_result1: CollectFieldsResult,
     scope1: VariableScope | None,
-    grouped_field_set2: GroupedFieldSet,
+    collect_fields_result2: CollectFieldsResult,
     scope2: VariableScope | None,
 ) -> None:
     """Collect all Conflicts between two collections of fields.
@@ -703,6 +722,8 @@ def collect_conflicts_between(
     already been called on each provided collection of fields. This is true because
     this validator traverses each individual selection set.
     """
+    grouped_field_set1 = collect_fields_result1.grouped_field_set
+    grouped_field_set2 = collect_fields_result2.grouped_field_set
     if not grouped_field_set1 or not grouped_field_set2:
         return
     # A field map is a keyed collection, where each key represents a response name and
@@ -953,13 +974,13 @@ def collect_fields(
     rule_context: RuleContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    scope: VariableScope | None,
 ) -> CollectFieldsResult:
     """Get fields and referenced fragment spreads
 
     Given a selection set, return the collection of fields (a mapping of response name
     to field nodes and definitions) as well as a list of fragment spreads referenced
-    via fragment spreads.
+    via fragment spreads. Share source fields across scopes; only resolving spreads
+    depends on the scope.
     """
     cached_collect_fields_results = rule_context.cached_collect_fields_results
     # A programmatically built document can share a selection-set object between
@@ -969,31 +990,26 @@ def collect_fields(
     by_selection_set = cached_collect_fields_results.get(parent_type)
     if by_selection_set is None:
         by_selection_set = cached_collect_fields_results[parent_type] = RefMap()
-    cache = by_selection_set.get(selection_set)
-    if cache is None:
-        cache = by_selection_set[selection_set] = RefMap()
-    cached = cache.get(scope)
-    if cached is None:
+    collect_fields_result = by_selection_set.get(selection_set)
+    if collect_fields_result is None:
         grouped_field_set: GroupedFieldSet = {}
-        fragment_spreads: dict[str, FragmentSpread] = {}
+        spreads: list[FragmentSpreadNode] = []
         collect_fields_impl(
             validation_context,
             parent_type,
             selection_set,
             grouped_field_set,
-            fragment_spreads,
-            scope,
+            spreads,
         )
-        cached = CollectFieldsResult(grouped_field_set, list(fragment_spreads.values()))
-        cache[scope] = cached
-    return cached
+        collect_fields_result = CollectFieldsResult(grouped_field_set, spreads)
+        by_selection_set[selection_set] = collect_fields_result
+    return collect_fields_result
 
 
 def collect_fragment_fields(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     fragment: FragmentDefinitionNode,
-    scope: VariableScope | None,
 ) -> CollectFieldsResult:
     """Get referenced fields and nested fragment spreads
 
@@ -1006,7 +1022,6 @@ def collect_fragment_fields(
         rule_context,
         fragment_type,
         fragment.selection_set,
-        scope,
     )
 
 
@@ -1015,8 +1030,7 @@ def collect_fields_impl(
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
     grouped_field_set: GroupedFieldSet,
-    fragment_spreads: dict[str, FragmentSpread],
-    scope: VariableScope | None,
+    fragment_spreads: list[FragmentSpreadNode],
 ) -> None:
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
@@ -1032,8 +1046,7 @@ def collect_fields_impl(
                 field_details_list = grouped_field_set[response_name] = []
             field_details_list.append(FieldDetails(parent_type, selection, field_def))
         elif isinstance(selection, FragmentSpreadNode):
-            fragment_spread = get_fragment_spread(validation_context, selection, scope)
-            fragment_spreads[fragment_spread.key] = fragment_spread
+            fragment_spreads.append(selection)
         elif isinstance(selection, InlineFragmentNode):  # pragma: no branch
             type_condition = selection.type_condition
             inline_fragment_type = (
@@ -1047,8 +1060,29 @@ def collect_fields_impl(
                 selection.selection_set,
                 grouped_field_set,
                 fragment_spreads,
-                scope,
             )
+
+
+def get_fragment_spreads(
+    validation_context: ValidationContext,
+    collect_fields_result: CollectFieldsResult,
+    scope: VariableScope | None,
+) -> list[FragmentSpread]:
+    """Resolve the spreads of a source collection in the enclosing variable scope."""
+    by_scope = collect_fields_result.by_scope
+    if by_scope is None:
+        by_scope = collect_fields_result.by_scope = RefMap()
+    cached = by_scope.get(scope)
+    if cached is not None:
+        return cached
+
+    fragment_spreads: dict[str, FragmentSpread] = {}
+    for spread_node in collect_fields_result.spreads:
+        spread = get_fragment_spread(validation_context, spread_node, scope)
+        fragment_spreads[spread.key] = spread
+    result = list(fragment_spreads.values())
+    by_scope[scope] = result
+    return result
 
 
 def get_fragment_spread(
@@ -1129,20 +1163,17 @@ class OrderedPairSet:
 
     Provides a third argument for has/add to allow flagging the pair as weakly or
     strongly present within the collection.
-
-    The first element is matched by object identity (its ``id``), since field maps
-    are unhashable mappings that are kept alive for the duration of the validation.
     """
 
     __slots__ = ("_data",)
 
-    _data: dict[int, dict[str, bool]]
+    _data: dict[CollectFieldsResult, dict[str, bool]]
 
     def __init__(self) -> None:
         self._data = {}
 
-    def has(self, a: GroupedFieldSet, b: str, weakly_present: bool) -> bool:
-        map_ = self._data.get(id(a))
+    def has(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> bool:
+        map_ = self._data.get(a)
         if map_ is None:
             return False
         result = map_.get(b)
@@ -1151,10 +1182,10 @@ class OrderedPairSet:
 
         return True if weakly_present else weakly_present == result
 
-    def add(self, a: GroupedFieldSet, b: str, weakly_present: bool) -> None:
-        map_ = self._data.get(id(a))
+    def add(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> None:
+        map_ = self._data.get(a)
         if map_ is None:
-            self._data[id(a)] = {b: weakly_present}
+            self._data[a] = {b: weakly_present}
         else:
             map_[b] = weakly_present
 

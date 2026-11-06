@@ -2,7 +2,12 @@ from contextlib import contextmanager
 from dataclasses import replace
 from functools import partial
 
-from graphql.language import FragmentDefinitionNode, parse
+from graphql.language import (
+    FieldNode,
+    FragmentDefinitionNode,
+    OperationDefinitionNode,
+    parse,
+)
 from graphql.utilities import build_schema
 from graphql.validation import (
     FieldsOnCorrectTypeRule,
@@ -385,6 +390,48 @@ def describe_validate_overlapping_fields_can_be_merged():
                 }
                 """
             )
+
+        def compares_a_shared_selection_set_in_distinct_variable_scopes():
+            schema = build_schema("type Query { child: Query, value(arg: Int): Int }")
+            document = parse(
+                """
+                query ($x: Int) {
+                  child { value(arg: $x) }
+                  child { ...Local(x: 1) }
+                }
+                fragment Local($x: Int) on Query { value(arg: $x) }
+                """,
+                experimental_fragment_arguments=True,
+            )
+            operation = next(
+                definition
+                for definition in document.definitions
+                if isinstance(definition, OperationDefinitionNode)
+            )
+            field = next(
+                selection
+                for selection in operation.selection_set.selections
+                if isinstance(selection, FieldNode)
+            )
+            selection_set = field.selection_set
+            assert selection_set
+            shared_document = replace(
+                document,
+                definitions=tuple(
+                    replace(definition, selection_set=selection_set)
+                    if isinstance(definition, FragmentDefinitionNode)
+                    else definition
+                    for definition in document.definitions
+                ),
+            )
+            for ast in (document, shared_document):
+                assert [error.message for error in validate(schema, ast)] == [
+                    (
+                        "Fields 'child' conflict because subfields 'value' conflict"
+                        " because they have differing arguments. Use different aliases"
+                        " on the fields to fetch both if this was intentional."
+                    )
+                ]
 
         def encounters_nested_field_conflict_in_fragments_that_could_merge():
             assert_errors(
