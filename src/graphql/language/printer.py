@@ -2,55 +2,18 @@
 
 from __future__ import annotations
 
-from collections.abc import Collection
 from typing import TYPE_CHECKING, Any
 
 from .block_string import print_block_string
 from .print_string import print_string
-from .visitor import Visitor, visit
+from .reducer import reduce
 
 if TYPE_CHECKING:
-    from ..language.ast import Node, OperationType
+    from collections.abc import Callable, Collection
 
-from typing import TypeAlias
+    from ..language.ast import Node
 
 __all__ = ["print_ast"]
-
-
-MAX_LINE_LENGTH = 80
-
-Strings: TypeAlias = Collection[str]
-
-
-class PrintedNode:
-    """A union type for all nodes that have been processed by the printer."""
-
-    alias: str
-    argument_name: str
-    arguments: Strings
-    block: bool
-    default_value: str
-    definitions: Strings
-    description: str
-    directives: str
-    field_name: str
-    fields: Strings
-    interfaces: Strings
-    locations: Strings
-    member_name: str
-    name: str
-    operation: OperationType
-    operation_types: Strings
-    repeatable: bool
-    selection_set: str
-    selections: Strings
-    type: str
-    type_condition: str
-    types: Strings
-    value: str
-    values: Strings
-    variable: str
-    variable_definitions: Strings
 
 
 def print_ast(ast: Node) -> str:
@@ -66,441 +29,483 @@ def print_ast(ast: Node) -> str:
     >>> print_ast(ast)
     '{\n  hero {\n    name\n  }\n}'
     """
-    return visit(ast, PrintAstVisitor())
+    return render(reduce(ast, print_doc_ast_reducer))
 
 
-class PrintAstVisitor(Visitor):
-    @staticmethod
-    def leave_name(node: PrintedNode, *_args: Any) -> str:
-        return node.value
+# The wrapping limit applies to total string length, including newlines.
+MAX_LINE_LENGTH = 80
 
-    @staticmethod
-    def leave_variable(node: PrintedNode, *_args: Any) -> str:
-        return f"${node.name}"
 
+class PrintBuffer:
+    """A linked list of printed parts that is rendered at the very end."""
+
+    __slots__ = (
+        "dedent_after",
+        "indent_before",
+        "length",
+        "lines",
+        "newlines",
+        "next",
+        "tail",
+    )
+
+    length: int
+    newlines: int
+    lines: str | list[str]
+    next: PrintBuffer | None
+    tail: PrintBuffer
+    indent_before: bool
+    dedent_after: bool
+
+    def __init__(self, value: str = "") -> None:
+        self.length = len(value)
+        if "\n" in value:
+            lines = value.split("\n")
+            self.lines = lines
+            self.newlines = len(lines) - 1
+        else:
+            self.lines = value
+            self.newlines = 0
+        self.next = None
+        self.tail = self
+        self.indent_before = False
+        self.dedent_after = False
+
+    def append(self, result: str | PrintBuffer) -> PrintBuffer:
+        if isinstance(result, str):
+            if not result:
+                return self
+            result = PrintBuffer(result)
+        self.tail.next = result
+        self.tail = result.tail
+        self.length += result.length
+        self.newlines += result.newlines
+        return self
+
+    def indent(self) -> PrintBuffer:
+        if not self.length:
+            return self
+        self.indent_before = True
+        self.tail.dedent_after = True
+        self.length += 2 * (self.newlines + 1)
+        return self
+
+
+EMPTY = PrintBuffer()
+
+
+def render(buffer: PrintBuffer | None) -> str:
+    output: list[str] = []
+    append = output.append
+    indentation = ""
+    part = buffer
+    while part is not None:
+        lines = part.lines
+        if part.indent_before:
+            indentation += "  "
+            append("  ")
+        if isinstance(lines, str):
+            append(lines)
+        else:
+            append(f"\n{indentation}".join(lines))
+        if part.dedent_after:
+            indentation = indentation[:-2]
+        part = part.next
+    return "".join(output)
+
+
+def print_operation_definition(node: Any) -> PrintBuffer:
+    var_defs = (
+        wrap("(\n", join(node.variable_definitions, "\n"), "\n)")
+        if has_multiline_items(node.variable_definitions)
+        else wrap("(", join(node.variable_definitions, ", "), ")")
+    )
+    operation = node.operation.value
+    prefix = join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                (operation, join((node.name, var_defs)), join(node.directives, " ")),
+                " ",
+            ),
+        )
+    )
+    # Anonymous queries with no directives or variable definitions can use the
+    # query short form.
+    return join(
+        (
+            ""
+            if operation == "query" and prefix.length == len(operation)
+            else join((prefix, " ")),
+            node.selection_set,
+        )
+    )
+
+
+def print_field(node: Any) -> PrintBuffer:
+    prefix = join((wrap("", node.alias, ": "), node.name))
+    return join(
+        (
+            wrapped_line_and_args(prefix, node.arguments),
+            wrap(" ", join(node.directives, " ")),
+            wrap(" ", node.selection_set),
+        )
+    )
+
+
+def print_fragment_spread(node: Any) -> PrintBuffer:
+    prefix = join(("...", node.name))
+    return join(
+        (
+            wrapped_line_and_args(prefix, node.arguments),
+            wrap(" ", join(node.directives, " ")),
+        )
+    )
+
+
+def print_list_value(node: Any) -> PrintBuffer:
+    values = node.values
+    if 2 + joined_length(values, ", ") > MAX_LINE_LENGTH:
+        return wrap("[\n", join(values, "\n").indent(), "\n]")
+    return join(("[", join(values, ", "), "]"))
+
+
+def print_object_value(node: Any) -> PrintBuffer:
+    fields = node.fields
+    if 4 + joined_length(fields, ", ") > MAX_LINE_LENGTH:
+        return block(fields)
+    return join(("{ ", join(fields, ", "), " }"))
+
+
+def print_string_value(node: Any) -> PrintBuffer:
+    return PrintBuffer(
+        print_block_string(node.value) if node.block else print_string(node.value)
+    )
+
+
+def print_arguments_definition(args: Collection[PrintBuffer] | None) -> PrintBuffer:
+    return (
+        wrap("(\n", join(args, "\n").indent(), "\n)")
+        if has_multiline_items(args)
+        else wrap("(", join(args, ", "), ")")
+    )
+
+
+print_doc_ast_reducer: dict[str, Callable[[Any], PrintBuffer]] = {
+    "name": lambda node: PrintBuffer(node.value),
+    "variable": lambda node: join(("$", node.name)),
     # Document
-
-    @staticmethod
-    def leave_document(node: PrintedNode, *_args: Any) -> str:
-        return join(node.definitions, "\n\n")
-
-    @staticmethod
-    def leave_operation_definition(node: PrintedNode, *_args: Any) -> str:
-        var_defs = (
-            wrap("(\n", join(node.variable_definitions, "\n"), "\n)")
-            if has_multiline_items(node.variable_definitions)
-            else wrap("(", join(node.variable_definitions, ", "), ")")
+    "document": lambda node: join(node.definitions, "\n\n"),
+    "operation_definition": print_operation_definition,
+    "variable_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            node.variable,
+            ": ",
+            node.type,
+            wrap(" = ", node.default_value),
+            wrap(" ", join(node.directives, " ")),
         )
-        prefix = wrap("", node.description, "\n") + join(
-            (
-                node.operation.value,
-                join((node.name, var_defs)),
-                join(node.directives, " "),
-            ),
-            " ",
-        )
-        # Anonymous queries with no directives or variable definitions can use the
-        # query short form.
-        return ("" if prefix == "query" else prefix + " ") + node.selection_set
-
-    @staticmethod
-    def leave_variable_definition(node: PrintedNode, *_args: Any) -> str:
-        return (
-            wrap("", node.description, "\n") + f"{node.variable}: {node.type}"
-            f"{wrap(' = ', node.default_value)}"
-            f"{wrap(' ', join(node.directives, ' '))}"
-        )
-
-    @staticmethod
-    def leave_selection_set(node: PrintedNode, *_args: Any) -> str:
-        return block(node.selections) if node.selections else "{}"
-
-    @staticmethod
-    def leave_field(node: PrintedNode, *_args: Any) -> str:
-        prefix = join((wrap("", node.alias, ": "), node.name))
-
-        return join(
-            (
-                wrapped_line_and_args(prefix, node.arguments),
-                wrap(" ", join(node.directives, " ")),
-                wrap(" ", node.selection_set),
-            ),
-        )
-
-    @staticmethod
-    def leave_argument(node: PrintedNode, *_args: Any) -> str:
-        return f"{node.name}: {node.value}"
-
-    @staticmethod
-    def leave_fragment_argument(node: PrintedNode, *_args: Any) -> str:
-        return f"{node.name}: {node.value}"
-
+    ),
+    "selection_set": lambda node: (
+        block(node.selections) if node.selections else PrintBuffer("{}")
+    ),
+    "field": print_field,
+    "argument": lambda node: join((node.name, ": ", node.value)),
+    "fragment_argument": lambda node: join((node.name, ": ", node.value)),
     # Fragments
-
-    @staticmethod
-    def leave_fragment_spread(node: PrintedNode, *_args: Any) -> str:
-        prefix = f"...{node.name}"
-        return wrapped_line_and_args(prefix, node.arguments) + wrap(
-            " ", join(node.directives, " ")
-        )
-
-    @staticmethod
-    def leave_inline_fragment(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            (
-                "...",
-                wrap("on ", node.type_condition),
-                join(node.directives, " "),
-                node.selection_set,
-            ),
+    "fragment_spread": print_fragment_spread,
+    "inline_fragment": lambda node: join(
+        (
+            "...",
+            wrap("on ", node.type_condition),
+            join(node.directives, " "),
+            node.selection_set,
+        ),
+        " ",
+    ),
+    "fragment_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            # Note: fragment variable definitions are experimental and may be changed
+            # or removed in the future.
+            "fragment ",
+            node.name,
+            wrap("(", join(node.variable_definitions, ", "), ")"),
+            " on ",
+            node.type_condition,
             " ",
+            wrap("", join(node.directives, " "), " "),
+            node.selection_set,
         )
-
-    @staticmethod
-    def leave_fragment_definition(node: PrintedNode, *_args: Any) -> str:
-        return (
-            wrap("", node.description, "\n") + f"fragment {node.name}"
-            f"{wrap('(', join(node.variable_definitions, ', '), ')')}"
-            f" on {node.type_condition}"
-            f" {wrap('', join(node.directives, ' '), ' ')}"
-            f"{node.selection_set}"
-        )
-
+    ),
     # Value
-
-    @staticmethod
-    def leave_int_value(node: PrintedNode, *_args: Any) -> str:
-        return node.value
-
-    @staticmethod
-    def leave_float_value(node: PrintedNode, *_args: Any) -> str:
-        return node.value
-
-    @staticmethod
-    def leave_string_value(node: PrintedNode, *_args: Any) -> str:
-        if node.block:
-            return print_block_string(node.value)
-        return print_string(node.value)
-
-    @staticmethod
-    def leave_boolean_value(node: PrintedNode, *_args: Any) -> str:
-        return "true" if node.value else "false"
-
-    @staticmethod
-    def leave_null_value(_node: PrintedNode, *_args: Any) -> str:
-        return "null"
-
-    @staticmethod
-    def leave_enum_value(node: PrintedNode, *_args: Any) -> str:
-        return node.value
-
-    @staticmethod
-    def leave_list_value(node: PrintedNode, *_args: Any) -> str:
-        values = node.values
-        values_line = f"[{join(values, ', ')}]"
-        return (
-            "\n".join(("[", indent(join(values, "\n")), "]"))
-            if len(values_line) > 80
-            else values_line
-        )
-
-    @staticmethod
-    def leave_object_value(node: PrintedNode, *_args: Any) -> str:
-        fields = node.fields
-        fields_line = f"{{ {join(fields, ', ')} }}"
-        return block(fields) if len(fields_line) > MAX_LINE_LENGTH else fields_line
-
-    @staticmethod
-    def leave_object_field(node: PrintedNode, *_args: Any) -> str:
-        return f"{node.name}: {node.value}"
-
+    "int_value": lambda node: PrintBuffer(node.value),
+    "float_value": lambda node: PrintBuffer(node.value),
+    "string_value": print_string_value,
+    "boolean_value": lambda node: PrintBuffer("true" if node.value else "false"),
+    "null_value": lambda _node: PrintBuffer("null"),
+    "enum_value": lambda node: PrintBuffer(node.value),
+    "list_value": print_list_value,
+    "object_value": print_object_value,
+    "object_field": lambda node: join((node.name, ": ", node.value)),
     # Directive
-
-    @staticmethod
-    def leave_directive(node: PrintedNode, *_args: Any) -> str:
-        return f"@{node.name}{wrap('(', join(node.arguments, ', '), ')')}"
-
+    "directive": lambda node: join(
+        ("@", node.name, wrap("(", join(node.arguments, ", "), ")"))
+    ),
     # Type
-
-    @staticmethod
-    def leave_named_type(node: PrintedNode, *_args: Any) -> str:
-        return node.name
-
-    @staticmethod
-    def leave_list_type(node: PrintedNode, *_args: Any) -> str:
-        return f"[{node.type}]"
-
-    @staticmethod
-    def leave_non_null_type(node: PrintedNode, *_args: Any) -> str:
-        return f"{node.type}!"
-
+    "named_type": lambda node: node.name,
+    "list_type": lambda node: join(("[", node.type, "]")),
+    "non_null_type": lambda node: join((node.type, "!")),
     # Type System Definitions
-
-    @staticmethod
-    def leave_schema_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (
-                "schema",
-                join(node.directives, " "),
-                block(node.operation_types),
+    "schema_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                ("schema", join(node.directives, " "), block(node.operation_types)), " "
             ),
-            " ",
         )
-
-    @staticmethod
-    def leave_operation_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return f"{node.operation.value}: {node.type}"
-
-    @staticmethod
-    def leave_scalar_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (
-                "scalar",
-                node.name,
-                join(node.directives, " "),
+    ),
+    "operation_type_definition": lambda node: join(
+        (node.operation.value, ": ", node.type)
+    ),
+    "scalar_type_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(("scalar", node.name, join(node.directives, " ")), " "),
+        )
+    ),
+    "object_type_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                (
+                    "type",
+                    node.name,
+                    wrap("implements ", join(node.interfaces, " & ")),
+                    join(node.directives, " "),
+                    block(node.fields),
+                ),
+                " ",
             ),
-            " ",
         )
-
-    @staticmethod
-    def leave_object_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (
-                "type",
-                node.name,
-                wrap("implements ", join(node.interfaces, " & ")),
-                join(node.directives, " "),
-                block(node.fields),
+    ),
+    "field_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            node.name,
+            print_arguments_definition(node.arguments),
+            ": ",
+            node.type,
+            wrap(" ", join(node.directives, " ")),
+        )
+    ),
+    "input_value_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            node.name,
+            ": ",
+            node.type,
+            wrap(" = ", node.default_value),
+            wrap(" ", join(node.directives, " ")),
+        )
+    ),
+    "interface_type_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                (
+                    "interface",
+                    node.name,
+                    wrap("implements ", join(node.interfaces, " & ")),
+                    join(node.directives, " "),
+                    block(node.fields),
+                ),
+                " ",
             ),
-            " ",
         )
-
-    @staticmethod
-    def leave_field_definition(node: PrintedNode, *_args: Any) -> str:
-        args = node.arguments
-        args = (
-            wrap("(\n", indent(join(args, "\n")), "\n)")
-            if has_multiline_items(args)
-            else wrap("(", join(args, ", "), ")")
-        )
-        directives = wrap(" ", join(node.directives, " "))
-        return (
-            wrap("", node.description, "\n")
-            + f"{node.name}{args}: {node.type}{directives}"
-        )
-
-    @staticmethod
-    def leave_input_value_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (
-                f"{node.name}: {node.type}",
-                wrap("= ", node.default_value),
-                join(node.directives, " "),
+    ),
+    "union_type_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                (
+                    "union",
+                    node.name,
+                    join(node.directives, " "),
+                    wrap("= ", join(node.types, " | ")),
+                ),
+                " ",
             ),
-            " ",
         )
-
-    @staticmethod
-    def leave_interface_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (
-                "interface",
-                node.name,
-                wrap("implements ", join(node.interfaces, " & ")),
-                join(node.directives, " "),
-                block(node.fields),
+    ),
+    "enum_type_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                ("enum", node.name, join(node.directives, " "), block(node.values)), " "
             ),
-            " ",
         )
-
-    @staticmethod
-    def leave_union_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (
-                "union",
-                node.name,
-                join(node.directives, " "),
-                wrap("= ", join(node.types, " | ")),
+    ),
+    "enum_value_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join((node.name, join(node.directives, " ")), " "),
+        )
+    ),
+    "input_object_type_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            join(
+                ("input", node.name, join(node.directives, " "), block(node.fields)),
+                " ",
             ),
-            " ",
         )
-
-    @staticmethod
-    def leave_enum_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            ("enum", node.name, join(node.directives, " "), block(node.values)), " "
+    ),
+    "directive_definition": lambda node: join(
+        (
+            wrap("", node.description, "\n"),
+            "directive @",
+            node.name,
+            print_arguments_definition(node.arguments),
+            wrap(" ", join(node.directives, " ")),
+            " repeatable" if node.repeatable else "",
+            " on ",
+            join(node.locations, " | "),
         )
-
-    @staticmethod
-    def leave_enum_value_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            (node.name, join(node.directives, " ")), " "
-        )
-
-    @staticmethod
-    def leave_input_object_type_definition(node: PrintedNode, *_args: Any) -> str:
-        return wrap("", node.description, "\n") + join(
-            ("input", node.name, join(node.directives, " "), block(node.fields)), " "
-        )
-
-    @staticmethod
-    def leave_directive_definition(node: PrintedNode, *_args: Any) -> str:
-        args = node.arguments
-        args = (
-            wrap("(\n", indent(join(args, "\n")), "\n)")
-            if has_multiline_items(args)
-            else wrap("(", join(args, ", "), ")")
-        )
-        directives = wrap(" ", join(node.directives, " "))
-        repeatable = " repeatable" if node.repeatable else ""
-        locations = join(node.locations, " | ")
-        return (
-            wrap("", node.description, "\n")
-            + f"directive @{node.name}{args}{directives}{repeatable} on {locations}"
-        )
-
-    @staticmethod
-    def leave_schema_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            ("extend schema", join(node.directives, " "), block(node.operation_types)),
-            " ",
-        )
-
-    @staticmethod
-    def leave_directive_extension(node: PrintedNode, *_args: Any) -> str:
-        return join((f"extend directive @{node.name}", join(node.directives, " ")), " ")
-
-    @staticmethod
-    def leave_scalar_type_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(("extend scalar", node.name, join(node.directives, " ")), " ")
-
-    @staticmethod
-    def leave_object_type_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            (
-                "extend type",
-                node.name,
-                wrap("implements ", join(node.interfaces, " & ")),
-                join(node.directives, " "),
-                block(node.fields),
-            ),
-            " ",
-        )
-
-    @staticmethod
-    def leave_interface_type_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            (
-                "extend interface",
-                node.name,
-                wrap("implements ", join(node.interfaces, " & ")),
-                join(node.directives, " "),
-                block(node.fields),
-            ),
-            " ",
-        )
-
-    @staticmethod
-    def leave_union_type_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            (
-                "extend union",
-                node.name,
-                join(node.directives, " "),
-                wrap("= ", join(node.types, " | ")),
-            ),
-            " ",
-        )
-
-    @staticmethod
-    def leave_enum_type_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            ("extend enum", node.name, join(node.directives, " "), block(node.values)),
-            " ",
-        )
-
-    @staticmethod
-    def leave_input_object_type_extension(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            ("extend input", node.name, join(node.directives, " "), block(node.fields)),
-            " ",
-        )
-
+    ),
+    "schema_extension": lambda node: join(
+        ("extend schema", join(node.directives, " "), block(node.operation_types)), " "
+    ),
+    "scalar_type_extension": lambda node: join(
+        ("extend scalar", node.name, join(node.directives, " ")), " "
+    ),
+    "object_type_extension": lambda node: join(
+        (
+            "extend type",
+            node.name,
+            wrap("implements ", join(node.interfaces, " & ")),
+            join(node.directives, " "),
+            block(node.fields),
+        ),
+        " ",
+    ),
+    "interface_type_extension": lambda node: join(
+        (
+            "extend interface",
+            node.name,
+            wrap("implements ", join(node.interfaces, " & ")),
+            join(node.directives, " "),
+            block(node.fields),
+        ),
+        " ",
+    ),
+    "union_type_extension": lambda node: join(
+        (
+            "extend union",
+            node.name,
+            join(node.directives, " "),
+            wrap("= ", join(node.types, " | ")),
+        ),
+        " ",
+    ),
+    "enum_type_extension": lambda node: join(
+        ("extend enum", node.name, join(node.directives, " "), block(node.values)), " "
+    ),
+    "input_object_type_extension": lambda node: join(
+        ("extend input", node.name, join(node.directives, " "), block(node.fields)), " "
+    ),
+    "directive_extension": lambda node: join(
+        (join(("extend directive @", node.name)), join(node.directives, " ")), " "
+    ),
     # Schema Coordinates
-
-    @staticmethod
-    def leave_type_coordinate(node: PrintedNode, *_args: Any) -> str:
-        return node.name
-
-    @staticmethod
-    def leave_member_coordinate(node: PrintedNode, *_args: Any) -> str:
-        return join((node.name, wrap(".", node.member_name)))
-
-    @staticmethod
-    def leave_argument_coordinate(node: PrintedNode, *_args: Any) -> str:
-        return join(
-            (node.name, wrap(".", node.field_name), wrap("(", node.argument_name, ":)"))
-        )
-
-    @staticmethod
-    def leave_directive_coordinate(node: PrintedNode, *_args: Any) -> str:
-        return f"@{node.name}"
-
-    @staticmethod
-    def leave_directive_argument_coordinate(node: PrintedNode, *_args: Any) -> str:
-        return f"@{node.name}{wrap('(', node.argument_name, ':)')}"
+    "type_coordinate": lambda node: node.name,
+    "member_coordinate": lambda node: join((node.name, wrap(".", node.member_name))),
+    "argument_coordinate": lambda node: join(
+        (node.name, wrap(".", node.field_name), wrap("(", node.argument_name, ":)"))
+    ),
+    "directive_coordinate": lambda node: join(("@", node.name)),
+    "directive_argument_coordinate": lambda node: join(
+        ("@", node.name, wrap("(", node.argument_name, ":)"))
+    ),
+}
 
 
-def join(strings: Strings | None, separator: str = "") -> str:
-    """Join strings in a given collection.
+def join(
+    items: Collection[str | PrintBuffer | None] | None, separator: str = ""
+) -> PrintBuffer:
+    """Join the items of a given collection.
 
-    Return an empty string if it is None or empty, otherwise join all items together
+    Return an empty buffer if it is None or empty, otherwise join all items together
     separated by separator if provided.
     """
-    return separator.join(s for s in strings if s) if strings else ""
+    if not items:
+        return EMPTY
+    result = EMPTY
+    for item in items:
+        if not item:
+            continue
+        buffer = PrintBuffer(item) if isinstance(item, str) else item
+        if not buffer.length:
+            continue
+        if not result.length:
+            result = buffer
+        else:
+            if separator:
+                result.append(separator)
+            result.append(buffer)
+    return result
 
 
-def block(strings: Strings | None) -> str:
-    """Return strings inside a block.
+def joined_length(items: Collection[PrintBuffer], separator: str) -> int:
+    """Get the length that the given items would have when joined."""
+    length = 0
+    for item in items:
+        if item.length:
+            length += (len(separator) if length else 0) + item.length
+    return length
 
-    Given a collection of strings, return a string with each item on its own line,
+
+def block(items: Collection[PrintBuffer | None] | None) -> PrintBuffer:
+    """Return items inside a block.
+
+    Given a collection of items, return a buffer with each item on its own line,
     wrapped in an indented "{ }" block.
     """
-    return wrap("{\n", indent(join(strings, "\n")), "\n}")
+    return wrap("{\n", join(items, "\n").indent(), "\n}")
 
 
-def wrap(start: str, string: str | None, end: str = "") -> str:
-    """Wrap string inside other strings at start and end.
+def wrap(start: str, buffer: PrintBuffer | None, end: str = "") -> PrintBuffer:
+    """Wrap buffer inside strings at start and end.
 
-    If the string is not None or empty, then wrap with start and end, otherwise return
-    an empty string.
+    If the buffer is not None or empty, then wrap with start and end, otherwise return
+    an empty buffer.
     """
-    return f"{start}{string}{end}" if string else ""
+    if buffer is None or not buffer.length:
+        return EMPTY
+    return (
+        buffer.append(end)
+        if not start
+        else PrintBuffer(start).append(buffer).append(end)
+    )
 
 
-def indent(string: str) -> str:
-    """Indent string with two spaces.
-
-    If the string is not None or empty, add two spaces at the beginning of every line
-    inside the string.
-    """
-    return wrap("  ", string.replace("\n", "\n  "))
-
-
-def is_multiline(string: str) -> bool:
-    """Check whether a string consists of multiple lines."""
-    return "\n" in string
-
-
-def has_multiline_items(strings: Strings | None) -> bool:
+def has_multiline_items(items: Collection[PrintBuffer] | None) -> bool:
     """Check whether one of the items in the list has multiple lines."""
-    return any(is_multiline(item) for item in strings) if strings else False
+    return any(item.newlines for item in items) if items else False
 
 
-def wrapped_line_and_args(prefix: str, args: Strings | None) -> str:
+def wrapped_line_and_args(
+    prefix: PrintBuffer, args: Collection[PrintBuffer] | None
+) -> PrintBuffer:
     """Print the given prefix with its arguments, wrapping long argument lists."""
-    args_line = prefix + wrap("(", join(args, ", "), ")")
-
-    if len(args_line) > MAX_LINE_LENGTH:
-        args_line = prefix + wrap("(\n", indent(join(args, "\n")), "\n)")
-    return args_line
+    if not args:
+        return prefix
+    return join(
+        (
+            prefix,
+            wrap("(\n", join(args, "\n").indent(), "\n)")
+            if prefix.length + joined_length(args, ", ") + 2 > MAX_LINE_LENGTH
+            else wrap("(", join(args, ", "), ")"),
+        )
+    )

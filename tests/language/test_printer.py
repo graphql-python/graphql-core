@@ -4,8 +4,11 @@ import pytest
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
+    EnumValueNode,
     FieldNode,
+    ListValueNode,
     NameNode,
+    SelectionSetNode,
     parse,
     parse_schema_coordinate,
     print_ast,
@@ -19,6 +22,25 @@ def describe_printer_query_document():
     def prints_minimal_ast():
         ast = FieldNode(name=NameNode(value="foo"))
         assert print_ast(ast) == "foo"
+
+    def ignores_empty_items_when_wrapping_values():
+        ast = ListValueNode(
+            values=(EnumValueNode(value=""), EnumValueNode(value="a" * 78))
+        )
+        assert print_ast(ast) == f"[{'a' * 78}]"
+        ast = ListValueNode(
+            values=(EnumValueNode(value="a" * 40), EnumValueNode(value="a" * 39))
+        )
+        assert print_ast(ast) == f"[\n  {'a' * 40}\n  {'a' * 39}\n]"
+
+    def prints_shared_nodes_without_modifying_them():
+        name = NameNode(value="field")
+        field = FieldNode(name=name)
+        ast = SelectionSetNode(selections=(field, field))
+
+        assert print_ast(ast) == "{\n  field\n  field\n}"
+        assert ast.selections == (field, field)
+        assert field.name is name
 
     def prints_empty_selection_sets():
         ast = parse(
