@@ -1,4 +1,5 @@
 import gc
+import sys
 import weakref
 from functools import cache
 
@@ -399,6 +400,10 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
         assert len(errors) == 1
         _assert_aborted(errors[0])
 
+    @pytest.mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
     def does_not_keep_the_document_alive():
         document = parse(
             "{ ...F0 } "

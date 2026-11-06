@@ -1,7 +1,10 @@
 import gc
+import sys
 import weakref
 from functools import cache
 from importlib import import_module
+
+import pytest
 
 from graphql.execution import (
     ExecutionResult,
@@ -95,6 +98,10 @@ def describe_too_deeply_nested_selections_at_the_root():
         assert result.errors[0].message != MESSAGE
         assert isinstance(result.data, dict)
 
+    @pytest.mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
     def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
         refs: list[weakref.ref] = []
         module = import_module("graphql.execution.collect_fields")

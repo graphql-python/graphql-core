@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import sys
 import weakref
 from typing import Any, TypeAlias, cast
 
@@ -1430,6 +1431,10 @@ def describe_too_deeply_nested_sources():
     def still_parses_a_depth_that_fits():
         assert parse("{a" * 50 + "}" * 50).token_count == 150
 
+    @pytest.mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
     def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
         refs: list[weakref.ref] = []
         parse_selection_set = Parser.parse_selection_set
