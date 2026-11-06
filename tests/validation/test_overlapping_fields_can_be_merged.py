@@ -2,12 +2,19 @@ from contextlib import contextmanager
 from functools import partial
 from typing import cast
 
+from pytest import warns
+
 from graphql.language import FieldNode, FragmentDefinitionNode, parse, print_ast
 from graphql.utilities import build_schema
-from graphql.validation import OverlappingFieldsCanBeMergedRule, validate
+from graphql.validation import (
+    FieldsOnCorrectTypeRule,
+    OverlappingFieldsCanBeMergedRule,
+    validate,
+)
 from graphql.validation.rules import (
     overlapping_fields_can_be_merged as overlapping_module,
 )
+from graphql.validation.validate import ValidationAbortedError
 
 from .harness import assert_validation_errors
 
@@ -30,8 +37,18 @@ budget_schema = build_schema("""
 
 @contextmanager
 def budget_of(limit):
-    # Temporarily lower the module-level comparison budget so the budget tests can
+    # Temporarily lower the module-level complexity budget so the budget tests can
     # trigger the guard with small, fast queries.
+    saved = overlapping_module.MAX_COMPLEXITY_BUDGET
+    overlapping_module.MAX_COMPLEXITY_BUDGET = limit
+    try:
+        yield
+    finally:
+        overlapping_module.MAX_COMPLEXITY_BUDGET = saved
+
+
+@contextmanager
+def max_field_comparisons_of(limit):
     saved = overlapping_module.MAX_FIELD_COMPARISONS
     overlapping_module.MAX_FIELD_COMPARISONS = limit
     try:
@@ -1624,12 +1641,28 @@ second line\"\"\"
             " to fetch both if this was intentional."
         )
 
-    def describe_comparison_budget():
+    def describe_complexity_budget():
+        def aborts_validation_when_the_complexity_budget_is_exceeded():
+            # Repeated inline fragments select the same response name, forcing O(n^2)
+            # pairwise comparisons. Once the budget is exhausted the rule aborts the
+            # whole validation instead of running the comparison to completion. The
+            # trailing `other` selection set is never visited, so exactly one error
+            # is reported for the whole document.
+            query = (
+                "{ field { " + " ".join(["... on Node { x }"] * 10) + " } other { x } }"
+            )
+            with budget_of(10):
+                assert_errors(
+                    query,
+                    [{"message": "Validation aborted."}],
+                    schema=budget_schema,
+                )
+
         def error_does_not_keep_the_exceeded_budget_alive():
-            # The error is created while the internal budget signal is handled,
-            # but must not adopt its traceback, which keeps the comparison alive.
+            # The error is raised from deep inside the conflict search,
+            # but must not keep its traceback, which keeps the comparison alive.
             query = "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
-            with budget_of(5):
+            with budget_of(10):
                 errors = validate(
                     budget_schema,
                     parse(query, no_location=True),
@@ -1637,31 +1670,43 @@ second line\"\"\"
                 )
             assert len(errors) == 1
             error = errors[0]
-            assert error.message.startswith("Query is too complex to validate")
+            assert error.message == "Validation aborted."
             assert error.__traceback__ is None
             assert error.__context__ is None
 
-        def aborts_validation_when_the_comparison_budget_is_exceeded():
-            # Repeated inline fragments select the same response name, forcing O(n^2)
-            # pairwise comparisons. Once the budget is exhausted the rule aborts with
-            # a single error instead of running the comparison to completion. The
-            # trailing `other` selection set is visited after the abort and must be
-            # skipped, so exactly one error is reported for the whole document.
-            query = (
-                "{ field { " + " ".join(["... on Node { x }"] * 10) + " } other { x } }"
-            )
-            with budget_of(5):
-                assert_errors(
-                    query,
-                    [
-                        {
-                            "message": "Query is too complex to validate for"
-                            " overlapping fields: exceeded 5 field comparisons."
-                            " Validation was aborted."
-                        }
-                    ],
-                    schema=budget_schema,
+        def aborted_error_does_not_keep_the_exceeded_budget_alive():
+            # The unknown field reaches the error limit, and the exceeded budget then
+            # aborts the validation, without discarding the earlier error and without
+            # anything staying attached to the aborted error.
+            query = "{ unknown field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+            with budget_of(10):
+                errors = validate(
+                    budget_schema,
+                    parse(query, no_location=True),
+                    [FieldsOnCorrectTypeRule, OverlappingFieldsCanBeMergedRule],
+                    max_errors=1,
                 )
+            assert errors == [
+                {"message": "Cannot query field 'unknown' on type 'Query'."},
+                {"message": "Validation aborted."},
+            ]
+            error = errors[-1]
+            assert isinstance(error, ValidationAbortedError)
+            assert error.__traceback__ is None
+            assert error.__context__ is None
+
+        def creates_a_new_error_for_every_abort():
+            # A shared error would add the frames of every validation to its traceback.
+            query = parse("{ field { " + " ".join(["... on Node { x }"] * 10) + " } }")
+            with budget_of(10):
+                errors1 = validate(
+                    budget_schema, query, [OverlappingFieldsCanBeMergedRule]
+                )
+                errors2 = validate(
+                    budget_schema, query, [OverlappingFieldsCanBeMergedRule]
+                )
+            assert errors1 == errors2 == [{"message": "Validation aborted."}]
+            assert errors1[0] is not errors2[0]
 
         def deduplication_alone_would_not_bound_this_query():
             # Each `f` selection shares the response name `f` but wraps a distinct
@@ -1669,7 +1714,7 @@ second line\"\"\"
             # structural fingerprint and none conflicts with another (differing
             # aliases merge cleanly). A fix based purely on deduplicating structurally
             # identical fields cannot remove any of these, so it would still perform
-            # O(n^2) comparisons; the comparison budget bounds the work regardless.
+            # O(n^2) comparisons; the complexity budget bounds the work regardless.
             query = (
                 "{ field { "
                 + " ".join(f"... on Node {{ f {{ a{i}: x }} }}" for i in range(20))
@@ -1681,24 +1726,75 @@ second line\"\"\"
                 assert_valid(query, schema=budget_schema)
             # With a small budget the same query is aborted rather than validated in
             # quadratic time.
-            with budget_of(10):
+            with budget_of(20):
                 assert_errors(
                     query,
-                    [
-                        {
-                            "message": "Query is too complex to validate for"
-                            " overlapping fields: exceeded 10 field comparisons."
-                            " Validation was aborted."
-                        }
-                    ],
+                    [{"message": "Validation aborted."}],
                     schema=budget_schema,
                 )
 
         def does_not_abort_queries_that_stay_within_the_budget():
             # A valid overlapping query well under the budget validates normally, with
             # no spurious abort error.
-            with budget_of(50):
+            with budget_of(100):
                 assert_valid(
                     "{ field { ... on Node { x } ... on Node { x } } }",
                     schema=budget_schema,
                 )
+
+        def reads_the_budget_when_the_validation_of_the_rule_starts():
+            document = parse(
+                "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+            )
+            rules = [OverlappingFieldsCanBeMergedRule]
+            with budget_of(90):
+                errors = validate(budget_schema, document, rules)
+            assert errors == []
+            with budget_of(89):
+                errors = validate(budget_schema, document, rules)
+            assert errors == [{"message": "Validation aborted."}]
+
+        def aborts_for_many_fragments_with_disjoint_response_names():
+            schema = build_schema("type Query { name: String }")
+
+            def document(count):
+                spreads = " ".join(f"...G{i}" for i in range(count))
+                fragments = "\n".join(
+                    f"fragment G{i} on Query {{ a{i}: name }}" for i in range(count)
+                )
+                return parse(f"{{ {spreads} }}\n{fragments}")
+
+            rules = [OverlappingFieldsCanBeMergedRule]
+            assert validate(schema, document(400), rules) == []
+            errors = validate(schema, document(800), rules)
+            assert errors == [{"message": "Validation aborted."}]
+            assert errors[0].locations is None
+
+        def aborts_for_many_spreads_of_undefined_fragments():
+            schema = build_schema("type Query { node: Query, name: String }")
+            spreads = " ".join(f"...missing{i}" for i in range(1024))
+            document = parse(f"{{ node {{ {spreads} }} }}")
+            errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+            assert errors == [{"message": "Validation aborted."}]
+            assert errors[0].locations is None
+
+        def describe_deprecated_max_field_comparisons():
+            def has_the_default_of_half_the_complexity_budget():
+                assert (
+                    2 * overlapping_module.MAX_FIELD_COMPARISONS
+                    == overlapping_module.MAX_COMPLEXITY_BUDGET
+                )
+
+            def is_used_with_a_warning_if_it_was_changed():
+                document = parse(
+                    "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+                )
+                rules = [OverlappingFieldsCanBeMergedRule]
+                with max_field_comparisons_of(45):
+                    with warns(DeprecationWarning, match="MAX_FIELD_COMPARISONS"):
+                        assert validate(budget_schema, document, rules) == []
+                with max_field_comparisons_of(44):
+                    with warns(DeprecationWarning, match="MAX_COMPLEXITY_BUDGET"):
+                        assert validate(budget_schema, document, rules) == [
+                            {"message": "Validation aborted."}
+                        ]

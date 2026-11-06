@@ -1,6 +1,7 @@
 """Overlapping fields can be merged rule"""
 
 import json
+import warnings
 from typing import Any, Dict, List, NamedTuple, Optional, Sequence, cast
 
 from ...error import GraphQLError
@@ -33,32 +34,26 @@ from ...type import (
 from ...utilities import type_from_ast
 from . import ValidationContext, ValidationRule
 
-__all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
+__all__ = [
+    "MAX_COMPLEXITY_BUDGET",
+    "MAX_FIELD_COMPARISONS",
+    "OverlappingFieldsCanBeMergedRule",
+]
 
-# The maximum number of pairwise field comparisons performed while validating a
-# single document with the OverlappingFieldsCanBeMerged rule. The rule compares
-# every pair of fields that share a response name and recurses into their
-# sub-selections, which is O(n^2) in the number of such fields (and worse when
-# inline fragments repeat the same response name at multiple nesting levels). A
-# crafted query can therefore drive validation into minutes of CPU on a single
-# request. Once this many comparisons have been made, validation is aborted with a
-# GraphQLError instead of running to completion. The default is high enough that any
-# realistic query stays far below it; it can be raised or lowered by assigning to
-# ``graphql.validation.rules.overlapping_fields_can_be_merged.MAX_FIELD_COMPARISONS``.
+# Meter work that can grow through repeated comparisons. Once the budget is exhausted,
+# the whole validation is aborted with an error. Collecting a selection set's fields is
+# cached and is not charged. The default is high enough that any realistic query stays
+# far below it; it can be raised or lowered by assigning to this module attribute, which
+# is read when the validation of the rule starts.
+MAX_COMPLEXITY_BUDGET = 500_000
+
+# Deprecated, use MAX_COMPLEXITY_BUDGET instead. If this is changed, the budget is two
+# times its value, because a comparison of two fields costs two units of the budget.
 MAX_FIELD_COMPARISONS = 250_000
-
 
 # Keep diagnostic detail bounded independently of document size.
 MAX_CONFLICT_DETAIL_LENGTH = 1000
 MAX_CONFLICT_NODES = 20
-
-
-class ComparisonBudgetExceededError(Exception):
-    """Internal signal that the field-comparison budget has been exhausted.
-
-    Raised deep inside the recursive conflict search and caught by the rule to abort
-    validation. Never surfaces to callers of ``validate``.
-    """
 
 
 class OverlappingFieldsCanBeMergedRule(ValidationRule):
@@ -89,10 +84,6 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         super().__init__(context)
         self.rule_context = RuleContext()
 
-        # Set once the comparison budget is exhausted. Further selection sets are then
-        # skipped, since validation has already been aborted with an error.
-        self._budget_exceeded = False
-
     def enter_selection_set(
         self, selection_set: SelectionSetNode, _key: Any, parent: Any, *_args: Any
     ) -> None:
@@ -104,26 +95,12 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # Their fields' own selection sets are still visited independently.
         if isinstance(parent, InlineFragmentNode):
             return
-        if self._budget_exceeded:
-            return
-        try:
-            conflicts = find_conflicts_within_selection_set(
-                self.context,
-                self.rule_context,
-                self.context.get_parent_type(),
-                selection_set,
-            )
-        except ComparisonBudgetExceededError:
-            self._budget_exceeded = True
-            self.report_error(
-                GraphQLError(
-                    "Query is too complex to validate for overlapping fields:"
-                    f" exceeded {MAX_FIELD_COMPARISONS} field comparisons."
-                    " Validation was aborted.",
-                    selection_set,
-                )
-            )
-            return
+        conflicts = find_conflicts_within_selection_set(
+            self.context,
+            self.rule_context,
+            self.context.get_parent_type(),
+            selection_set,
+        )
         for response_name, reason, fields1, fields2 in conflicts:
             self.report_error(
                 GraphQLError(
@@ -222,7 +199,7 @@ class RuleContext:
     __slots__ = (
         "cached_collect_fields_results",
         "compared_fragment_pairs",
-        "field_comparisons",
+        "remaining_complexity_budget",
         "stringified_values",
     )
 
@@ -244,9 +221,7 @@ class RuleContext:
         # are compared by value and the document keeps them alive.
         self.stringified_values: Dict[int, str] = {}
 
-        # The number of pairwise field comparisons made so far, which is limited by
-        # the comparison budget.
-        self.field_comparisons = 0
+        self.remaining_complexity_budget = get_complexity_budget()
 
 
 # Algorithm:
@@ -375,6 +350,10 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
+    # Callers can enumerate more field-map/fragment pairs than document nodes.
+    # Count attempts even when an empty collection or the pair cache skips them.
+    spend_complexity_budget(rule_context, 1)
+
     if not collect_fields_result.grouped_field_set:
         return
 
@@ -438,6 +417,9 @@ def collect_conflicts_between_fragments(
     Collect all conflicts found between two fragments, including via spreading in any
     nested fragments.
     """
+    # Count attempted fragment pairs, including identity and cache hits.
+    spend_complexity_budget(rule_context, 2)
+
     compared_fragment_pairs = rule_context.compared_fragment_pairs
     # No need to compare a fragment to itself.
     if fragment_name1 == fragment_name2:
@@ -635,7 +617,7 @@ def collect_conflicts_between(
     # the first field map must be compared to every field in the second field map to
     # find potential conflicts.
     for response_name, fields1, fields2 in get_overlapping_fields(
-        collect_fields_result1, collect_fields_result2
+        rule_context, collect_fields_result1, collect_fields_result2
     ):
         for field_details1 in fields1:
             for field_details2 in fields2:
@@ -652,6 +634,7 @@ def collect_conflicts_between(
 
 
 def get_overlapping_fields(
+    rule_context: "RuleContext",
     collect_fields_result1: CollectFieldsResult,
     collect_fields_result2: CollectFieldsResult,
 ) -> List[OverlappingFields]:
@@ -668,6 +651,8 @@ def get_overlapping_fields(
     overlapping_fields: List[OverlappingFields] = []
     grouped_field_set2 = collect_fields_result2.grouped_field_set
     for response_name, fields1 in collect_fields_result1.grouped_field_set.items():
+        # A field map can participate in many distinct comparisons.
+        spend_complexity_budget(rule_context, 1)
         fields2 = grouped_field_set2.get(response_name)
         if fields2:
             overlapping_fields.append(
@@ -690,12 +675,6 @@ def find_conflict(
     Determines if there is a conflict between two particular fields, including comparing
     their sub-fields.
     """
-    # Charge this comparison against the document-wide budget and abort validation once
-    # it is exhausted, guarding against quadratic-blowup denial of service.
-    rule_context.field_comparisons += 1
-    if rule_context.field_comparisons > MAX_FIELD_COMPARISONS:
-        raise ComparisonBudgetExceededError
-
     parent_type1 = field_details1.parent_type
     node1 = field_details1.node
     def1 = field_details1.definition
@@ -718,6 +697,9 @@ def find_conflict(
     # The return type for each field.
     type1 = cast(Optional[GraphQLOutputType], def1 and def1.type)
     type2 = cast(Optional[GraphQLOutputType], def2 and def2.type)
+
+    # Count attempted field pairs, including pairs skipped by type exclusivity.
+    spend_complexity_budget(rule_context, 2)
 
     if not are_mutually_exclusive:
         field_info1 = get_field_info(field_details1)
@@ -798,6 +780,8 @@ def same_arguments(
 
     values2 = argument_info2.values
     for arg1 in argument_info1.nodes:
+        # A prepared argument list can participate in many field-pair comparisons.
+        spend_complexity_budget(rule_context, 1)
         value2 = values2.get(arg1.name.value)
         if value2 is None or stringify_value(
             rule_context, arg1.value
@@ -994,6 +978,27 @@ def collect_conflict_nodes(
         if len(nodes) == MAX_CONFLICT_NODES:
             break
     return nodes
+
+
+def get_complexity_budget() -> int:
+    """Get the initial complexity budget for the validation of a document."""
+    if MAX_FIELD_COMPARISONS != 250_000:
+        warnings.warn(
+            "MAX_FIELD_COMPARISONS is deprecated, use MAX_COMPLEXITY_BUDGET instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return 2 * MAX_FIELD_COMPARISONS
+    return MAX_COMPLEXITY_BUDGET
+
+
+def spend_complexity_budget(rule_context: "RuleContext", cost: int) -> None:
+    rule_context.remaining_complexity_budget -= cost
+    if rule_context.remaining_complexity_budget < 0:
+        from ..validate import ValidationAbortedError
+
+        msg = "Validation aborted."
+        raise ValidationAbortedError(msg)
 
 
 def maybe_abbreviate(text: str) -> str:
