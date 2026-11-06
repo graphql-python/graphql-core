@@ -181,13 +181,16 @@ GroupedFieldSet = Dict[str, FieldDetailsList]
 class CollectFieldsResult:
     """The fields and fragment names collected from a selection set."""
 
-    __slots__ = "fragment_names", "grouped_field_set"
+    __slots__ = "compared_fragments", "fragment_names", "grouped_field_set"
+
+    compared_fragments: Optional[Dict[str, bool]]
 
     def __init__(
         self, grouped_field_set: GroupedFieldSet, fragment_names: List[str]
     ) -> None:
         self.grouped_field_set = grouped_field_set
         self.fragment_names = fragment_names
+        self.compared_fragments = None
 
 
 class RuleContext:
@@ -195,16 +198,14 @@ class RuleContext:
 
     __slots__ = (
         "cached_collect_fields_results",
-        "compared_fields_and_fragment_pairs",
         "compared_fragment_pairs",
         "field_comparisons",
     )
 
     def __init__(self) -> None:
-        # A memoization for when fields and a fragment or two fragments are compared
-        # "between" each other for conflicts. Comparisons may be made many times, so
-        # memoizing this can dramatically improve the performance of this validator.
-        self.compared_fields_and_fragment_pairs = OrderedPairSet()
+        # A memoization for when two fragments are compared for conflicts. Comparisons
+        # may be made many times, so memoizing this can dramatically improve the
+        # performance of this validator.
         self.compared_fragment_pairs = PairSet()
 
         # A cache for the "field map" and list of fragment names found in any given
@@ -347,16 +348,16 @@ def collect_conflicts_between_fields_and_fragment(
     if not collect_fields_result.grouped_field_set:
         return
 
-    compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
+    compared_fragments = collect_fields_result.compared_fragments
+    if compared_fragments is None:
+        compared_fragments = collect_fields_result.compared_fragments = {}
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
-    if compared_fields_and_fragment_pairs.has(
-        collect_fields_result, fragment_name, are_mutually_exclusive
-    ):
+    compared = compared_fragments.get(fragment_name)
+    # Only a non-exclusive comparison can be reused for overlapping parents.
+    if compared is False or (are_mutually_exclusive and compared is True):
         return
-    compared_fields_and_fragment_pairs.add(
-        collect_fields_result, fragment_name, are_mutually_exclusive
-    )
+    compared_fragments[fragment_name] = are_mutually_exclusive
 
     fragment = validation_context.get_fragment(fragment_name)
     if not fragment:
@@ -876,43 +877,6 @@ def subfield_conflicts(
             list(chain([node2], *[conflict.fields2 for conflict in conflicts])),
         )
     return None  # no conflict
-
-
-class OrderedPairSet:
-    """Ordered pair set
-
-    A way to keep track of pairs of things where the ordering of the pair matters.
-
-    Provides a third argument for has/add to allow flagging the pair as weakly or
-    strongly present within the collection.
-
-    The first element is matched by object identity (its ``id``), since collected
-    fields are kept alive for the duration of the validation.
-    """
-
-    __slots__ = ("_data",)
-
-    _data: Dict[int, Dict[str, bool]]
-
-    def __init__(self) -> None:
-        self._data = {}
-
-    def has(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> bool:
-        map_ = self._data.get(id(a))
-        if map_ is None:
-            return False
-        result = map_.get(b)
-        if result is None:
-            return False
-
-        return True if weakly_present else weakly_present == result
-
-    def add(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> None:
-        map_ = self._data.get(id(a))
-        if map_ is None:
-            self._data[id(a)] = {b: weakly_present}
-        else:
-            map_[b] = weakly_present
 
 
 class PairSet:

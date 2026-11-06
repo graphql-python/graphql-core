@@ -1376,6 +1376,41 @@ def describe_validate_overlapping_fields_can_be_merged():
             }
             """)
 
+    def rechecks_field_to_fragment_comparisons_when_parents_can_overlap():
+        schema = build_schema("""
+            type Query { item: Item }
+            interface Item { child: Leaf }
+            type A implements Item { child: Leaf }
+            type B implements Item { child: Leaf }
+            type Leaf { first: Int second: Int }
+            """)
+        errors = validate(
+            schema,
+            parse("""
+                {
+                  item {
+                    ...Left
+                    ... on B { child { ...Right ...RightAgain } }
+                  }
+                  other: item {
+                    ...Left
+                    ... on A { child { ...Right } }
+                  }
+                }
+                fragment Left on A { child { value: first } }
+                fragment Right on Leaf { value: second }
+                fragment RightAgain on Leaf { ...Right }
+                """),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        assert len(errors) == 1
+        assert errors[0].message == (
+            "Fields 'child' conflict because subfields 'value' conflict because"
+            " 'first' and 'second' are different fields."
+            " Use different aliases on the fields"
+            " to fetch both if this was intentional."
+        )
+
     def describe_comparison_budget():
         def error_does_not_keep_the_exceeded_budget_alive():
             # The error is created while the internal budget signal is handled,
