@@ -1,6 +1,6 @@
 """GraphQL Schema creation from GraphQL AST"""
 
-from typing import cast, Union
+from typing import cast, Optional, Union
 
 from ..language import DocumentNode, Source, parse
 from ..type import (
@@ -119,6 +119,10 @@ def build_schema(
     no_location: bool = False,
     allow_legacy_fragment_variables: bool = False,
     experimental_directives_on_directive_definitions: bool = False,
+    max_tokens: Optional[int] = None,
+    max_lexical_tokens: Optional[int] = None,
+    max_comments: Optional[int] = None,
+    max_source_length: Optional[int] = None,
 ) -> GraphQLSchema:
     r"""Build a GraphQLSchema directly from a source document.
 
@@ -133,6 +137,16 @@ def build_schema(
         definitions to be parsed (deprecated, will be removed in v3.3).
     :param experimental_directives_on_directive_definitions: Allows directives on
         directive definitions to be parsed (experimental).
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` together with
+        ``max_comments`` or ``max_source_length`` instead. Unlike
+        ``max_lexical_tokens``, this limit also counts comments.
+    :param max_lexical_tokens: The maximum number of lexical tokens allowed within the
+        document. This limit does not count comments, use ``max_comments`` for these,
+        and it does not limit the length of the source text, use ``max_source_length``
+        for this.
+    :param max_comments: The maximum number of comments allowed within the document.
+    :param max_source_length: The maximum length of the source text in code points,
+        checked before lexing.
     :returns: The schema built from the provided SDL document.
 
     Build a schema from SDL source using the default options:
@@ -164,6 +178,10 @@ def build_schema(
             experimental_directives_on_directive_definitions=(
                 experimental_directives_on_directive_definitions
             ),
+            max_tokens=max_tokens,
+            max_lexical_tokens=max_lexical_tokens,
+            max_comments=max_comments,
+            max_source_length=max_source_length,
         ),
         assume_valid=assume_valid,
         assume_valid_sdl=assume_valid_sdl,

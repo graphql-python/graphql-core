@@ -7,6 +7,7 @@ from typing import Union
 from pytest import mark, raises
 
 from graphql import graphql_sync
+from graphql.error import GraphQLSyntaxError
 from graphql.language import DocumentNode, InterfaceTypeDefinitionNode, parse, print_ast
 from graphql.type import (
     GraphQLArgument,
@@ -102,6 +103,66 @@ def describe_schema_builder():
             {"add": 89},
             None,
         )
+
+    def forwards_the_maximum_lexical_token_limit():
+        source = "type Query { field: String }"
+
+        build_schema(source, max_lexical_tokens=7)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 6 tokens\. Parsing aborted\.",
+        ):
+            build_schema(source, max_lexical_tokens=6)
+
+    def forwards_the_deprecated_max_tokens_option():
+        source = "type Query { field: Int }"
+
+        build_schema(source, max_tokens=7)
+        with raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 6 tokens\. Parsing aborted\.",
+        ):
+            build_schema(source, max_tokens=6)
+        with raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 0 tokens\. Parsing aborted\.",
+        ):
+            build_schema(source, max_tokens=0)
+
+    def forwards_the_maximum_source_length_to_the_parser():
+        source = "type Query"
+
+        build_schema(source, max_source_length=len(source))
+        max_source_length = len(source) - 1
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            rf" Source contains more than {max_source_length} code points\."
+            r" Parsing aborted\.",
+        ):
+            build_schema(source, max_source_length=max_source_length)
+
+    def forwards_the_maximum_comment_limit():
+        source = "# comment\ntype Query"
+
+        build_schema(source, max_comments=1)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 0 comments\. Parsing aborted\.",
+        ):
+            build_schema(source, max_comments=0)
+
+    def counts_comments_for_the_deprecated_max_tokens_option_only():
+        source = "# comment\ntype Query"
+
+        build_schema(source, max_lexical_tokens=2)
+        with raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 2 tokens\. Parsing aborted\.",
+        ):
+            build_schema(source, max_tokens=2)
 
     def ignores_non_type_system_definitions():
         sdl = """
