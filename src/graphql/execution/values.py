@@ -1,6 +1,6 @@
 """Helpers for handling values"""
 
-from typing import Any, Callable, Collection, Dict, List, Optional, Union, cast
+from typing import Any, Callable, Collection, Dict, List, Optional, Tuple, Union, cast
 
 from ..error import GraphQLError
 from ..language import (
@@ -21,6 +21,7 @@ from ..language import (
     VariableNode,
     print_ast,
 )
+from ..language.parser import MAX_NESTING_DEPTH
 from ..pyutils import Undefined, inspect, print_path_list
 from ..type import (
     GraphQLDirective,
@@ -29,6 +30,7 @@ from ..type import (
     GraphQLSchema,
     is_input_object_type,
     is_input_type,
+    is_list_type,
     is_non_null_type,
 )
 from ..utilities.coerce_input_value import coerce_input_value
@@ -132,6 +134,34 @@ def get_variable_values(
     return errors
 
 
+def input_is_nested_too_deeply(value: Any, type_: GraphQLInputType) -> bool:
+    """Check whether coercing the given value would recurse too deeply.
+
+    See ``MAX_NESTING_DEPTH`` for why this is needed in addition to handling a stack
+    overflow. Only the nesting that the type follows counts, so a deep value of a
+    custom scalar is fine.
+
+    :meta private:
+    """
+    stack: List[Tuple[Any, Any, int]] = [(value, type_, 0)]
+    while stack:
+        current, current_type, depth = stack.pop()
+        if depth > MAX_NESTING_DEPTH:
+            return True
+        if is_non_null_type(current_type):
+            current_type = current_type.of_type
+        if is_list_type(current_type):
+            items = current if isinstance(current, (list, tuple)) else [current]
+            stack.extend((item, current_type.of_type, depth + 1) for item in items)
+        elif is_input_object_type(current_type) and isinstance(current, dict):
+            stack.extend(
+                (current[name], field.type, depth + 1)
+                for name, field in current_type.fields.items()
+                if name in current
+            )
+    return False
+
+
 def coerce_variable_values(
     schema: GraphQLSchema,
     var_def_nodes: Collection[VariableDefinitionNode],
@@ -207,6 +237,8 @@ def coerce_variable_values(
                 )
             )
 
+        if input_is_nested_too_deeply(value, var_type):
+            raise RecursionError
         coerced_values[var_name] = coerce_input_value(
             value, var_type, on_input_value_error
         )

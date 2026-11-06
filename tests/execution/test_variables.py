@@ -7,8 +7,9 @@ from typing import Any, Dict, List, Optional
 from graphql import graphql_sync
 from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult, execute_sync
-from graphql.execution.values import get_variable_values
+from graphql.execution.values import get_variable_values, input_is_nested_too_deeply
 from graphql.language import OperationDefinitionNode, StringValueNode, ValueNode, parse
+from graphql.language.parser import MAX_NESTING_DEPTH
 from graphql.pyutils import Undefined
 from graphql.type import (
     GraphQLArgument,
@@ -18,6 +19,7 @@ from graphql.type import (
     GraphQLFloat,
     GraphQLInputField,
     GraphQLInputObjectType,
+    GraphQLInt,
     GraphQLList,
     GraphQLNonNull,
     GraphQLObjectType,
@@ -1131,8 +1133,47 @@ def describe_too_deeply_nested_variable_values():
             schema, document, {"field": resolve_field}, variable_values={"input": value}
         ) == ({"field": "ok"}, None)
 
+    def accepts_values_up_to_the_maximum_nesting_depth():
+        value = _nested(MAX_NESTING_DEPTH - 1)
+        result = get_variable_values(schema, variable_definitions, {"input": value})
+        assert not isinstance(result, list)
+        assert result == {"input": value}
+
+    def rejects_values_above_the_maximum_nesting_depth():
+        value = _nested(MAX_NESTING_DEPTH + 1)
+        result = get_variable_values(schema, variable_definitions, {"input": value})
+        assert isinstance(result, list)
+        _assert_nested_too_deeply(result[0])
+
+    def checks_list_values_and_single_values_of_list_types():
+        list_type = GraphQLList(GraphQLNonNull(GraphQLInt))
+        assert not input_is_nested_too_deeply(1, list_type)
+        assert not input_is_nested_too_deeply([1, 2], list_type)
+        deep_value: Any = 1
+        deep_type: Any = GraphQLInt
+        for _ in range(MAX_NESTING_DEPTH + 1):
+            deep_value = [deep_value]
+            deep_type = GraphQLList(deep_type)
+        assert input_is_nested_too_deeply(deep_value, deep_type)
+        assert input_is_nested_too_deeply(1, deep_type)
+
+    def ignores_values_that_are_no_objects_for_input_object_types():
+        input_type = GraphQLInputObjectType(
+            "NoObject", {"a": GraphQLInputField(GraphQLInt)}
+        )
+        assert not input_is_nested_too_deeply("no object", input_type)
+
+    def accepts_deep_values_of_custom_scalars():
+        deep: Any = 1
+        for _ in range(MAX_NESTING_DEPTH * 2):
+            deep = {"a": deep}
+        assert not input_is_nested_too_deeply(deep, GraphQLScalarType("Json"))
+
     def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
         refs: List[weakref.ref] = []
+        monkeypatch.setattr(
+            "graphql.execution.values.input_is_nested_too_deeply", lambda *_args: False
+        )
         module = import_module("graphql.utilities.coerce_input_value")
         coerce_input_value = module.coerce_input_value
 
