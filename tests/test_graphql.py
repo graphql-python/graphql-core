@@ -155,6 +155,26 @@ def describe_graphql():
 
         assert result == ({"syncField": "**rootValue**"}, None)
 
+    async def works_with_a_custom_parse_function_with_a_fixed_parameter_list():
+        def custom_parse(
+            source,
+            no_location=False,
+            max_tokens=None,
+            experimental_fragment_arguments=False,
+        ):
+            return default_harness.parse(
+                source,
+                no_location=no_location,
+                max_tokens=max_tokens,
+                experimental_fragment_arguments=experimental_fragment_arguments,
+            )
+
+        result = graphql_sync(
+            schema, "{ a }", harness=default_harness._replace(parse=custom_parse)
+        )
+
+        assert result == ({"a": "A"}, None)
+
     async def returns_parse_errors_thrown_synchronously_by_a_custom_harness():
         parse_error = GraphQLError("sync parse error")
 

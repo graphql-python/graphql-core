@@ -1329,7 +1329,10 @@ class DocumentNode(Node):
     # (declared as a ClassVar so it is not treated as a traversable child key, the
     # equivalent of the non-enumerable ``tokenCount`` property in graphql-js).
     token_count: ClassVar[int] = 0
-    """The number of lexical tokens parsed for this document."""
+    """The number of tokens parsed for this document.
+
+    The count includes comments, unlike in GraphQL.js.
+    """
 
 
 # Type System Definition nodes

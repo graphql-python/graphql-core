@@ -474,6 +474,18 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
             cast("list[GraphQLError]", validation_result), document
         )
 
+    # Pass these limits only when set, so that a custom harness
+    # with a parse function that does not know them keeps working.
+    parse_limits = {
+        name: limit
+        for name, limit in (
+            ("max_lexical_tokens", max_lexical_tokens),
+            ("max_comments", max_comments),
+            ("max_source_length", max_source_length),
+        )
+        if limit is not None
+    }
+
     # Parse
     try:
         document = harness.parse(
@@ -481,9 +493,7 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
             no_location=no_location,
             max_tokens=max_tokens,
             experimental_fragment_arguments=experimental_fragment_arguments,
-            max_lexical_tokens=max_lexical_tokens,
-            max_comments=max_comments,
-            max_source_length=max_source_length,
+            **parse_limits,
         )
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])
