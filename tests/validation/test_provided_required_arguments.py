@@ -110,6 +110,26 @@ def describe_validate_provided_required_arguments():
                 """
             )
 
+        def checks_required_arguments_on_each_spread():
+            assert_errors(
+                """
+                {
+                  ...F(x: 3)
+                  ...F
+                }
+                fragment F($x: Int!, $y: Int = 3) on Query {
+                  foo
+                }
+                """,
+                [
+                    {
+                        "message": "Fragment 'F' argument 'x' of type 'Int!'"
+                        " is required, but it was not provided.",
+                        "locations": [(4, 19)],
+                    },
+                ],
+            )
+
         def skips_missing_fragments():
             assert_valid(
                 """
