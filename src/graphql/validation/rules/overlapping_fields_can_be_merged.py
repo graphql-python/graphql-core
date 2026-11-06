@@ -101,11 +101,17 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # skipped, since validation has already been aborted with an error.
         self._budget_exceeded = False
 
-    def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
+    def enter_selection_set(
+        self, selection_set: SelectionSetNode, _key: Any, parent: Any, *_args: Any
+    ) -> None:
         """Called when entering a selection set node.
 
         :meta private:
         """
+        # Inline fragments are flattened into their enclosing response level.
+        # Their fields' own selection sets are still visited independently.
+        if isinstance(parent, InlineFragmentNode):
+            return
         if self._budget_exceeded:
             return
         try:
@@ -327,9 +333,8 @@ def find_conflicts_within_selection_set(
     """Find conflicts within selection set.
 
     Find all conflicts found "within" a selection set, including those found via
-    spreading in fragments.
-
-    Called when visiting each SelectionSet in the GraphQL Document.
+    spreading in fragments. Inline-fragment selection sets are included in their
+    enclosing collection.
     """
     conflicts: List[Conflict] = []
 
