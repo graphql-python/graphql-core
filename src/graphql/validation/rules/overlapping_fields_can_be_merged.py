@@ -329,8 +329,11 @@ def find_conflicts_within_selection_set(
         collect_fields_result.grouped_field_set,
     )
 
+    # Compare fragment uses only with fields or another spread.
     fragment_names = collect_fields_result.fragment_names
-    if fragment_names:
+    if fragment_names and (
+        collect_fields_result.grouped_field_set or len(fragment_names) > 1
+    ):
         # (B) Then collect conflicts between these fields and those represented by each
         # spread fragment name found.
         for i, fragment_name in enumerate(fragment_names):
