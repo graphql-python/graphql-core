@@ -202,12 +202,26 @@ FieldDetailsList = List[FieldDetails]
 GroupedFieldSet = Dict[str, FieldDetailsList]
 
 
+class OverlappingFields(NamedTuple):
+    """The fields of two collections that have the same response name."""
+
+    response_name: str
+    fields1: FieldDetailsList
+    fields2: FieldDetailsList
+
+
 class CollectFieldsResult:
     """The fields and fragment names collected from a selection set."""
 
-    __slots__ = "compared_fragments", "fragment_names", "grouped_field_set"
+    __slots__ = (
+        "compared_fragments",
+        "fragment_names",
+        "grouped_field_set",
+        "overlapping_fields",
+    )
 
     compared_fragments: Optional[Dict[str, bool]]
+    overlapping_fields: Optional[Dict["CollectFieldsResult", List[OverlappingFields]]]
 
     def __init__(
         self, grouped_field_set: GroupedFieldSet, fragment_names: List[str]
@@ -215,6 +229,7 @@ class CollectFieldsResult:
         self.grouped_field_set = grouped_field_set
         self.fragment_names = fragment_names
         self.compared_fragments = None
+        self.overlapping_fields = None
 
 
 class RuleContext:
@@ -622,9 +637,10 @@ def collect_conflicts_between(
     already been called on each provided collection of fields. This is true because
     this validator traverses each individual selection set.
     """
-    grouped_field_set1 = collect_fields_result1.grouped_field_set
-    grouped_field_set2 = collect_fields_result2.grouped_field_set
-    if not grouped_field_set1 or not grouped_field_set2:
+    if (
+        not collect_fields_result1.grouped_field_set
+        or not collect_fields_result2.grouped_field_set
+    ):
         return
 
     # A field map is a keyed collection, where each key represents a response name and
@@ -632,21 +648,47 @@ def collect_conflicts_between(
     # For any response name which appears in both provided field maps, each field from
     # the first field map must be compared to every field in the second field map to
     # find potential conflicts.
-    for response_name, field_details_list1 in grouped_field_set1.items():
-        field_details_list2 = grouped_field_set2.get(response_name)
-        if field_details_list2:
-            for field_details1 in field_details_list1:
-                for field_details2 in field_details_list2:
-                    conflict = find_conflict(
-                        validation_context,
-                        rule_context,
-                        parent_fields_are_mutually_exclusive,
-                        response_name,
-                        field_details1,
-                        field_details2,
-                    )
-                    if conflict:
-                        conflicts.append(conflict)
+    for response_name, fields1, fields2 in get_overlapping_fields(
+        collect_fields_result1, collect_fields_result2
+    ):
+        for field_details1 in fields1:
+            for field_details2 in fields2:
+                conflict = find_conflict(
+                    validation_context,
+                    rule_context,
+                    parent_fields_are_mutually_exclusive,
+                    response_name,
+                    field_details1,
+                    field_details2,
+                )
+                if conflict:
+                    conflicts.append(conflict)
+
+
+def get_overlapping_fields(
+    collect_fields_result1: CollectFieldsResult,
+    collect_fields_result2: CollectFieldsResult,
+) -> List[OverlappingFields]:
+    """Get the fields of two collections that have the same response name.
+
+    Reuse matching response groups when these collections are compared again.
+    """
+    by_collect_fields_result = collect_fields_result1.overlapping_fields
+    if by_collect_fields_result is None:
+        by_collect_fields_result = collect_fields_result1.overlapping_fields = {}
+    cached = by_collect_fields_result.get(collect_fields_result2)
+    if cached is not None:
+        return cached
+    overlapping_fields: List[OverlappingFields] = []
+    grouped_field_set2 = collect_fields_result2.grouped_field_set
+    for response_name, fields1 in collect_fields_result1.grouped_field_set.items():
+        fields2 = grouped_field_set2.get(response_name)
+        if fields2:
+            overlapping_fields.append(
+                OverlappingFields(response_name, fields1, fields2)
+            )
+    by_collect_fields_result[collect_fields_result2] = overlapping_fields
+    return overlapping_fields
 
 
 def find_conflict(
