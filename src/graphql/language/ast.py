@@ -541,7 +541,10 @@ class DocumentNode(Node):
     # that it is not treated as a traversable attribute, the equivalent of the
     # non-enumerable ``tokenCount`` property in graphql-js.
     token_count: int = 0
-    """The number of lexical tokens parsed for this document."""
+    """The number of tokens parsed for this document.
+
+    The count includes comments, unlike in GraphQL.js.
+    """
 
 
 class DefinitionNode(Node):

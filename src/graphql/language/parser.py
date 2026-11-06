@@ -571,7 +571,10 @@ class Parser:
 
     @property
     def token_count(self) -> int:
-        """Get the number of tokens that have been parsed so far."""
+        """Get the number of tokens that have been parsed so far.
+
+        The count includes comments, unlike in GraphQL.js.
+        """
         return self._token_counter
 
     def parse_document(self) -> DocumentNode:
