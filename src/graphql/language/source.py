@@ -1,13 +1,10 @@
 """GraphQL source input"""
 
-import re
 from typing import Any
 
-from .location import SourceLocation
+from .location import SourceLocation, _re_newline
 
 __all__ = ["Source", "is_source"]
-
-_re_newline = re.compile(r"\r\n|[\n\r]")
 
 
 class Source:

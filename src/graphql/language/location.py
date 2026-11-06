@@ -1,6 +1,7 @@
 """Source locations"""
 
-from typing import Any, NamedTuple, TYPE_CHECKING
+import re
+from typing import Any, Dict, List, NamedTuple, Sequence, TYPE_CHECKING, Tuple
 
 try:
     from typing import TypedDict
@@ -10,7 +11,9 @@ except ImportError:  # Python < 3.8
 if TYPE_CHECKING:
     from .source import Source  # noqa: F401
 
-__all__ = ["get_location", "SourceLocation", "FormattedSourceLocation"]
+__all__ = ["get_location", "get_locations", "SourceLocation", "FormattedSourceLocation"]
+
+_re_newline = re.compile(r"\r\n|[\n\r]")
 
 
 class FormattedSourceLocation(TypedDict):
@@ -60,3 +63,32 @@ def get_location(source: "Source", position: int) -> SourceLocation:
     SourceLocation(line=1, column=14)
     """
     return source.get_location(position)
+
+
+def get_locations(locations: Sequence[Tuple["Source", int]]) -> List[SourceLocation]:
+    """Get the line and column for several character positions in their sources.
+
+    This scans each of the sources only once.
+
+    For internal use only.
+
+    :meta private:
+    """
+    # Keyed by the id of the source, because sources are compared by value.
+    # The values and the given locations keep the sources alive.
+    by_source: Dict[int, Tuple["Source", List[Tuple[int, int]]]] = {}
+    for index, (source, start) in enumerate(locations):
+        by_source.setdefault(id(source), (source, []))[1].append((start, index))
+    result: List[Any] = [None] * len(locations)
+    for source, positions in by_source.values():
+        matches = _re_newline.finditer(source.body)
+        match = next(matches, None)
+        line = 1
+        line_start = 0
+        for position, index in sorted(positions):
+            while match is not None and match.start() < position:
+                line_start = match.end()
+                line += 1
+                match = next(matches, None)
+            result[index] = SourceLocation(line, position + 1 - line_start)
+    return result
