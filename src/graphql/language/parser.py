@@ -104,7 +104,8 @@ def parse(
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
-    Throws GraphQLError if a syntax error is encountered.
+    Throws GraphQLError if a syntax error is encountered, or if the document is nested
+    too deeply to be parsed within the recursion limit of the interpreter.
 
     By default, the parser creates AST nodes that know the location in the source that
     they correspond to. The ``no_location`` option disables that behavior for
@@ -218,7 +219,11 @@ def parse(
         max_comments=max_comments,
         max_source_length=max_source_length,
     )
-    return parser.parse_document()
+    try:
+        return parser.parse_document()
+    except RecursionError:
+        pass
+    raise nested_too_deeply_error(parser)
 
 
 def parse_value(
@@ -232,7 +237,8 @@ def parse_value(
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
 
-    Throws GraphQLError if a syntax error is encountered.
+    Throws GraphQLError if a syntax error is encountered, or if the value is nested
+    too deeply to be parsed within the recursion limit of the interpreter.
 
     This is useful within tools that operate upon GraphQL Values directly and in
     isolation of complete GraphQL documents.
@@ -281,10 +287,15 @@ def parse_value(
         max_comments=max_comments,
         max_source_length=max_source_length,
     )
-    parser.expect_token(TokenKind.SOF)
-    value = parser.parse_value_literal(False)
-    parser.expect_token(TokenKind.EOF)
-    return value
+    try:
+        parser.expect_token(TokenKind.SOF)
+        value = parser.parse_value_literal(False)
+        parser.expect_token(TokenKind.EOF)
+    except RecursionError:
+        pass
+    else:
+        return value
+    raise nested_too_deeply_error(parser)
 
 
 def parse_const_value(
@@ -299,6 +310,8 @@ def parse_const_value(
     """Parse the AST for a given string containing a GraphQL constant value.
 
     Similar to parse_value, but raises a parse error if it encounters a variable.
+    It also throws GraphQLError if the value is nested too deeply to be parsed within
+    the recursion limit of the interpreter.
     The return type will be a constant value.
 
     :param source: A GraphQL source string or source object containing a
@@ -350,10 +363,15 @@ def parse_const_value(
         max_comments=max_comments,
         max_source_length=max_source_length,
     )
-    parser.expect_token(TokenKind.SOF)
-    value = parser.parse_const_value_literal()
-    parser.expect_token(TokenKind.EOF)
-    return value
+    try:
+        parser.expect_token(TokenKind.SOF)
+        value = parser.parse_const_value_literal()
+        parser.expect_token(TokenKind.EOF)
+    except RecursionError:
+        pass
+    else:
+        return value
+    raise nested_too_deeply_error(parser)
 
 
 def parse_type(
@@ -367,7 +385,8 @@ def parse_type(
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
 
-    Throws GraphQLError if a syntax error is encountered.
+    Throws GraphQLError if a syntax error is encountered, or if the type is nested
+    too deeply to be parsed within the recursion limit of the interpreter.
 
     This is useful within tools that operate upon GraphQL Types directly and
     in isolation of complete GraphQL documents.
@@ -420,10 +439,15 @@ def parse_type(
         max_comments=max_comments,
         max_source_length=max_source_length,
     )
-    parser.expect_token(TokenKind.SOF)
-    type_ = parser.parse_type_reference()
-    parser.expect_token(TokenKind.EOF)
-    return type_
+    try:
+        parser.expect_token(TokenKind.SOF)
+        type_ = parser.parse_type_reference()
+        parser.expect_token(TokenKind.EOF)
+    except RecursionError:
+        pass
+    else:
+        return type_
+    raise nested_too_deeply_error(parser)
 
 
 def parse_schema_coordinate(
@@ -492,10 +516,15 @@ def parse_schema_coordinate(
         max_comments=max_comments,
         max_source_length=max_source_length,
     )
-    parser.expect_token(TokenKind.SOF)
-    coordinate = parser.parse_schema_coordinate()
-    parser.expect_token(TokenKind.EOF)
-    return coordinate
+    try:
+        parser.expect_token(TokenKind.SOF)
+        coordinate = parser.parse_schema_coordinate()
+        parser.expect_token(TokenKind.EOF)
+    except RecursionError:
+        pass
+    else:
+        return coordinate
+    raise nested_too_deeply_error(parser)
 
 
 class Parser:
@@ -508,6 +537,9 @@ class Parser:
     It's still part of the internal API and is versioned, so any changes to it are never
     considered breaking changes. If you still need to support multiple versions of the
     library, please use the `__version_info__` variable for version detection.
+
+    Its methods raise a RecursionError if the source is nested too deeply. Only
+    :func:`parse` and the other parse functions turn this into a syntax error.
     """
 
     _no_location: bool
@@ -1703,6 +1735,23 @@ class Parser:
                 # The number of comments the lexer may still skip before the next
                 # token.
                 lexer._comment_budget = max_tokens - self._token_counter  # noqa: SLF001
+
+
+def nested_too_deeply_error(parser: Parser) -> GraphQLSyntaxError:
+    """Create the error for a source that exceeds the recursion limit.
+
+    Raise this only after leaving the block that handled the RecursionError. Otherwise
+    it would be kept as the context of this error, and its traceback would keep all the
+    frames of the recursion alive.
+
+    :meta private:
+    """
+    lexer = parser._lexer  # noqa: SLF001
+    return GraphQLSyntaxError(
+        lexer.source,
+        lexer.token.start,
+        "Document is nested too deeply. Parsing aborted.",
+    )
 
 
 def get_token_desc(token: Token) -> str:

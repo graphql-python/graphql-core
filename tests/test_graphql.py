@@ -286,6 +286,37 @@ def describe_graphql():
         assert result == ({"asyncField": "rootValue"}, None)
 
 
+def describe_too_deeply_nested_documents():
+    depth = 100_000
+    message = "Syntax Error: Document is nested too deeply. Parsing aborted."
+
+    documents = {
+        "nested fields": "{a" * depth + "}" * depth,
+        "inline fragments": "{" + "...{" * depth + "a" + "}" * depth + "}",
+        "object literal": "{f(a:" + "{a:" * depth + "1" + "}" * depth + ")}",
+        "list literal": "{f(a:" + "[" * depth + "]" * depth + ")}",
+        "list type": "query($a:" + "[" * depth + "A" + "]" * depth + "){f}",
+    }
+
+    def _assert_parse_error(result):
+        assert result.data is None
+        assert result.errors
+        assert len(result.errors) == 1
+        error = result.errors[0]
+        assert error.message == message
+        assert error.locations
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    @pytest.mark.parametrize("shape", documents)
+    def graphql_sync_returns_a_parse_error(shape):
+        _assert_parse_error(graphql_sync(schema, documents[shape]))
+
+    @pytest.mark.parametrize("shape", documents)
+    async def graphql_returns_a_parse_error(shape):
+        _assert_parse_error(await graphql(schema, documents[shape]))
+
+
 def describe_graphql_sync():
     def returns_result_for_synchronous_execution():
         result = graphql_sync(schema, "{ syncField }", root_value="rootValue")

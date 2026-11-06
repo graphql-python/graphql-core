@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gc
+import weakref
 from typing import Any, TypeAlias, cast
 
 import pytest
@@ -1351,3 +1353,103 @@ def describe_parse_schema_coordinate():
         assert parse_schema_coordinate("MyType") == parse_schema_coordinate(
             Source("MyType")
         )
+
+
+def describe_too_deeply_nested_sources():
+    # Far beyond the recursion limit on all interpreters. Parsing stops at that limit,
+    # so the size of these sources does not make the tests slow.
+    depth = 100_000
+    message = "Document is nested too deeply. Parsing aborted."
+
+    documents = {
+        "nested fields": "{a" * depth + "}" * depth,
+        "inline fragments": "{" + "...{" * depth + "a" + "}" * depth + "}",
+        "object literal": "{f(a:" + "{a:" * depth + "1" + "}" * depth + ")}",
+        "list literal": "{f(a:" + "[" * depth + "]" * depth + ")}",
+        "list type": "query($a:" + "[" * depth + "A" + "]" * depth + "){f}",
+    }
+
+    def _assert_nested_too_deeply(error: GraphQLSyntaxError) -> None:
+        assert error.description == message
+        assert error.message == f"Syntax Error: {message}"
+        assert error.positions
+        assert next(iter(error.positions)) > 0
+        assert error.locations
+        assert error.locations[0].line == 1
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    @pytest.mark.parametrize("shape", documents)
+    def parse_reports_a_syntax_error(shape: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(documents[shape])
+        _assert_nested_too_deeply(exc_info.value)
+
+    @pytest.mark.parametrize(
+        "source", ["[" * depth + "]" * depth, "{a:" * depth + "1" + "}" * depth]
+    )
+    def parse_value_reports_a_syntax_error(source: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_value(source)
+        _assert_nested_too_deeply(exc_info.value)
+
+    @pytest.mark.parametrize(
+        "source", ["[" * depth + "]" * depth, "{a:" * depth + "1" + "}" * depth]
+    )
+    def parse_const_value_reports_a_syntax_error(source: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_const_value(source)
+        _assert_nested_too_deeply(exc_info.value)
+
+    def parse_type_reports_a_syntax_error():
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_type("[" * depth + "A" + "]" * depth)
+        _assert_nested_too_deeply(exc_info.value)
+
+    def parse_schema_coordinate_reports_a_syntax_error(monkeypatch):
+        # Schema coordinates do not nest, so this needs an exhausted stack.
+        def exhausted_stack(_self):
+            raise RecursionError
+
+        monkeypatch.setattr(Parser, "parse_schema_coordinate", exhausted_stack)
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_schema_coordinate("Type.field")
+        assert exc_info.value.description == message
+        assert exc_info.value.positions == [0]
+        assert exc_info.value.__context__ is None
+
+    def reports_the_position_where_parsing_stopped():
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("\n\n" + documents["list literal"])
+        error = exc_info.value
+        assert error.positions
+        position = next(iter(error.positions))
+        assert position > 7
+        assert error.locations == [(3, position - 1)]
+
+    def still_parses_a_depth_that_fits():
+        assert parse("{a" * 50 + "}" * 50).token_count == 150
+
+    def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
+        refs: list[weakref.ref] = []
+        parse_selection_set = Parser.parse_selection_set
+
+        class Tracked:
+            pass
+
+        def tracked_parse_selection_set(self):
+            tracked = Tracked()
+            refs.append(weakref.ref(tracked))
+            return parse_selection_set(self)
+
+        monkeypatch.setattr(Parser, "parse_selection_set", tracked_parse_selection_set)
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(documents["nested fields"])
+        gc.collect()
+        assert len(refs) > 10
+        assert all(ref() is None for ref in refs)
+        assert exc_info.value.__context__ is None
+
+    def leaves_the_recursion_error_when_using_the_parser_directly():
+        with pytest.raises(RecursionError):
+            Parser(documents["nested fields"]).parse_document()
