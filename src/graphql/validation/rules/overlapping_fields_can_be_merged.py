@@ -1,8 +1,7 @@
 """Overlapping fields can be merged rule"""
 
 import json
-from itertools import chain
-from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Union, cast
+from typing import Any, Dict, List, NamedTuple, Optional, Sequence, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -34,8 +33,6 @@ from ...type import (
 from ...utilities import type_from_ast
 from . import ValidationContext, ValidationRule
 
-MYPY = False
-
 __all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
 
 # The maximum number of pairwise field comparisons performed while validating a
@@ -51,22 +48,17 @@ __all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
 MAX_FIELD_COMPARISONS = 250_000
 
 
+# Keep diagnostic detail bounded independently of document size.
+MAX_CONFLICT_DETAIL_LENGTH = 1000
+MAX_CONFLICT_NODES = 20
+
+
 class ComparisonBudgetExceededError(Exception):
     """Internal signal that the field-comparison budget has been exhausted.
 
     Raised deep inside the recursive conflict search and caught by the rule to abort
     validation. Never surfaces to callers of ``validate``.
     """
-
-
-def reason_message(reason: "ConflictReasonMessage") -> str:
-    if isinstance(reason, list):
-        return " and ".join(
-            f"subfields '{sub_reason.response_name}' conflict"
-            f" because {reason_message(sub_reason.reason)}"
-            for sub_reason in reason
-        )
-    return reason
 
 
 class OverlappingFieldsCanBeMergedRule(ValidationRule):
@@ -133,10 +125,10 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
             return
         for response_name, reason, fields1, fields2 in conflicts:
-            reason_msg = reason_message(reason)
             self.report_error(
                 GraphQLError(
-                    f"Fields '{response_name}' conflict because {reason_msg}."
+                    f"Fields '{maybe_abbreviate(response_name)}'"
+                    f" conflict because {reason}."
                     " Use different aliases on the fields to fetch both"
                     " if this was intentional.",
                     fields1 + fields2,
@@ -144,25 +136,11 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
 
 
-# Reason is a string, or a nested list of conflicts.
-if MYPY:  # recursive types not fully supported yet (/python/mypy/issues/731)
-    ConflictReasonMessage = Union[str, List]
-else:
-    ConflictReasonMessage = Union[str, List["ConflictReason"]]
-
-
-class ConflictReason(NamedTuple):
-    """Field name and reason."""
-
-    response_name: str
-    reason: ConflictReasonMessage
-
-
 class Conflict(NamedTuple):
     """A conflict with the field nodes on both sides."""
 
     response_name: str
-    reason: ConflictReasonMessage
+    reason: str
     fields1: List[FieldNode]
     fields2: List[FieldNode]
 
@@ -747,7 +725,10 @@ def find_conflict(
             name1 = node1.name.value
             name2 = node2.name.value
             if name1 != name2:
-                reason = f"'{name1}' and '{name2}' are different fields"
+                reason = (
+                    f"'{maybe_abbreviate(name1)}' and '{maybe_abbreviate(name2)}'"
+                    " are different fields"
+                )
             elif same_arguments(
                 rule_context, field_info1.arguments, field_info2.arguments
             ):
@@ -979,16 +960,45 @@ def subfield_conflicts(
     Conflict.
     """
     if conflicts:
+        # Abbreviate while combining child reasons, not after expanding a whole
+        # tree of conflicts.
+        message = ""
+        for name, reason, _fields1, _fields2 in conflicts:
+            message += (
+                f"{' and ' if message else ''}"
+                f"subfields '{maybe_abbreviate(name)}' conflict because {reason}"
+            )
+            if len(message) > MAX_CONFLICT_DETAIL_LENGTH:
+                break
         return Conflict(
             response_name,
-            [
-                ConflictReason(conflict.response_name, conflict.reason)
-                for conflict in conflicts
-            ],
-            list(chain([node1], *[conflict.fields1 for conflict in conflicts])),
-            list(chain([node2], *[conflict.fields2 for conflict in conflicts])),
+            maybe_abbreviate(message),
+            collect_conflict_nodes(node1, [conflict.fields1 for conflict in conflicts]),
+            collect_conflict_nodes(node2, [conflict.fields2 for conflict in conflicts]),
         )
     return None  # no conflict
+
+
+def collect_conflict_nodes(
+    node: FieldNode, conflict_fields: List[List[FieldNode]]
+) -> List[FieldNode]:
+    nodes = [node]
+    for fields in conflict_fields:
+        remaining = MAX_CONFLICT_NODES - len(nodes)
+        # Locations start with the enclosing field. Take from the end so that
+        # truncation favors the deeper fields involved in the conflict.
+        nodes += fields[-remaining:]
+        if len(nodes) == MAX_CONFLICT_NODES:
+            break
+    return nodes
+
+
+def maybe_abbreviate(text: str) -> str:
+    return (
+        text[:MAX_CONFLICT_DETAIL_LENGTH] + "..."
+        if len(text) > MAX_CONFLICT_DETAIL_LENGTH
+        else text
+    )
 
 
 class PairSet:
