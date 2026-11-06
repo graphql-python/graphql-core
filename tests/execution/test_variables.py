@@ -4,6 +4,8 @@ from importlib import import_module
 from math import nan
 from typing import Any, Dict, List, Optional
 
+from pytest import mark
+
 from graphql import graphql_sync
 from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult, execute_sync
@@ -1078,6 +1080,7 @@ def describe_too_deeply_nested_variable_values():
         assert error.__context__ is None
         assert error.__cause__ is None
 
+    @mark.usefixtures("without_nesting_limit")
     def get_variable_values_returns_an_error():
         for key in ("nested", "nestedList"):
             result = get_variable_values(
@@ -1087,6 +1090,7 @@ def describe_too_deeply_nested_variable_values():
             assert len(result) == 1
             _assert_nested_too_deeply(result[0])
 
+    @mark.usefixtures("without_nesting_limit")
     def get_variable_values_keeps_previous_errors():
         operation = parse(
             "query ($other: Int, $input: Nested) { field(other: $other) }"
@@ -1103,6 +1107,7 @@ def describe_too_deeply_nested_variable_values():
         assert result[0].message.startswith("Variable '$other' got invalid value")
         _assert_nested_too_deeply(result[1])
 
+    @mark.usefixtures("without_nesting_limit")
     def execute_sync_returns_a_result_with_the_error():
         result = execute_sync(
             schema, document, variable_values={"input": _nested(too_deep)}
@@ -1112,6 +1117,7 @@ def describe_too_deeply_nested_variable_values():
         assert len(result.errors) == 1
         _assert_nested_too_deeply(result.errors[0])
 
+    @mark.usefixtures("without_nesting_limit")
     def graphql_sync_returns_a_result_with_the_error():
         result = graphql_sync(
             schema, source, variable_values={"input": _nested(too_deep)}

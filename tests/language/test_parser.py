@@ -1294,6 +1294,7 @@ def describe_too_deeply_nested_sources():
         assert error.__cause__ is None
 
     @mark.parametrize("shape", documents)
+    @mark.usefixtures("without_nesting_limit")
     def parse_reports_a_syntax_error(shape: str):
         with raises(GraphQLSyntaxError) as exc_info:
             parse(documents[shape])
@@ -1302,6 +1303,7 @@ def describe_too_deeply_nested_sources():
     @mark.parametrize(
         "source", ["[" * depth + "]" * depth, "{a:" * depth + "1" + "}" * depth]
     )
+    @mark.usefixtures("without_nesting_limit")
     def parse_value_reports_a_syntax_error(source: str):
         with raises(GraphQLSyntaxError) as exc_info:
             parse_value(source)
@@ -1310,11 +1312,13 @@ def describe_too_deeply_nested_sources():
     @mark.parametrize(
         "source", ["[" * depth + "]" * depth, "{a:" * depth + "1" + "}" * depth]
     )
+    @mark.usefixtures("without_nesting_limit")
     def parse_const_value_reports_a_syntax_error(source: str):
         with raises(GraphQLSyntaxError) as exc_info:
             parse_const_value(source)
         _assert_nested_too_deeply(exc_info.value)
 
+    @mark.usefixtures("without_nesting_limit")
     def parse_type_reports_a_syntax_error():
         with raises(GraphQLSyntaxError) as exc_info:
             parse_type("[" * depth + "A" + "]" * depth)
@@ -1332,6 +1336,7 @@ def describe_too_deeply_nested_sources():
         assert exc_info.value.positions == [0]
         assert exc_info.value.__context__ is None
 
+    @mark.usefixtures("without_nesting_limit")
     def reports_the_position_where_parsing_stopped():
         with raises(GraphQLSyntaxError) as exc_info:
             parse("\n\n" + documents["list literal"])
@@ -1378,6 +1383,7 @@ def describe_too_deeply_nested_sources():
         sys.implementation.name == "pypy",
         reason="The JIT of PyPy can keep these objects alive.",
     )
+    @mark.usefixtures("without_nesting_limit")
     def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
         refs: List[weakref.ref] = []
         parse_selection_set = Parser.parse_selection_set
@@ -1398,6 +1404,7 @@ def describe_too_deeply_nested_sources():
         assert all(ref() is None for ref in refs)
         assert exc_info.value.__context__ is None
 
+    @mark.usefixtures("without_nesting_limit")
     def leaves_the_recursion_error_when_using_the_parser_directly():
         with raises(RecursionError):
             Parser(documents["nested fields"]).parse_document()

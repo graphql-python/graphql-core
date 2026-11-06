@@ -2,7 +2,6 @@ import gc
 import sys
 import weakref
 from functools import lru_cache
-from importlib import import_module
 from typing import List
 
 from pytest import mark, raises
@@ -371,6 +370,7 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
         assert error.__cause__ is None
 
     @mark.parametrize("shape", selections)
+    @mark.usefixtures("without_nesting_limit")
     def keeps_previous_errors_with_the_default_rules(shape: str):
         errors = validate(schema, _document(shape))
         assert len(errors) > 1
@@ -386,12 +386,14 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
             ("chain through fields", NoFragmentCyclesRule),
         ],
     )
+    @mark.usefixtures("without_nesting_limit")
     def aborts_with_the_failing_rule_alone(shape: str, rule):
         errors = validate(schema, _document(shape), [rule])
         assert len(errors) == 1
         _assert_aborted(errors[0])
 
     @mark.parametrize("shape", selections)
+    @mark.usefixtures("without_nesting_limit")
     def keeps_previous_errors_with_the_failing_rule(shape: str):
         errors = validate(
             schema, _document(shape), [FieldsOnCorrectTypeRule, NoFragmentCyclesRule]
@@ -522,9 +524,8 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
         sys.implementation.name == "pypy",
         reason="The JIT of PyPy can keep these objects alive.",
     )
-    def does_not_keep_the_document_alive(monkeypatch):
-        validate_module = import_module("graphql.validation.validate")
-        monkeypatch.setattr(validate_module, "MAX_NESTING_DEPTH", depth * 2)
+    @mark.usefixtures("without_nesting_limit")
+    def does_not_keep_the_document_alive():
         document = parse(
             "{ ...F0 } "
             + " ".join(

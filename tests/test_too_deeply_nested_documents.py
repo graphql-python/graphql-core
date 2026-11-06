@@ -30,11 +30,13 @@ def _assert_parse_error(result):
 
 def describe_too_deeply_nested_documents():
     @mark.parametrize("shape", documents)
+    @mark.usefixtures("without_nesting_limit")
     def graphql_sync_returns_a_parse_error(shape):
         _assert_parse_error(graphql_sync(schema, documents[shape]))
 
     @mark.parametrize("shape", documents)
     @mark.asyncio
+    @mark.usefixtures("without_nesting_limit")
     async def graphql_returns_a_parse_error(shape):
         _assert_parse_error(await graphql(schema, documents[shape]))
 
@@ -56,9 +58,11 @@ def describe_too_deeply_nested_documents():
         assert error.__traceback__ is None
         assert error.__context__ is None
 
+    @mark.usefixtures("without_nesting_limit")
     def graphql_sync_aborts_validation_of_a_fragment_chain():
         _assert_validation_aborted(graphql_sync(schema, _fragment_chain()))
 
     @mark.asyncio
+    @mark.usefixtures("without_nesting_limit")
     async def graphql_aborts_validation_of_a_fragment_chain():
         _assert_validation_aborted(await graphql(schema, _fragment_chain()))
