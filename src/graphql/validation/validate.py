@@ -146,6 +146,7 @@ def validate(
     rules: Optional[Collection[Type[ASTValidationRule]]] = None,
     max_errors: Optional[int] = None,
     type_info: Optional[TypeInfo] = None,
+    hide_suggestions: bool = False,
 ) -> List[GraphQLError]:
     """Implements the "Validation" section of the spec.
 
@@ -178,6 +179,7 @@ def validate(
         Defaults to 100.
     :param type_info: TypeInfo instance used to track traversal state during
         validation (deprecated, will be removed in v3.3).
+    :param hide_suggestions: Omit suggestions from validation errors.
     :returns: Validation errors, or an empty list when the document is valid.
 
     Validate with the default specified rules:
@@ -233,7 +235,9 @@ def validate(
             )
         errors.append(error)
 
-    context = ValidationContext(schema, document_ast, type_info, on_error)
+    context = ValidationContext(
+        schema, document_ast, type_info, on_error, hide_suggestions
+    )
 
     # This uses a specialized visitor which runs multiple visitors in parallel,
     # while maintaining the visitor skip and break API.

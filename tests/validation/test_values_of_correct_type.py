@@ -525,6 +525,25 @@ def describe_validate_values_of_correct_type():
                 ],
             )
 
+        def string_into_enum_no_suggestion():
+            assert_errors(
+                """
+                {
+                  dog {
+                    doesKnowCommand(dogCommand: "SIT")
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Enum 'DogCommand' cannot represent non-enum value:"
+                        ' "SIT".',
+                        "locations": [(4, 49)],
+                    },
+                ],
+                hide_suggestions=True,
+            )
+
         def boolean_into_enum():
             assert_errors(
                 """
@@ -577,6 +596,24 @@ def describe_validate_values_of_correct_type():
                         "locations": [(4, 49)],
                     },
                 ],
+            )
+
+        def different_case_enum_value_into_enum_no_suggestion():
+            assert_errors(
+                """
+                {
+                  dog {
+                    doesKnowCommand(dogCommand: sit)
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Value 'sit' does not exist in 'DogCommand' enum.",
+                        "locations": [(4, 49)],
+                    },
+                ],
+                hide_suggestions=True,
             )
 
     def describe_valid_list_value():
@@ -963,6 +1000,28 @@ def describe_validate_values_of_correct_type():
                         "locations": [(6, 23)],
                     },
                 ],
+            )
+
+        def partial_object_unknown_field_arg_no_suggestions():
+            assert_errors(
+                """
+                {
+                  complicatedArgs {
+                    complexArgField(complexArg: {
+                      requiredField: true,
+                      invalidField: "value"
+                    })
+                  }
+                }
+                """,
+                [
+                    {
+                        "message": "Field 'invalidField'"
+                        " is not defined by type 'ComplexInput'.",
+                        "locations": [(6, 23)],
+                    },
+                ],
+                hide_suggestions=True,
             )
 
         def reports_original_error_for_custom_scalar_which_throws():

@@ -379,6 +379,7 @@ class ExecutionContext:
         max_coercion_errors: int = 50,
         middleware: Optional[Middleware] = None,
         is_awaitable: Optional[Callable[[Any], bool]] = None,
+        hide_suggestions: bool = False,
     ) -> Union[List[GraphQLError], "ExecutionContext"]:
         """Build an execution context
 
@@ -432,6 +433,7 @@ class ExecutionContext:
             operation.variable_definitions or (),
             raw_variable_values or {},
             max_errors=max_coercion_errors,
+            hide_suggestions=hide_suggestions,
         )
 
         if isinstance(coerced_variable_values, list):
@@ -1169,6 +1171,7 @@ def execute(
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type["ExecutionContext"]] = None,
     is_awaitable: Optional[Callable[[Any], bool]] = None,
+    hide_suggestions: bool = False,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a GraphQL operation.
 
@@ -1204,6 +1207,7 @@ def execute(
         context.
     :param is_awaitable: The predicate to be used for checking whether values are
         awaitable.
+    :param hide_suggestions: Omit suggestions from input coercion errors.
     :returns: A completed execution result, or a coroutine object yielding one when
         execution is asynchronous.
 
@@ -1314,6 +1318,11 @@ def execute(
 
     # If a valid execution context cannot be created due to incorrect arguments,
     # a "Response" with only errors is returned.
+    # Pass this option only when it is set, so that subclasses
+    # overriding the build method with a fixed signature keep working.
+    build_options: Dict[str, Any] = (
+        {"hide_suggestions": True} if hide_suggestions else {}
+    )
     exe_context = execution_context_class.build(
         schema,
         document,
@@ -1327,6 +1336,7 @@ def execute(
         max_coercion_errors,
         middleware,
         is_awaitable,
+        **build_options,
     )
 
     # Return early errors if execution context failed.
@@ -1389,6 +1399,7 @@ def execute_sync(
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type["ExecutionContext"]] = None,
     check_sync: bool = False,
+    hide_suggestions: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -1415,6 +1426,7 @@ def execute_sync(
         context.
     :param check_sync: Set this to ``True`` to still run checks that no awaitable
         values are returned. By default, everything is assumed to be synchronous.
+    :param hide_suggestions: Omit suggestions from input coercion errors.
     :returns: The completed execution result for a synchronous operation.
 
     Execute an operation synchronously when all resolvers are synchronous:
@@ -1470,6 +1482,7 @@ def execute_sync(
         middleware,
         execution_context_class,
         is_awaitable,
+        hide_suggestions,
     )
 
     # Assert that the execution was synchronous.

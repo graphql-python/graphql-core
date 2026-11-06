@@ -2400,10 +2400,11 @@ class GraphQLEnumType(GraphQLNamedType):
             f"Enum '{self.name}' cannot represent value: {inspect(output_value)}"
         )
 
-    def parse_value(self, input_value: str) -> Any:
+    def parse_value(self, input_value: str, hide_suggestions: bool = False) -> Any:
         """Parse a GraphQL enum name from variable input.
 
         :param input_value: runtime input value to parse
+        :param hide_suggestions: omit suggestions from error messages
         :returns: the internal enum value represented by the input name
 
         >>> from graphql import GraphQLEnumType
@@ -2427,23 +2428,31 @@ class GraphQLEnumType(GraphQLNamedType):
             except KeyError:
                 raise GraphQLError(
                     f"Value '{input_value}' does not exist in '{self.name}' enum."
-                    + did_you_mean_enum_value(self, input_value)
+                    + (
+                        ""
+                        if hide_suggestions
+                        else did_you_mean_enum_value(self, input_value)
+                    )
                 )
             return enum_value.value
         value_str = inspect(input_value)
         raise GraphQLError(
             f"Enum '{self.name}' cannot represent non-string value: {value_str}."
-            + did_you_mean_enum_value(self, value_str)
+            + ("" if hide_suggestions else did_you_mean_enum_value(self, value_str))
         )
 
     def parse_literal(
-        self, value_node: ValueNode, _variables: Optional[Dict[str, Any]] = None
+        self,
+        value_node: ValueNode,
+        _variables: Optional[Dict[str, Any]] = None,
+        hide_suggestions: bool = False,
     ) -> Any:
         """Parse a GraphQL enum name from an AST value literal.
 
         :param value_node: AST value literal to parse
         :param _variables: runtime variable values; ignored because variables will
             be resolved before calling this method
+        :param hide_suggestions: omit suggestions from error messages
         :returns: the internal enum value represented by the literal
 
         >>> from graphql import GraphQLEnumType, parse_value
@@ -2464,14 +2473,18 @@ class GraphQLEnumType(GraphQLNamedType):
                 value_str = print_ast(value_node)
                 raise GraphQLError(
                     f"Value '{value_str}' does not exist in '{self.name}' enum."
-                    + did_you_mean_enum_value(self, value_str),
+                    + (
+                        ""
+                        if hide_suggestions
+                        else did_you_mean_enum_value(self, value_str)
+                    ),
                     value_node,
                 )
             return enum_value.value
         value_str = print_ast(value_node)
         raise GraphQLError(
             f"Enum '{self.name}' cannot represent non-enum value: {value_str}."
-            + did_you_mean_enum_value(self, value_str),
+            + ("" if hide_suggestions else did_you_mean_enum_value(self, value_str)),
             value_node,
         )
 

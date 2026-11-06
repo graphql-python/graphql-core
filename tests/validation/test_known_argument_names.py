@@ -131,6 +131,18 @@ def describe_validate_known_argument_names():
             ],
         )
 
+    def misspelled_directive_args_are_reported_without_suggestions():
+        assert_errors(
+            "{ dog @skip(iff: true) }",
+            [
+                {
+                    "message": "Unknown argument 'iff' on directive '@skip'.",
+                    "locations": [(1, 13)],
+                }
+            ],
+            hide_suggestions=True,
+        )
+
     def invalid_arg_name():
         assert_errors(
             """
@@ -162,6 +174,23 @@ def describe_validate_known_argument_names():
                     "locations": [(3, 31)],
                 }
             ],
+        )
+
+    def misspelled_arg_name_is_reported_no_suggestions():
+        assert_errors(
+            """
+            fragment invalidArgName on Dog {
+              doesKnowCommand(DogCommand: true)
+            }
+            """,
+            [
+                {
+                    "message": "Unknown argument 'DogCommand'"
+                    " on field 'Dog.doesKnowCommand'.",
+                    "locations": [(3, 31)],
+                }
+            ],
+            hide_suggestions=True,
         )
 
     def unknown_args_amongst_known_args():

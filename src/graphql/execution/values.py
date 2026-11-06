@@ -48,6 +48,7 @@ def get_variable_values(
     var_def_nodes: Collection[VariableDefinitionNode],
     inputs: Dict[str, Any],
     max_errors: Optional[int] = None,
+    hide_suggestions: bool = False,
 ) -> CoercedVariableValues:
     """Get coerced variable values based on provided definitions.
 
@@ -62,6 +63,7 @@ def get_variable_values(
     :param max_errors: The maximum number of coercion errors to report (unlimited by
         default). When the limit is exceeded, an additional error is added and
         coercion is aborted.
+    :param hide_suggestions: Omit suggestions from input coercion errors.
     :returns: Coerced variable values, or a list of request errors.
 
     Coerce provided variables and apply operation defaults:
@@ -121,7 +123,9 @@ def get_variable_values(
         errors.append(error)
 
     try:
-        coerced = coerce_variable_values(schema, var_def_nodes, inputs, on_error)
+        coerced = coerce_variable_values(
+            schema, var_def_nodes, inputs, on_error, hide_suggestions
+        )
         if not errors:
             return coerced
     except GraphQLError as e:
@@ -167,6 +171,7 @@ def coerce_variable_values(
     var_def_nodes: Collection[VariableDefinitionNode],
     inputs: Dict[str, Any],
     on_error: Callable[[GraphQLError], None],
+    hide_suggestions: bool = False,
 ) -> Dict[str, Any]:
     """Coerce the variable values, reporting errors via the given callback.
 
@@ -240,7 +245,7 @@ def coerce_variable_values(
         if input_is_nested_too_deeply(value, var_type):
             raise RecursionError
         coerced_values[var_name] = coerce_input_value(
-            value, var_type, on_input_value_error
+            value, var_type, on_input_value_error, None, hide_suggestions
         )
 
     return coerced_values

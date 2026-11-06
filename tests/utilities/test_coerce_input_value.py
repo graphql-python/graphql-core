@@ -40,14 +40,16 @@ def expect_errors(result: CoercedValue) -> List[CoercedValueError]:
 
 
 def describe_coerce_input_value():
-    def _coerce_value(input_value: Any, type_: GraphQLInputType):
+    def _coerce_value(
+        input_value: Any, type_: GraphQLInputType, hide_suggestions: bool = False
+    ):
         errors: List[CoercedValueError] = []
         append = errors.append
 
         def on_error(path, invalid_value, error):
             append(CoercedValueError(error.message, path, invalid_value))
 
-        value = coerce_input_value(input_value, type_, on_error)
+        value = coerce_input_value(input_value, type_, on_error, None, hide_suggestions)
         return CoercedValue(errors, value)
 
     def describe_for_graphql_non_null():
@@ -131,6 +133,12 @@ def describe_coerce_input_value():
                 )
             ]
 
+        def returns_an_error_for_misspelled_enum_value_no_suggestions():
+            result = _coerce_value("foo", TestEnum, True)
+            assert expect_errors(result) == [
+                ("Value 'foo' does not exist in 'TestEnum' enum.", [], "foo")
+            ]
+
         def returns_an_error_for_incorrect_value_type():
             result1 = _coerce_value(123, TestEnum)
             assert expect_errors(result1) == [
@@ -139,6 +147,22 @@ def describe_coerce_input_value():
 
             result2 = _coerce_value({"field": "value"}, TestEnum)
             assert expect_errors(result2) == [
+                (
+                    "Enum 'TestEnum' cannot represent non-string value:"
+                    " {'field': 'value'}.",
+                    [],
+                    {"field": "value"},
+                )
+            ]
+
+        def returns_an_error_for_incorrect_value_type_no_suggestions():
+            result = _coerce_value(123, TestEnum, True)
+            assert expect_errors(result) == [
+                ("Enum 'TestEnum' cannot represent non-string value: 123.", [], 123)
+            ]
+
+            result = _coerce_value({"field": "value"}, TestEnum, False)
+            assert expect_errors(result) == [
                 (
                     "Enum 'TestEnum' cannot represent non-string value:"
                     " {'field': 'value'}.",
@@ -225,6 +249,16 @@ def describe_coerce_input_value():
                 (
                     "Field 'bart' is not defined by type 'TestInputObject'."
                     " Did you mean 'bar'?",
+                    [],
+                    {"foo": 123, "bart": 123},
+                )
+            ]
+
+        def returns_error_for_a_misspelled_field_no_suggestions():
+            result = _coerce_value({"foo": 123, "bart": 123}, TestInputObject, True)
+            assert expect_errors(result) == [
+                (
+                    "Field 'bart' is not defined by type 'TestInputObject'.",
                     [],
                     {"foo": 123, "bart": 123},
                 )
@@ -370,6 +404,22 @@ def describe_coerce_input_value():
                 ),
             ]
 
+        def returns_an_error_for_a_misspelled_field_no_suggestions():
+            result = _coerce_value({"bart": 123}, TestInputObject, True)
+            assert expect_errors(result) == [
+                (
+                    "Field 'bart' is not defined by type 'TestInputObject'.",
+                    [],
+                    {"bart": 123},
+                ),
+                (
+                    "Exactly one key must be specified"
+                    " for OneOf type 'TestInputObject'.",
+                    [],
+                    {"bart": 123},
+                ),
+            ]
+
     def describe_for_graphql_input_object_with_default_value():
         def _get_test_input_object(default_value):
             return GraphQLInputObjectType(
@@ -484,7 +534,9 @@ def describe_coerce_input_value():
     def describe_with_default_on_error():
         def throw_error_without_path():
             with raises(GraphQLError) as exc_info:
-                assert coerce_input_value(None, GraphQLNonNull(GraphQLInt))
+                assert coerce_input_value(
+                    None, GraphQLNonNull(GraphQLInt), hide_suggestions=True
+                )
             assert exc_info.value.message == (
                 "Invalid value None: Expected non-nullable type 'Int!' not to be None."
             )
@@ -492,7 +544,9 @@ def describe_coerce_input_value():
         def throw_error_with_path():
             with raises(GraphQLError) as exc_info:
                 assert coerce_input_value(
-                    [None], GraphQLList(GraphQLNonNull(GraphQLInt))
+                    [None],
+                    GraphQLList(GraphQLNonNull(GraphQLInt)),
+                    hide_suggestions=True,
                 )
             assert exc_info.value.message == (
                 "Invalid value None at 'value[0]':"

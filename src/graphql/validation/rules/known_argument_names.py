@@ -60,7 +60,11 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
                         GraphQLError(
                             f"Unknown argument '{arg_name}'"
                             f" on directive '@{directive_name}'."
-                            + did_you_mean(suggestions),
+                            + (
+                                ""
+                                if self.context.hide_suggestions
+                                else did_you_mean(suggestions)
+                            ),
                             arg_node,
                         )
                     )
@@ -107,8 +111,11 @@ class KnownArgumentNamesRule(KnownArgumentNamesOnDirectivesRule):
         if not arg_def and field_def and parent_type:
             arg_name = arg_node.name.value
             field_name = args[3][-1].name.value
-            known_args_names = list(field_def.args)
-            suggestions = suggestion_list(arg_name, known_args_names)
+            suggestions = (
+                []
+                if context.hide_suggestions
+                else suggestion_list(arg_name, list(field_def.args))
+            )
             context.report_error(
                 GraphQLError(
                     f"Unknown argument '{arg_name}'"

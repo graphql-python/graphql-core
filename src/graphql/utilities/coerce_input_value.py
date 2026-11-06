@@ -18,6 +18,7 @@ from ..type import (
     GraphQLInputType,
     GraphQLList,
     GraphQLScalarType,
+    is_enum_type,
     is_leaf_type,
     is_input_object_type,
     is_list_type,
@@ -46,6 +47,7 @@ def coerce_input_value(
     type_: GraphQLInputType,
     on_error: OnErrorCB = default_on_error,
     path: Optional[Path] = None,
+    hide_suggestions: bool = False,
 ) -> Any:
     """Coerce a Python value given a GraphQL Input Type.
 
@@ -55,6 +57,7 @@ def coerce_input_value(
         invalid value and the error. By default, the error is raised.
     :param path: The path of the value inside an enclosing input value, used when
         reporting errors.
+    :param hide_suggestions: Omit suggestions from error messages.
     :returns: Coerced value, or ``Undefined`` if coercion failed and errors were
         reported.
 
@@ -87,7 +90,9 @@ def coerce_input_value(
     if is_non_null_type(type_):
         if input_value is not None and input_value is not Undefined:
             type_ = cast(GraphQLNonNull, type_)
-            return coerce_input_value(input_value, type_.of_type, on_error, path)
+            return coerce_input_value(
+                input_value, type_.of_type, on_error, path, hide_suggestions
+            )
         on_error(
             path.as_list() if path else [],
             input_value,
@@ -110,12 +115,18 @@ def coerce_input_value(
             for index, item_value in enumerate(input_value):
                 append_item(
                     coerce_input_value(
-                        item_value, item_type, on_error, Path(path, index, None)
+                        item_value,
+                        item_type,
+                        on_error,
+                        Path(path, index, None),
+                        hide_suggestions,
                     )
                 )
             return coerced_list
         # Lists accept a non-list value as a list of one.
-        return [coerce_input_value(input_value, item_type, on_error, path)]
+        return [
+            coerce_input_value(input_value, item_type, on_error, path, hide_suggestions)
+        ]
 
     if is_input_object_type(type_):
         type_ = cast(GraphQLInputObjectType, type_)
@@ -150,13 +161,19 @@ def coerce_input_value(
                 continue
 
             coerced_dict[field.out_name or field_name] = coerce_input_value(
-                field_value, field.type, on_error, Path(path, field_name, type_.name)
+                field_value,
+                field.type,
+                on_error,
+                Path(path, field_name, type_.name),
+                hide_suggestions,
             )
 
         # Ensure every provided field is defined.
         for field_name in input_value:
             if field_name not in fields:
-                suggestions = suggestion_list(field_name, fields)
+                suggestions = (
+                    [] if hide_suggestions else suggestion_list(field_name, fields)
+                )
                 on_error(
                     path.as_list() if path else [],
                     input_value,
@@ -196,7 +213,13 @@ def coerce_input_value(
         # indicate failure. If it throws, maintain a reference to the original error.
         type_ = cast(GraphQLScalarType, type_)
         try:
-            parse_result = type_.parse_value(input_value)
+            # Note: only enum types accept `hide_suggestions`, since scalar
+            # `parse_value` functions are user-provided with a fixed signature.
+            parse_result = (
+                type_.parse_value(input_value, hide_suggestions)  # type: ignore
+                if is_enum_type(type_)
+                else type_.parse_value(input_value)
+            )
         except GraphQLError as error:
             on_error(path.as_list() if path else [], input_value, error)
             return Undefined

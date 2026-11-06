@@ -29,6 +29,7 @@ async def graphql(
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
     is_awaitable: Optional[Callable[[Any], bool]] = None,
+    hide_suggestions: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -68,6 +69,8 @@ async def graphql(
         context.
     :param is_awaitable: The predicate to be used for checking whether values are
         awaitable.
+    :param hide_suggestions: Omit suggestions from validation and input coercion
+        errors.
     :returns: The execution result, or the request errors if parsing or validation
         fails.
 
@@ -135,6 +138,7 @@ async def graphql(
         middleware,
         execution_context_class,
         is_awaitable,
+        hide_suggestions,
     )
 
     if isawaitable(result):
@@ -163,6 +167,7 @@ def graphql_sync(
     middleware: Optional[Middleware] = None,
     execution_context_class: Optional[Type[ExecutionContext]] = None,
     check_sync: bool = False,
+    hide_suggestions: bool = False,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -194,6 +199,8 @@ def graphql_sync(
         context.
     :param check_sync: Set this to ``True`` to still run checks that no awaitable
         values are returned. By default, everything is assumed to be synchronous.
+    :param hide_suggestions: Omit suggestions from validation and input coercion
+        errors.
     :returns: The completed execution result, or the request errors if parsing or
         validation fails.
 
@@ -246,6 +253,7 @@ def graphql_sync(
         middleware,
         execution_context_class,
         is_awaitable,
+        hide_suggestions,
     )
 
     # Assert that the execution was synchronous.
@@ -270,6 +278,7 @@ def graphql_impl(
     middleware: Optional[Middleware],
     execution_context_class: Optional[Type[ExecutionContext]],
     is_awaitable: Optional[Callable[[Any], bool]],
+    hide_suggestions: bool,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary.
 
@@ -289,7 +298,7 @@ def graphql_impl(
     # Validate
     from .validation import validate
 
-    validation_errors = validate(schema, document)
+    validation_errors = validate(schema, document, hide_suggestions=hide_suggestions)
     if validation_errors:
         return ExecutionResult(data=None, errors=validation_errors)
 
@@ -308,4 +317,5 @@ def graphql_impl(
         middleware,
         execution_context_class,
         is_awaitable,
+        hide_suggestions,
     )

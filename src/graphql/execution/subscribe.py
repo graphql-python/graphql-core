@@ -39,6 +39,7 @@ async def subscribe(
     field_resolver: Optional[GraphQLFieldResolver] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     max_coercion_errors: int = 50,
+    hide_suggestions: bool = False,
 ) -> Union[AsyncIterator[ExecutionResult], ExecutionResult]:
     """Create a GraphQL subscription.
 
@@ -75,6 +76,7 @@ async def subscribe(
     :param subscribe_field_resolver: Resolver used for the root subscription field.
     :param max_coercion_errors: Set the maximum number of errors allowed for coercing
         variable values (defaults to 50).
+    :param hide_suggestions: Omit suggestions from input coercion errors.
     :returns: A source stream mapped to execution results, or an execution result
         containing subscription errors.
 
@@ -162,6 +164,7 @@ async def subscribe(
         operation_name,
         subscribe_field_resolver,
         max_coercion_errors,
+        hide_suggestions,
     )
     if isinstance(result_or_stream, ExecutionResult):
         return result_or_stream
@@ -184,6 +187,7 @@ async def subscribe(
             variable_values,
             operation_name,
             field_resolver,
+            hide_suggestions=hide_suggestions,
         )
         return await result if isawaitable(result) else result
 
@@ -200,6 +204,7 @@ async def create_source_event_stream(
     operation_name: Optional[str] = None,
     subscribe_field_resolver: Optional[GraphQLFieldResolver] = None,
     max_coercion_errors: int = 50,
+    hide_suggestions: bool = False,
 ) -> Union[AsyncIterable[Any], ExecutionResult]:
     """Create source event stream
 
@@ -234,6 +239,7 @@ async def create_source_event_stream(
     :param subscribe_field_resolver: Resolver used for the root subscription field.
     :param max_coercion_errors: Set the maximum number of errors allowed for coercing
         variable values (defaults to 50).
+    :param hide_suggestions: Omit suggestions from input coercion errors.
     :returns: The source event stream, or an execution result containing subscription
         errors.
 
@@ -276,6 +282,7 @@ async def create_source_event_stream(
         operation_name,
         subscribe_field_resolver=subscribe_field_resolver,
         max_coercion_errors=max_coercion_errors,
+        hide_suggestions=hide_suggestions,
     )
 
     # Return early errors if execution context failed.

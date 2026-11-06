@@ -227,6 +227,8 @@ class ASTValidationContext:
             self._fragment_spreads[node] = spreads
         return spreads
 
+    # TODO: In the next major version, accept multiple operations here and
+    # remove get_recursively_referenced_fragments_for_operations.
     def get_recursively_referenced_fragments(
         self, operation: OperationDefinitionNode
     ) -> List[FragmentDefinitionNode]:
@@ -358,6 +360,11 @@ class SDLValidationContext(ASTValidationContext):
         super().__init__(ast, on_error)
         self.schema = schema
 
+    @property
+    def hide_suggestions(self) -> bool:
+        """Whether suggestions should be omitted from validation errors."""
+        return False
+
 
 class ValidationContext(ASTValidationContext):
     """Utility class providing a context for validation using a GraphQL schema.
@@ -370,6 +377,7 @@ class ValidationContext(ASTValidationContext):
     :param ast: Document AST being validated.
     :param type_info: TypeInfo instance used to track traversal state.
     :param on_error: Callback invoked for each validation error.
+    :param hide_suggestions: Omit suggestions from error messages.
 
     >>> from graphql import GraphQLError, TypeInfo, build_schema, parse
     >>> from graphql.validation import ValidationContext
@@ -402,13 +410,20 @@ class ValidationContext(ASTValidationContext):
         ast: DocumentNode,
         type_info: TypeInfo,
         on_error: Callable[[GraphQLError], None],
+        hide_suggestions: bool = False,
     ) -> None:
         super().__init__(ast, on_error)
+        self._hide_suggestions = hide_suggestions
         self.schema = schema
         self._type_info = type_info
         self._variable_usages = {}
         self._recursive_variable_usages = {}
         self._fragment_variable_usages = {}
+
+    @property
+    def hide_suggestions(self) -> bool:
+        """Whether suggestions should be omitted from validation errors."""
+        return self._hide_suggestions
 
     def get_variable_usages(self, node: NodeWithSelectionSet) -> List[VariableUsage]:
         """Get variable usages found directly within the given node.
