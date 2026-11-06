@@ -6,6 +6,7 @@ from asyncio import FIRST_COMPLETED, ensure_future, wait
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from ...error import GraphQLError, located_error
+from ...pyutils import RefMap
 from ..types import (
     CompletedResult,
     ExperimentalIncrementalExecutionResults,
@@ -28,7 +29,7 @@ from .work_queue import (
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Sequence
 
-    from ...pyutils import AbortSignal
+    from ...pyutils import AbortSignal, Path
     from ..types import IncrementalResult
     from .incremental_executor import (
         DeliveryGroup,
@@ -89,10 +90,14 @@ class IncrementalPublisher:
 
     _ids: dict[DeliveryGroup | ItemStream, str]
     _next_id: int
+    _path_lists: RefMap[Path, list[str | int]]
 
     def __init__(self) -> None:
         self._ids = {}
         self._next_id = 0
+        # Paths are shared by every defer label at one response position, so the
+        # flattened list is built once per Path instead of once per label.
+        self._path_lists = RefMap()
 
     def build_response(
         self,
@@ -120,6 +125,16 @@ class IncrementalPublisher:
             initial_result, self._subscribe(work_queue, context)
         )
 
+    def _path_to_list(self, path: Path | None) -> list[str | int]:
+        """Get the given path as a list of keys, building it only once."""
+        if path is None:
+            return []
+        path_list = self._path_lists.get(path)
+        if path_list is None:
+            path_list = path.as_list()
+            self._path_lists[path] = path_list
+        return path_list
+
     def _ensure_id(self, node: DeliveryGroup | ItemStream) -> str:
         """Get the id assigned to the given node, assigning one if needed."""
         id_ = self._ids.get(node)
@@ -139,9 +154,8 @@ class IncrementalPublisher:
         nodes: list[DeliveryGroup | ItemStream] = [*new_groups, *new_streams]
         for node in nodes:
             id_ = self._ensure_id(node)
-            path = node.path
             pending_results.append(
-                PendingResult(id_, path.as_list() if path else [], node.label)
+                PendingResult(id_, self._path_to_list(node.path), node.label)
             )
         return pending_results
 
@@ -285,8 +299,7 @@ class IncrementalPublisher:
         value: ExecutionGroupValue,
     ) -> tuple[str, list[str | int] | None]:
         """Get the best id and sub path for an execution group value."""
-        path = initial_delivery_group.path
-        max_length = len(path.as_list()) if path else 0
+        max_length = len(self._path_to_list(initial_delivery_group.path))
         best_id = initial_id
 
         for delivery_group in value.delivery_groups:
@@ -295,8 +308,7 @@ class IncrementalPublisher:
             id_ = self._ids.get(delivery_group)
             if id_ is None:
                 continue
-            group_path = delivery_group.path
-            length = len(group_path.as_list()) if group_path else 0
+            length = len(self._path_to_list(delivery_group.path))
             if length > max_length:
                 max_length = length
                 best_id = id_
