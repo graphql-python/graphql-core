@@ -15,11 +15,11 @@ An extensive test suite with over 3000 unit tests and 100% coverage replicates t
 complete test suite of GraphQL.js, ensuring that this port is reliable and compatible
 with GraphQL.js.
 
-The current stable version 3.3.1 of GraphQL-core is up-to-date with GraphQL.js
-version 17.0.2 and supports Python versions 3.10 to 3.15.
+The current stable version 3.3.2 of GraphQL-core is up-to-date with GraphQL.js
+version 17.1.0 and supports Python versions 3.10 to 3.15.
 
 If you need compatibility with GraphQL.js 16 or support for Python 3.7 to 3.9,
-you can use the latest version 3.2.13 from the 3.2 branch.
+you can use the latest version 3.2.14 from the 3.2 branch.
 
 Note that for various reasons, GraphQL-core does not use SemVer like GraphQL.js.
 Changes in the major version of GraphQL.js are reflected in the minor version of
