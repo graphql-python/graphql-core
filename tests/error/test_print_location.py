@@ -53,6 +53,24 @@ def describe_print_location():
             """  # noqa: E501
         )
 
+    def prints_minified_locations_at_80_character_boundaries():
+        source = Source("a" * 80 + "b" * 80 + "c" * 40)
+
+        for column, next_line in ((80, "b" * 80), (160, "c" * 40)):
+            result = print_source_location(source, SourceLocation(1, column))
+            lines = result.split("\n")
+            assert lines[-2] == f"  | {' ' * 79}^"
+            assert lines[-1] == f"  | {next_line}"
+
+    def prints_minified_locations_just_after_80_character_boundaries():
+        source = Source("a" * 80 + "b" * 80 + "c" * 80 + "d" * 40)
+
+        for column, previous_line in ((81, "b" * 80), (161, "c" * 80)):
+            result = print_source_location(source, SourceLocation(1, column))
+            lines = result.split("\n")
+            assert lines[-3] == f"  | {previous_line}"
+            assert lines[-2] == "  | ^"
+
     def prints_single_digit_line_number_with_no_padding():
         result = print_source_location(
             Source("*", "Test", SourceLocation(9, 1)), SourceLocation(1, 1)

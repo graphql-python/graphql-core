@@ -62,7 +62,9 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
 
     # Special case for minified documents
     if len(location_line) > 120:
-        sub_line_index, sub_line_column_num = divmod(column_num, 80)
+        zero_based_column = column_num - 1
+        sub_line_index = zero_based_column // 80
+        sub_line_column_num = zero_based_column % 80 + 1
         sub_lines = [
             location_line[i : i + 80] for i in range(0, len(location_line), 80)
         ]
