@@ -62,12 +62,14 @@ def print_source_location(source: Source, source_location: SourceLocation) -> st
 
     # Special case for minified documents
     if len(location_line) > 120:
-        zero_based_column = column_num - 1
-        sub_line_index = zero_based_column // 80
-        sub_line_column_num = zero_based_column % 80 + 1
         sub_lines = [
             location_line[i : i + 80] for i in range(0, len(location_line), 80)
         ]
+
+        # At EOF, point just after the last character, even in a full chunk.
+        zero_based_column = column_num - 1
+        sub_line_index = min(zero_based_column // 80, len(sub_lines) - 1)
+        sub_line_column_num = column_num - sub_line_index * 80
 
         return location_str + print_prefixed_lines(
             (f"{line_num} |", sub_lines[0]),

@@ -71,6 +71,19 @@ def describe_print_location():
             assert lines[-3] == f"  | {previous_line}"
             assert lines[-2] == "  | ^"
 
+    def prints_eof_after_the_final_minified_chunk():
+        source = Source("a" * 80 + "b" * 80)
+        result = print_source_location(source, SourceLocation(1, 161))
+
+        assert result == "\n".join(
+            [
+                "GraphQL request:1:161",
+                f"1 | {'a' * 80}",
+                f"  | {'b' * 80}",
+                f"  | {' ' * 80}^",
+            ]
+        )
+
     def prints_single_digit_line_number_with_no_padding():
         result = print_source_location(
             Source("*", "Test", SourceLocation(9, 1)), SourceLocation(1, 1)
