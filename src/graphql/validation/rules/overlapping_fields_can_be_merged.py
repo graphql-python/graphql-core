@@ -175,9 +175,9 @@ ConflictReason: TypeAlias = tuple[str, "ConflictReasonMessage"]
 # Reason is a string, or a nested list of conflicts.
 ConflictReasonMessage: TypeAlias = str | list[ConflictReason]
 # Tuple defining a field node in a context.
-NodeAndDef: TypeAlias = tuple[GraphQLCompositeType, FieldNode, GraphQLField | None]
-# Dictionary of lists of those.
-NodeAndDefCollection: TypeAlias = dict[str, list[NodeAndDef]]
+FieldDetails: TypeAlias = tuple[GraphQLCompositeType, FieldNode, GraphQLField | None]
+FieldDetailsList: TypeAlias = list[FieldDetails]
+GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
 # Variable-map identity distinguishes fragment scopes in the caches.
 VariableMap: TypeAlias = dict[str, ValueNode]
 
@@ -190,17 +190,14 @@ class FragmentSpread(NamedTuple):
     var_map: VariableMap | None
 
 
-FieldsAndFragmentSpreads: TypeAlias = tuple[NodeAndDefCollection, list[FragmentSpread]]
-FieldsAndFragmentSpreadsCache: TypeAlias = dict[
-    SelectionSetNode, RefMap[VariableMap | None, FieldsAndFragmentSpreads]
-]
+CollectFieldsResult: TypeAlias = tuple[GroupedFieldSet, list[FragmentSpread]]
 
 
 class RuleContext:
     """The state of the rule that is shared during the validation of a document."""
 
     __slots__ = (
-        "cached_fields_and_fragment_spreads",
+        "cached_collect_fields_results",
         "compared_fields_and_fragment_pairs",
         "compared_fragment_pairs",
         "field_comparisons",
@@ -215,7 +212,9 @@ class RuleContext:
 
         # A cache for the "field map" and list of fragment spreads found in any given
         # selection set.
-        self.cached_fields_and_fragment_spreads: FieldsAndFragmentSpreadsCache = {}
+        self.cached_collect_fields_results: dict[
+            SelectionSetNode, RefMap[VariableMap | None, CollectFieldsResult]
+        ] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
         # the comparison budget.
@@ -291,7 +290,7 @@ def find_conflicts_within_selection_set(
     """
     conflicts: list[Conflict] = []
 
-    field_map, fragment_spreads = get_fields_and_fragment_spreads(
+    grouped_field_set, fragment_spreads = collect_fields(
         validation_context, rule_context, parent_type, selection_set, var_map
     )
 
@@ -301,7 +300,7 @@ def find_conflicts_within_selection_set(
         validation_context,
         rule_context,
         conflicts,
-        field_map,
+        grouped_field_set,
         var_map,
     )
 
@@ -314,7 +313,7 @@ def find_conflicts_within_selection_set(
                 rule_context,
                 conflicts,
                 False,
-                field_map,
+                grouped_field_set,
                 var_map,
                 fragment_spread,
             )
@@ -340,7 +339,7 @@ def collect_conflicts_between_fields_and_fragment(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     are_mutually_exclusive: bool,
-    field_map: NodeAndDefCollection,
+    grouped_field_set: GroupedFieldSet,
     var_map: VariableMap | None,
     fragment_spread: FragmentSpread,
 ) -> None:
@@ -349,7 +348,7 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
-    if not field_map:
+    if not grouped_field_set:
         return
 
     compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
@@ -358,28 +357,26 @@ def collect_conflicts_between_fields_and_fragment(
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
     if compared_fields_and_fragment_pairs.has(
-        field_map, fragment_key, are_mutually_exclusive
+        grouped_field_set, fragment_key, are_mutually_exclusive
     ):
         return
     compared_fields_and_fragment_pairs.add(
-        field_map, fragment_key, are_mutually_exclusive
+        grouped_field_set, fragment_key, are_mutually_exclusive
     )
 
     fragment = validation_context.get_fragment(fragment_spread.node.name.value)
     if not fragment:
         return
 
-    field_map2, referenced_fragment_spreads = (
-        get_referenced_fields_and_fragment_spreads(
-            validation_context,
-            rule_context,
-            fragment,
-            fragment_spread.var_map,
-        )
+    grouped_field_set2, referenced_fragment_spreads = collect_fragment_fields(
+        validation_context,
+        rule_context,
+        fragment,
+        fragment_spread.var_map,
     )
 
-    # Do not compare a fragment's fieldMap to itself.
-    if field_map is field_map2:
+    # Do not compare a fragment's grouped_field_set to itself.
+    if grouped_field_set is grouped_field_set2:
         return
 
     # (D) First collect any conflicts between the provided collection of fields and the
@@ -389,9 +386,9 @@ def collect_conflicts_between_fields_and_fragment(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        field_map,
+        grouped_field_set,
         var_map,
-        field_map2,
+        grouped_field_set2,
         fragment_spread.var_map,
     )
 
@@ -403,7 +400,7 @@ def collect_conflicts_between_fields_and_fragment(
             rule_context,
             conflicts,
             are_mutually_exclusive,
-            field_map,
+            grouped_field_set,
             var_map,
             referenced_fragment_spread,
         )
@@ -458,22 +455,18 @@ def collect_conflicts_between_fragments(
     if not fragment1 or not fragment2:
         return
 
-    field_map1, referenced_fragment_spreads1 = (
-        get_referenced_fields_and_fragment_spreads(
-            validation_context,
-            rule_context,
-            fragment1,
-            fragment_spread1.var_map,
-        )
+    grouped_field_set1, referenced_fragment_spreads1 = collect_fragment_fields(
+        validation_context,
+        rule_context,
+        fragment1,
+        fragment_spread1.var_map,
     )
 
-    field_map2, referenced_fragment_spreads2 = (
-        get_referenced_fields_and_fragment_spreads(
-            validation_context,
-            rule_context,
-            fragment2,
-            fragment_spread2.var_map,
-        )
+    grouped_field_set2, referenced_fragment_spreads2 = collect_fragment_fields(
+        validation_context,
+        rule_context,
+        fragment2,
+        fragment_spread2.var_map,
     )
 
     # (F) First, collect all conflicts between these two collections of fields
@@ -483,9 +476,9 @@ def collect_conflicts_between_fragments(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        field_map1,
+        grouped_field_set1,
         fragment_spread1.var_map,
-        field_map2,
+        grouped_field_set2,
         fragment_spread2.var_map,
     )
 
@@ -533,14 +526,14 @@ def find_conflicts_between_sub_selection_sets(
     """
     conflicts: list[Conflict] = []
 
-    field_map1, fragment_spreads1 = get_fields_and_fragment_spreads(
+    grouped_field_set1, fragment_spreads1 = collect_fields(
         validation_context,
         rule_context,
         parent_type1,
         selection_set1,
         var_map1,
     )
-    field_map2, fragment_spreads2 = get_fields_and_fragment_spreads(
+    grouped_field_set2, fragment_spreads2 = collect_fields(
         validation_context,
         rule_context,
         parent_type2,
@@ -554,9 +547,9 @@ def find_conflicts_between_sub_selection_sets(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        field_map1,
+        grouped_field_set1,
         var_map1,
-        field_map2,
+        grouped_field_set2,
         var_map2,
     )
 
@@ -569,7 +562,7 @@ def find_conflicts_between_sub_selection_sets(
                 rule_context,
                 conflicts,
                 are_mutually_exclusive,
-                field_map1,
+                grouped_field_set1,
                 var_map1,
                 fragment_spread2,
             )
@@ -583,7 +576,7 @@ def find_conflicts_between_sub_selection_sets(
                 rule_context,
                 conflicts,
                 are_mutually_exclusive,
-                field_map2,
+                grouped_field_set2,
                 var_map2,
                 fragment_spread1,
             )
@@ -609,7 +602,7 @@ def collect_conflicts_within(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     conflicts: list[Conflict],
-    field_map: NodeAndDefCollection,
+    grouped_field_set: GroupedFieldSet,
     var_map: VariableMap | None,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
@@ -617,22 +610,22 @@ def collect_conflicts_within(
     # the value at that key is a list of all fields which provide that response name.
     # For every response name, if there are multiple fields, they must be compared to
     # find a potential conflict.
-    for response_name, fields in field_map.items():
+    for response_name, field_details_list in grouped_field_set.items():
         # This compares every field in the list to every other field in this list
         # (except to itself). If the list only has one item, nothing needs to be
         # compared.
-        if len(fields) > 1:
-            for i, field in enumerate(fields):
-                for other_field in fields[i + 1 :]:
+        if len(field_details_list) > 1:
+            for i, field_details in enumerate(field_details_list):
+                for other_field_details in field_details_list[i + 1 :]:
                     conflict = find_conflict(
                         validation_context,
                         rule_context,
                         # within one collection is never mutually exclusive
                         False,
                         response_name,
-                        field,
+                        field_details,
                         var_map,
-                        other_field,
+                        other_field_details,
                         var_map,
                     )
                     if conflict:
@@ -644,9 +637,9 @@ def collect_conflicts_between(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     parent_fields_are_mutually_exclusive: bool,
-    field_map1: NodeAndDefCollection,
+    grouped_field_set1: GroupedFieldSet,
     var_map1: VariableMap | None,
-    field_map2: NodeAndDefCollection,
+    grouped_field_set2: GroupedFieldSet,
     var_map2: VariableMap | None,
 ) -> None:
     """Collect all Conflicts between two collections of fields.
@@ -656,26 +649,26 @@ def collect_conflicts_between(
     already been called on each provided collection of fields. This is true because
     this validator traverses each individual selection set.
     """
-    if not field_map1 or not field_map2:
+    if not grouped_field_set1 or not grouped_field_set2:
         return
     # A field map is a keyed collection, where each key represents a response name and
     # the value at that key is a list of all fields which provide that response name.
     # For any response name which appears in both provided field maps, each field from
     # the first field map must be compared to every field in the second field map to
     # find potential conflicts.
-    for response_name, fields1 in field_map1.items():
-        fields2 = field_map2.get(response_name)
-        if fields2:
-            for field1 in fields1:
-                for field2 in fields2:
+    for response_name, field_details_list1 in grouped_field_set1.items():
+        field_details_list2 = grouped_field_set2.get(response_name)
+        if field_details_list2:
+            for field_details1 in field_details_list1:
+                for field_details2 in field_details_list2:
                     conflict = find_conflict(
                         validation_context,
                         rule_context,
                         parent_fields_are_mutually_exclusive,
                         response_name,
-                        field1,
+                        field_details1,
                         var_map1,
-                        field2,
+                        field_details2,
                         var_map2,
                     )
                     if conflict:
@@ -687,9 +680,9 @@ def find_conflict(
     rule_context: RuleContext,
     parent_fields_are_mutually_exclusive: bool,
     response_name: str,
-    field1: NodeAndDef,
+    field_details1: FieldDetails,
     var_map1: VariableMap | None,
-    field2: NodeAndDef,
+    field_details2: FieldDetails,
     var_map2: VariableMap | None,
 ) -> Conflict | None:
     """Find conflict.
@@ -703,8 +696,8 @@ def find_conflict(
     if rule_context.field_comparisons > MAX_FIELD_COMPARISONS:
         raise ComparisonBudgetExceededError
 
-    parent_type1, node1, def1 = field1
-    parent_type2, node2, def2 = field2
+    parent_type1, node1, def1 = field_details1
+    parent_type2, node2, def2 = field_details2
 
     # If it is known that two fields could not possibly apply at the same time, due to
     # the parent types, then it is safe to permit them to diverge in aliased field or
@@ -895,61 +888,62 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     return False
 
 
-def get_fields_and_fragment_spreads(
+def collect_fields(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
     var_map: VariableMap | None,
-) -> FieldsAndFragmentSpreads:
+) -> CollectFieldsResult:
     """Get fields and referenced fragment spreads
 
     Given a selection set, return the collection of fields (a mapping of response name
     to field nodes and definitions) as well as a list of fragment spreads referenced
     via fragment spreads.
     """
-    cached_fields_and_fragment_spreads = rule_context.cached_fields_and_fragment_spreads
-    cache = cached_fields_and_fragment_spreads.get(selection_set)
+    cached_collect_fields_results = rule_context.cached_collect_fields_results
+    cache = cached_collect_fields_results.get(selection_set)
     if cache is None:
-        cache = cached_fields_and_fragment_spreads[selection_set] = RefMap()
+        cache = cached_collect_fields_results[selection_set] = RefMap()
     cached = cache.get(var_map)
     if not cached:
-        node_and_defs: NodeAndDefCollection = {}
+        grouped_field_set: GroupedFieldSet = {}
         fragment_spreads: dict[str, FragmentSpread] = {}
-        collect_fields_and_fragment_spreads(
+        collect_fields_impl(
             validation_context,
             parent_type,
             selection_set,
-            node_and_defs,
+            grouped_field_set,
             fragment_spreads,
             var_map,
         )
-        cached = (node_and_defs, list(fragment_spreads.values()))
-        cache[var_map] = cached
+        collect_fields_result = (grouped_field_set, list(fragment_spreads.values()))
+        cache[var_map] = collect_fields_result
+        return collect_fields_result
     return cached
 
 
-def get_referenced_fields_and_fragment_spreads(
+def collect_fragment_fields(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     fragment: FragmentDefinitionNode,
     var_map: VariableMap | None,
-) -> FieldsAndFragmentSpreads:
+) -> CollectFieldsResult:
     """Get referenced fields and nested fragment spreads
 
     Given a reference to a fragment, return the represented collection of fields as well
     as a list of nested fragment spreads referenced via fragment spreads.
     """
-    cached_fields_and_fragment_spreads = rule_context.cached_fields_and_fragment_spreads
+    cached_collect_fields_results = rule_context.cached_collect_fields_results
     # Short-circuit building a type from the node if possible.
-    cache = cached_fields_and_fragment_spreads.get(fragment.selection_set)
+    cache = cached_collect_fields_results.get(fragment.selection_set)
     if cache is not None:
         cached = cache.get(var_map)
         if cached:
             return cached
 
     fragment_type = type_from_ast(validation_context.schema, fragment.type_condition)
-    return get_fields_and_fragment_spreads(
+    return collect_fields(
         validation_context,
         rule_context,
         fragment_type,
@@ -958,11 +952,11 @@ def get_referenced_fields_and_fragment_spreads(
     )
 
 
-def collect_fields_and_fragment_spreads(
+def collect_fields_impl(
     validation_context: ValidationContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    node_and_defs: NodeAndDefCollection,
+    grouped_field_set: GroupedFieldSet,
     fragment_spreads: dict[str, FragmentSpread],
     var_map: VariableMap | None,
 ) -> None:
@@ -975,10 +969,11 @@ def collect_fields_and_fragment_spreads(
                 else None
             )
             response_name = selection.alias.value if selection.alias else field_name
-            if not node_and_defs.get(response_name):
-                node_and_defs[response_name] = []
-            node_and_defs[response_name].append(
-                cast("NodeAndDef", (parent_type, selection, field_def))
+            field_details_list = grouped_field_set.get(response_name)
+            if not field_details_list:
+                field_details_list = grouped_field_set[response_name] = []
+            field_details_list.append(
+                cast("FieldDetails", (parent_type, selection, field_def))
             )
         elif isinstance(selection, FragmentSpreadNode):
             fragment_spread = get_fragment_spread(
@@ -992,11 +987,11 @@ def collect_fields_and_fragment_spreads(
                 if type_condition
                 else parent_type
             )
-            collect_fields_and_fragment_spreads(
+            collect_fields_impl(
                 validation_context,
                 inline_fragment_type,
                 selection.selection_set,
-                node_and_defs,
+                grouped_field_set,
                 fragment_spreads,
                 var_map,
             )
@@ -1088,7 +1083,7 @@ class OrderedPairSet:
     def __init__(self) -> None:
         self._data = {}
 
-    def has(self, a: NodeAndDefCollection, b: str, weakly_present: bool) -> bool:
+    def has(self, a: GroupedFieldSet, b: str, weakly_present: bool) -> bool:
         map_ = self._data.get(id(a))
         if map_ is None:
             return False
@@ -1098,7 +1093,7 @@ class OrderedPairSet:
 
         return True if weakly_present else weakly_present == result
 
-    def add(self, a: NodeAndDefCollection, b: str, weakly_present: bool) -> None:
+    def add(self, a: GroupedFieldSet, b: str, weakly_present: bool) -> None:
         map_ = self._data.get(id(a))
         if map_ is None:
             self._data[id(a)] = {b: weakly_present}
