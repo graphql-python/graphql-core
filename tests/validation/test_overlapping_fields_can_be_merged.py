@@ -1,7 +1,8 @@
 from contextlib import contextmanager
+from dataclasses import replace
 from functools import partial
 
-from graphql.language import parse
+from graphql.language import FragmentDefinitionNode, parse
 from graphql.utilities import build_schema
 from graphql.validation import (
     FieldsOnCorrectTypeRule,
@@ -839,6 +840,71 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             schema=schema,
         )
+
+    def keeps_field_definitions_separate_when_selection_set_shared_between_types():
+        schema = build_schema(
+            """
+            type Query { node: Union }
+            union Union = First | Second
+            type First { value: Int }
+            type Second { value: String }
+            """
+        )
+        document = parse(
+            """
+            { node { ...First ...Second } }
+            fragment First on First { value }
+            fragment Second on Second { value }
+            """
+        )
+        first, second = (
+            definition
+            for definition in document.definitions
+            if isinstance(definition, FragmentDefinitionNode)
+        )
+        shared_document = replace(
+            document,
+            definitions=tuple(
+                replace(second, selection_set=first.selection_set)
+                if definition is second
+                else definition
+                for definition in document.definitions
+            ),
+        )
+        assert [error.message for error in validate(schema, shared_document)] == [
+            (
+                "Fields 'value' conflict because they return conflicting types"
+                " 'Int' and 'String'. Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
+
+    def keeps_field_definitions_separate_for_equal_selection_sets_without_locations():
+        # Unlike in GraphQL.js, AST nodes are compared by value, and without locations
+        # the selection sets of these two fragments are equal.
+        schema = build_schema(
+            """
+            type Query { node: Union }
+            union Union = First | Second
+            type First { value: Int }
+            type Second { value: String }
+            """
+        )
+        document = parse(
+            """
+            { node { ...First ...Second } }
+            fragment First on First { value }
+            fragment Second on Second { value }
+            """,
+            no_location=True,
+        )
+        assert [error.message for error in validate(schema, document)] == [
+            (
+                "Fields 'value' conflict because they return conflicting types"
+                " 'Int' and 'String'. Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
 
     def encounters_conflict_in_fragments():
         assert_errors(

@@ -253,7 +253,8 @@ class RuleContext:
         # A cache for the "field map" and list of fragment spreads found in any given
         # selection set.
         self.cached_collect_fields_results: dict[
-            SelectionSetNode, RefMap[VariableMap | None, CollectFieldsResult]
+            GraphQLNamedType | None,
+            RefMap[SelectionSetNode, RefMap[VariableMap | None, CollectFieldsResult]],
         ] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
@@ -961,9 +962,16 @@ def collect_fields(
     via fragment spreads.
     """
     cached_collect_fields_results = rule_context.cached_collect_fields_results
-    cache = cached_collect_fields_results.get(selection_set)
+    # A programmatically built document can share a selection-set object between
+    # different parent types; their field definitions must not share a cache entry.
+    # Selection sets are compared by identity, because AST nodes are compared by value
+    # and equal selection sets can occur in different fragments of one document.
+    by_selection_set = cached_collect_fields_results.get(parent_type)
+    if by_selection_set is None:
+        by_selection_set = cached_collect_fields_results[parent_type] = RefMap()
+    cache = by_selection_set.get(selection_set)
     if cache is None:
-        cache = cached_collect_fields_results[selection_set] = RefMap()
+        cache = by_selection_set[selection_set] = RefMap()
     cached = cache.get(var_map)
     if cached is None:
         grouped_field_set: GroupedFieldSet = {}
@@ -992,14 +1000,6 @@ def collect_fragment_fields(
     Given a reference to a fragment, return the represented collection of fields as well
     as a list of nested fragment spreads referenced via fragment spreads.
     """
-    cached_collect_fields_results = rule_context.cached_collect_fields_results
-    # Short-circuit building a type from the node if possible.
-    cache = cached_collect_fields_results.get(fragment.selection_set)
-    if cache is not None:
-        cached = cache.get(var_map)
-        if cached is not None:
-            return cached
-
     fragment_type = type_from_ast(validation_context.schema, fragment.type_condition)
     return collect_fields(
         validation_context,
