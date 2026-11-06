@@ -45,7 +45,7 @@ from graphql.language import (
     parse_type,
     parse_value,
 )
-from graphql.language.parser import Parser
+from graphql.language.parser import MAX_NESTING_DEPTH, Parser
 from graphql.pyutils import inspect
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
@@ -1430,6 +1430,36 @@ def describe_too_deeply_nested_sources():
 
     def still_parses_a_depth_that_fits():
         assert parse("{a" * 50 + "}" * 50).token_count == 150
+
+    nesting = {
+        "selections": lambda n: "{a" * (n - 1) + "{a" + "}" * n,
+        "list literal": lambda n: "{f(a:" + "[" * (n - 1) + "]" * (n - 1) + ")}",
+        "object literal": lambda n: (
+            "{f(a:" + "{a:" * (n - 2) + "{}" + "}" * (n - 2) + ")}"
+        ),
+        "list type": lambda n: "query($a:" + "[" * n + "A" + "]" * n + "){f}",
+    }
+
+    @pytest.mark.parametrize("shape", nesting)
+    def parses_up_to_the_maximum_nesting_depth(shape: str):
+        # The frames of the tests and the frame size differ between interpreters.
+        recursion_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(recursion_limit * 4)
+        try:
+            parse(nesting[shape](MAX_NESTING_DEPTH))
+        finally:
+            sys.setrecursionlimit(recursion_limit)
+
+    @pytest.mark.parametrize("shape", nesting)
+    def stops_above_the_maximum_nesting_depth(shape: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(nesting[shape](MAX_NESTING_DEPTH + 1))
+        _assert_nested_too_deeply(exc_info.value)
+
+    def counts_only_the_current_nesting_depth():
+        n = MAX_NESTING_DEPTH - 2
+        nested = "[" * n + "]" * n
+        parse("{" + " ".join(f"a{i}: f(a: {nested})" for i in range(3)) + "}")
 
     @pytest.mark.skipif(
         sys.implementation.name == "pypy",

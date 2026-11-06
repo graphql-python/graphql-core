@@ -527,6 +527,14 @@ def parse_schema_coordinate(
     raise nested_too_deeply_error(parser)
 
 
+# The maximum nesting depth of documents and of variable values.
+#
+# Too deep nesting is reported as an error also when it exhausts the stack, but PyPy
+# does not handle a stack overflow in JIT-compiled code reliably. So we stop well below
+# the stack limit of PyPy, on all interpreters, so that they all accept the same input.
+MAX_NESTING_DEPTH = 200
+
+
 class Parser:
     """GraphQL AST parser.
 
@@ -581,6 +589,7 @@ class Parser:
         self._lexer._max_comments = max_comments  # noqa: SLF001
         self._lexer._comment_count = 0  # noqa: SLF001
         self._token_counter = self._lexical_token_counter = 0
+        self._nesting_depth = 0
 
         if max_source_length is not None:
             lexer_source = self._lexer.source
@@ -769,8 +778,9 @@ class Parser:
         The ``allow_empty_selection_sets`` option is deprecated and will be removed in
         a future version, at which point this will be the only grammar.
         """
+        self._enter_nesting()
         start = self._lexer.token
-        return SelectionSetNode(
+        node = SelectionSetNode(
             selections=(
                 self.any(TokenKind.BRACE_L, self.parse_selection, TokenKind.BRACE_R)
                 if self._allow_empty_selection_sets
@@ -780,6 +790,13 @@ class Parser:
             ),
             loc=self.loc(start),
         )
+        self._nesting_depth -= 1
+        return node
+
+    def _enter_nesting(self) -> None:
+        self._nesting_depth += 1
+        if self._nesting_depth > MAX_NESTING_DEPTH:
+            raise RecursionError
 
     def parse_selection(self) -> SelectionNode:
         """Selection: Field or FragmentSpread or InlineFragment"""
@@ -949,12 +966,15 @@ class Parser:
 
     def parse_list(self, is_const: bool) -> ListValueNode:
         """ListValue[Const]"""
+        self._enter_nesting()
         start = self._lexer.token
         item = partial(self.parse_value_literal, is_const)
-        return ListValueNode(
+        node = ListValueNode(
             values=self.any(TokenKind.BRACKET_L, item, TokenKind.BRACKET_R),
             loc=self.loc(start),
         )
+        self._nesting_depth -= 1
+        return node
 
     def parse_object_field(self, is_const: bool) -> ObjectFieldNode:
         start = self._lexer.token
@@ -967,12 +987,15 @@ class Parser:
 
     def parse_object(self, is_const: bool) -> ObjectValueNode:
         """ObjectValue[Const]"""
+        self._enter_nesting()
         start = self._lexer.token
         item = partial(self.parse_object_field, is_const)
-        return ObjectValueNode(
+        node = ObjectValueNode(
             fields=self.any(TokenKind.BRACE_L, item, TokenKind.BRACE_R),
             loc=self.loc(start),
         )
+        self._nesting_depth -= 1
+        return node
 
     def parse_int(self, _is_const: bool = False) -> IntValueNode:
         token = self._lexer.token
@@ -1046,7 +1069,9 @@ class Parser:
         start = self._lexer.token
         type_: TypeNode
         if self.expect_optional_token(TokenKind.BRACKET_L):
+            self._enter_nesting()
             inner_type = self.parse_type_reference()
+            self._nesting_depth -= 1
             self.expect_token(TokenKind.BRACKET_R)
             type_ = ListTypeNode(type=inner_type, loc=self.loc(start))
         else:
