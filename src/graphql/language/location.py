@@ -78,6 +78,8 @@ def get_locations(locations: Sequence[tuple[Source, int]]) -> list[SourceLocatio
 
     :meta private:
     """
+    if len(locations) < 2:
+        return [source.get_location(start) for source, start in locations]
     by_source: RefMap[Source, list[tuple[int, int]]] = RefMap()
     for index, (source, start) in enumerate(locations):
         by_source.setdefault(source, []).append((start, index))
