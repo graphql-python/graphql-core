@@ -151,7 +151,7 @@ class ArgumentInfo(NamedTuple):
 class FieldInfo:
     """Argument data of a field that is compared with other fields."""
 
-    __slots__ = "arguments", "comparisons", "named_type"
+    __slots__ = "arguments", "comparisons", "named_type", "type_string"
 
     def __init__(
         self, named_type: Optional[GraphQLNamedType], arguments: Optional[ArgumentInfo]
@@ -160,6 +160,7 @@ class FieldInfo:
         # An empty reason means the field names and arguments match.
         self.comparisons: Dict[FieldInfo, str] = {}
         self.arguments = arguments
+        self.type_string: Optional[str] = None
 
 
 FieldDetailsList = List[FieldDetails]
@@ -728,9 +729,13 @@ def find_conflict(
             return Conflict(response_name, reason, [node1], [node2])
 
     if type1 and type2 and do_types_conflict(rule_context, type1, type2):
+        field_info1 = get_field_info(field_details1)
+        field_info2 = get_field_info(field_details2)
+        type1_string = field_info1.type_string = field_info1.type_string or str(type1)
+        type2_string = field_info2.type_string = field_info2.type_string or str(type2)
         return Conflict(
             response_name,
-            f"they return conflicting types '{type1}' and '{type2}'",
+            f"they return conflicting types '{type1_string}' and '{type2_string}'",
             [node1],
             [node2],
         )
