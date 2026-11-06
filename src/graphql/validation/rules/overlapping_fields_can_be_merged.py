@@ -182,15 +182,23 @@ class FieldDetails:
 class FieldInfo:
     """Argument and stream metadata of a field that is compared with other fields."""
 
-    __slots__ = "arguments", "comparisons", "has_stream", "stream_arguments"
+    __slots__ = (
+        "arguments",
+        "comparisons",
+        "has_stream",
+        "named_type",
+        "stream_arguments",
+    )
 
     def __init__(
         self,
+        named_type: GraphQLNamedType | None,
         arguments: ArgumentInfo | None,
         has_stream: bool,
         stream_arguments: ArgumentInfo | None,
     ) -> None:
         self.comparisons: dict[FieldInfo, FieldComparison] = {}
+        self.named_type = named_type
         self.arguments = arguments
         self.has_stream = has_stream
         self.stream_arguments = stream_arguments
@@ -1006,10 +1014,10 @@ def find_conflict(
             validation_context,
             rule_context,
             are_mutually_exclusive,
-            get_named_type(type1),
+            field_info1.named_type,
             selection_set1,
             scope1,
-            get_named_type(type2),
+            field_info2.named_type,
             selection_set2,
             scope2,
         )
@@ -1031,7 +1039,9 @@ def get_field_info(field_details: FieldDetails) -> FieldInfo:
             ),
             None,
         )
+        definition = field_details.definition
         info = field_details.info = FieldInfo(
+            get_named_type(definition.type if definition else None),
             get_argument_info(node.arguments),
             stream is not None,
             get_argument_info(stream.arguments) if stream else None,
@@ -1198,6 +1208,8 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     Composite types are ignored as their individual field types will be compared later
     recursively. However List and Non-Null types must match.
     """
+    if type1 is type2:
+        return False
     if is_list_type(type1):
         return (
             do_types_conflict(type1.of_type, type2.of_type)
