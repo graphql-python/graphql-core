@@ -54,6 +54,150 @@ def budget_of(limit):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def retains_the_first_described_conflict_when_abbreviating_locations():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+
+        def fields(name):
+            return (
+                f"early: child {{ cause: {name} }}\n"
+                f"middle: {'child { ' * 10} leaf: {name} {' }' * 10}\n"
+                f"late: {'child { ' * 10} leaf: {name} {' }' * 10}\n"
+            )
+
+        errors = validate(
+            schema,
+            parse(f"{{ child {{ {fields('left')} }} child {{ {fields('right')} }} }}"),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        assert len(errors) == 1
+        assert "subfields 'early' conflict" in errors[0].message
+        assert errors[0].locations
+        assert len(errors[0].locations) == 40
+        assert errors[0].nodes
+        aliases = [
+            node.alias.value
+            for node in errors[0].nodes
+            if isinstance(node, FieldNode) and node.alias
+        ]
+        assert aliases.count("cause") == 2
+
+    def omits_large_fragment_arguments_only_in_descriptions():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        words = "small words " * 24
+        document = parse(
+            f"""
+            {{ ...Local(x: "{words}") ...Local(x: 2) }}
+            fragment Local($x: Input) on Query {{ field(value: $x) }}
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert [error.message for error in errors] == [
+            (
+                "Spreads 'Local' conflict because Local(...) and Local(x: 2)"
+                " have different fragment arguments."
+            )
+        ]
+        assert words in print_ast(document)
+
+    def prints_structured_fragment_arguments_in_conflict_descriptions():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        document = parse(
+            """
+            query ($outside: Int) {
+              ...Local(x: { list: [null, true, false, 1, 1.5, "text", $outside] })
+              ...Local(x: 0)
+            }
+            fragment Local($x: Input) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert [error.message for error in errors] == [
+            (
+                "Spreads 'Local' conflict because Local(x:"
+                ' { list: [null, true, false, 1, 1.5, "text", $outside] })'
+                " and Local(x: 0) have different fragment arguments."
+            )
+        ]
+
+    def retains_leaf_locations_when_abbreviating_a_long_conflict_path():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+        first = "child { " * 21 + "same: left" + " }" * 21
+        second = "child { " * 21 + "same: right" + " }" * 21
+        errors = validate(
+            schema, parse(f"{{ {first} {second} }}"), [OverlappingFieldsCanBeMergedRule]
+        )
+        assert len(errors) == 1
+        assert errors[0].locations
+        assert len(errors[0].locations) == 40
+        assert errors[0].nodes
+        aliases = [
+            node.alias.value
+            for node in errors[0].nodes
+            if isinstance(node, FieldNode) and node.alias
+        ]
+        assert aliases.count("same") == 2
+
+    def retains_small_nested_descriptions_and_conflict_locations():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+        first = "child { " * 7 + "same: left" + " }" * 7
+        second = "child { " * 7 + "same: right" + " }" * 7
+        errors = validate(
+            schema, parse(f"{{ {first} {second} }}"), [OverlappingFieldsCanBeMergedRule]
+        )
+        assert len(errors) == 1
+        assert "'left' and 'right' are different fields" in errors[0].message
+        assert errors[0].locations
+        assert len(errors[0].locations) == 16
+        assert errors[0].nodes
+        aliases = [
+            node.alias.value
+            for node in errors[0].nodes
+            if isinstance(node, FieldNode) and node.alias
+        ]
+        assert aliases.count("same") == 2
+
+    def abbreviates_long_names_in_conflict_messages():
+        schema = build_schema("type Query { field(value: Int): String }")
+        name = "name" * 260
+        document = parse(f"{{ {name}: {name} {name}: field }}")
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 1
+        assert name[:1000] + "..." in errors[0].message
+        assert name not in errors[0].message
+        assert errors[0].locations
+        assert len(errors[0].locations) == 2
+
+    def abbreviates_long_lists_of_nested_reasons():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+        names = [f"field{i}_{'detail' * 40}" for i in range(5)]
+        first = " ".join(f"{name}: left" for name in names)
+        second = " ".join(f"{name}: right" for name in names)
+        errors = validate(
+            schema,
+            parse(f"{{ child {{ {first} }} child {{ {second} }} }}"),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        assert len(errors) == 1
+        assert "..." in errors[0].message
+        assert len(errors[0].message) < 1200
+        assert errors[0].locations
+        assert len(errors[0].locations) == 12
+
+    def reports_conflicts_without_source_locations():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse("{ field(value: 1) field(value: 2) }", no_location=True)
+        errors = validate(schema, document)
+        assert [error.message for error in errors] == [
+            (
+                "Fields 'field' conflict because they have differing arguments."
+                " Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
+        assert errors[0].locations is None
+
     def reports_fragment_argument_conflicts_when_one_spread_omits_arguments():
         schema = build_schema("type Query { field(value: Int): String }")
         document = parse(

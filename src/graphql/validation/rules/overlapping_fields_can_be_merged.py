@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from itertools import chain
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
 
 from ...error import GraphQLError
@@ -19,6 +18,7 @@ from ...language import (
     InlineFragmentNode,
     IntValueNode,
     ListValueNode,
+    NameNode,
     NullValueNode,
     ObjectValueNode,
     SelectionSetNode,
@@ -62,22 +62,18 @@ __all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
 MAX_FIELD_COMPARISONS = 250_000
 
 
+# Keep diagnostic detail bounded independently of document size.
+MAX_CONFLICT_DETAIL_LENGTH = 1000
+MAX_CONFLICT_NODES = 20
+MAX_FRAGMENT_ARGUMENT_SIZE = 256
+
+
 class ComparisonBudgetExceededError(Exception):
     """Internal signal that the field-comparison budget has been exhausted.
 
     Raised deep inside the recursive conflict search and caught by the rule to abort
     validation. Never surfaces to callers of ``validate``.
     """
-
-
-def reason_message(reason: ConflictReasonMessage) -> str:
-    if isinstance(reason, list):
-        return " and ".join(
-            f"subfields '{sub_reason.response_name}' conflict because"
-            f" {reason_message(sub_reason.reason)}"
-            for sub_reason in reason
-        )
-    return reason
 
 
 class OverlappingFieldsCanBeMergedRule(ValidationRule):
@@ -166,10 +162,10 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
             return
         for response_name, reason, fields1, fields2 in conflicts:
-            reason_msg = reason_message(reason)
             self.report_error(
                 GraphQLError(
-                    f"Fields '{response_name}' conflict because {reason_msg}."
+                    f"Fields '{maybe_abbreviate(response_name)}'"
+                    f" conflict because {reason}."
                     " Use different aliases on the fields to fetch both"
                     " if this was intentional.",
                     fields1 + fields2,
@@ -181,20 +177,9 @@ class Conflict(NamedTuple):
     """A conflict with the field nodes on both sides."""
 
     response_name: str
-    reason: ConflictReasonMessage
+    reason: str
     fields1: list[FieldNode]
     fields2: list[FieldNode]
-
-
-class ConflictReason(NamedTuple):
-    """Field name and reason."""
-
-    response_name: str
-    reason: ConflictReasonMessage
-
-
-# Reason is a string, or a nested list of conflicts.
-ConflictReasonMessage: TypeAlias = str | list[ConflictReason]
 
 
 class FieldDetails:
@@ -621,11 +606,16 @@ def collect_conflicts_between_fragments(
         if compared_fragment_pairs.has(fragment1, fragment2, False):
             return
         compared_fragment_pairs.add(fragment1, fragment2, False)
+        description1 = get_fragment_spread_description(
+            rule_context, fragment_spread1.node
+        )
+        description2 = get_fragment_spread_description(
+            rule_context, fragment_spread2.node
+        )
         validation_context.report_error(
             GraphQLError(
-                f"Spreads '{fragment_spread1.node.name.value}' conflict because"
-                f" {get_fragment_spread_description(fragment_spread1.node)}"
-                f" and {get_fragment_spread_description(fragment_spread2.node)}"
+                f"Spreads '{maybe_abbreviate(fragment_spread1.node.name.value)}'"
+                f" conflict because {description1} and {description2}"
                 " have different fragment arguments.",
                 [fragment_spread1.node, fragment_spread2.node],
             )
@@ -978,7 +968,8 @@ def find_conflict(
         if not same_name:
             return Conflict(
                 response_name,
-                f"'{name1}' and '{name2}' are different fields",
+                f"'{maybe_abbreviate(name1)}' and '{maybe_abbreviate(name2)}'"
+                " are different fields",
                 [node1],
                 [node2],
             )
@@ -1433,9 +1424,24 @@ def get_variable_scope(
     return VariableScope(fragment_signature)
 
 
-def get_fragment_spread_description(node: FragmentSpreadNode) -> str:
+def get_fragment_spread_description(
+    rule_context: RuleContext, node: FragmentSpreadNode
+) -> str:
     """Print the fragment spread without its directives and the leading dots."""
-    return print_ast(FragmentSpreadNode(name=node.name, arguments=node.arguments))[3:]
+    name = maybe_abbreviate(node.name.value)
+    # Use the cached representation's length to print only small arguments.
+    size = 1
+    for argument in node.arguments or ():
+        size += (
+            2
+            + len(argument.name.value)
+            + len(get_value_info(rule_context, argument.value).comparison_key)
+        )
+        if size > MAX_FRAGMENT_ARGUMENT_SIZE:
+            return name + "(...)"
+    return print_ast(
+        FragmentSpreadNode(name=NameNode(value=name), arguments=node.arguments)
+    )[3:]
 
 
 def subfield_conflicts(
@@ -1447,16 +1453,45 @@ def subfield_conflicts(
     Conflict.
     """
     if conflicts:
+        # Abbreviate while combining child reasons, not after expanding a whole
+        # tree of conflicts.
+        message = ""
+        for name, reason, _fields1, _fields2 in conflicts:
+            message += (
+                f"{' and ' if message else ''}"
+                f"subfields '{maybe_abbreviate(name)}' conflict because {reason}"
+            )
+            if len(message) > MAX_CONFLICT_DETAIL_LENGTH:
+                break
         return Conflict(
             response_name,
-            [
-                ConflictReason(conflict.response_name, conflict.reason)
-                for conflict in conflicts
-            ],
-            list(chain([node1], *[conflict.fields1 for conflict in conflicts])),
-            list(chain([node2], *[conflict.fields2 for conflict in conflicts])),
+            maybe_abbreviate(message),
+            collect_conflict_nodes(node1, [conflict.fields1 for conflict in conflicts]),
+            collect_conflict_nodes(node2, [conflict.fields2 for conflict in conflicts]),
         )
     return None  # no conflict
+
+
+def collect_conflict_nodes(
+    node: FieldNode, conflict_fields: list[list[FieldNode]]
+) -> list[FieldNode]:
+    nodes = [node]
+    for fields in conflict_fields:
+        remaining = MAX_CONFLICT_NODES - len(nodes)
+        # Locations start with the enclosing field. Take from the end so that
+        # truncation favors the deeper fields involved in the conflict.
+        nodes += fields[-remaining:]
+        if len(nodes) == MAX_CONFLICT_NODES:
+            break
+    return nodes
+
+
+def maybe_abbreviate(text: str) -> str:
+    return (
+        text[:MAX_CONFLICT_DETAIL_LENGTH] + "..."
+        if len(text) > MAX_CONFLICT_DETAIL_LENGTH
+        else text
+    )
 
 
 class OrderedPairSet:
