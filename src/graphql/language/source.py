@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any, TypeGuard
 
-from .location import SourceLocation
+from .location import SourceLocation, _re_newline
 
 __all__ = ["Source", "is_source"]
-
-_re_newline = re.compile(r"\r\n|[\n\r]")
 
 DEFAULT_NAME = "GraphQL request"
 DEFAULT_SOURCE_LOCATION = SourceLocation(1, 1)

@@ -287,13 +287,18 @@ class GraphQLError(Exception):
         if not positions and node_locations:
             positions = [loc.start for loc in node_locations]
         self.positions = positions or None
-        if positions and source:
-            locations: list[SourceLocation] | None = [
-                source.get_location(pos) for pos in positions
-            ]
+        source_positions = (
+            [(source, pos) for pos in positions]
+            if positions and source
+            else [(loc.source, loc.start) for loc in node_locations]
+        )
+        if source_positions:
+            # Lazy import to avoid a cyclic dependency between error and language
+            from ..language.location import get_locations
+
+            self.locations = get_locations(source_positions)
         else:
-            locations = [loc.source.get_location(loc.start) for loc in node_locations]
-        self.locations = locations or None
+            self.locations = None
 
         # Adopt the cause as the standard exception cause when it is one, so
         # that the cause chain is reported without duplicating the traceback.

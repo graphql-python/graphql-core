@@ -1,4 +1,5 @@
 from graphql import Source, SourceLocation, get_location
+from graphql.language.location import get_locations
 
 
 def describe_get_location():
@@ -83,6 +84,95 @@ def describe_get_location():
         assert get_location(source, 2) == (1, 3)
         source.body = "\r\nb"
         assert get_location(source, 2) == (2, 1)
+
+
+def describe_get_locations():
+    def handles_an_empty_list_of_positions():
+        assert get_locations([]) == []
+
+    def gets_locations_in_an_empty_source():
+        source = Source("")
+
+        assert get_locations([(source, 0)]) == [(1, 1)]
+
+    def gets_locations_around_different_line_endings():
+        source = Source("a\nb\rc\r\nd")
+
+        assert get_locations(
+            [(source, start) for start in range(len(source.body) + 1)]
+        ) == [
+            (1, 1),
+            (1, 2),
+            (2, 1),
+            (2, 2),
+            (3, 1),
+            (3, 2),
+            (4, 0),
+            (4, 1),
+            (4, 2),
+        ]
+
+    def preserves_input_order_and_duplicate_positions_without_changing_the_input():
+        source = Source("a\nb\nc")
+        locations = (
+            (source, 4),
+            (source, 0),
+            (source, 2),
+            (source, 4),
+        )
+
+        assert get_locations(locations) == [
+            (3, 1),
+            (1, 1),
+            (2, 1),
+            (3, 1),
+        ]
+        assert [start for _source, start in locations] == [4, 0, 2, 4]
+
+    def groups_interleaved_sources_by_identity():
+        first = Source("a\nb")
+        second = Source("a b")
+
+        assert get_locations(
+            [
+                (first, 2),
+                (second, 2),
+                (first, 1),
+                (second, 0),
+            ]
+        ) == [
+            (2, 1),
+            (1, 3),
+            (1, 2),
+            (1, 1),
+        ]
+
+    # In Python, Source has a structural __eq__ and __hash__.
+    def does_not_rely_on_the_equality_of_sources():
+        class AllEqualSource(Source):
+            def __eq__(self, _other: object) -> bool:
+                return True
+
+            def __hash__(self) -> int:
+                return 0
+
+        first = AllEqualSource("a\nb")
+        second = AllEqualSource("a b")
+        assert first == second
+        assert hash(first) == hash(second)
+
+        assert get_locations([(first, 2), (second, 2)]) == [(2, 1), (1, 3)]
+
+    def uses_the_current_source_body_across_repeated_calls():
+        source = Source("a\nb")
+        locations = [
+            (source, 2),
+            (source, 1),
+        ]
+
+        assert get_locations(locations) == [(2, 1), (1, 2)]
+        source.body = "a b"
+        assert get_locations(locations) == [(1, 3), (1, 2)]
 
 
 def describe_source_location():
