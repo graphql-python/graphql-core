@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
 
 from ...error import GraphQLError
@@ -47,33 +48,28 @@ if TYPE_CHECKING:
 
     from ...utilities.type_info import FragmentSignature
 
-__all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
+__all__ = [
+    "MAX_COMPLEXITY_BUDGET",
+    "MAX_FIELD_COMPARISONS",
+    "OverlappingFieldsCanBeMergedRule",
+]
 
-# The maximum number of pairwise field comparisons performed while validating a
-# single document with the OverlappingFieldsCanBeMerged rule. The rule compares
-# every pair of fields that share a response name and recurses into their
-# sub-selections, which is O(n^2) in the number of such fields (and worse when
-# inline fragments repeat the same response name at multiple nesting levels). A
-# crafted query can therefore drive validation into minutes of CPU on a single
-# request. Once this many comparisons have been made, validation is aborted with a
-# GraphQLError instead of running to completion. The default is high enough that any
-# realistic query stays far below it; it can be raised or lowered by assigning to
-# ``graphql.validation.rules.overlapping_fields_can_be_merged.MAX_FIELD_COMPARISONS``.
+# Meter work that can grow through repeated comparisons and fragment scopes. Once the
+# budget is exhausted, the whole validation is aborted with an error. Collecting a
+# selection set's fields is shared across scopes and is not charged. The default is high
+# enough that any realistic query stays far below it; it can be raised or lowered by
+# assigning to this module attribute, which is read when the validation of the rule
+# starts.
+MAX_COMPLEXITY_BUDGET = 500_000
+
+# Deprecated, use MAX_COMPLEXITY_BUDGET instead. If this is changed, the budget is two
+# times its value, because a comparison of two fields costs two units of the budget.
 MAX_FIELD_COMPARISONS = 250_000
-
 
 # Keep diagnostic detail bounded independently of document size.
 MAX_CONFLICT_DETAIL_LENGTH = 1000
 MAX_CONFLICT_NODES = 20
 MAX_FRAGMENT_ARGUMENT_SIZE = 256
-
-
-class ComparisonBudgetExceededError(Exception):
-    """Internal signal that the field-comparison budget has been exhausted.
-
-    Raised deep inside the recursive conflict search and caught by the rule to abort
-    validation. Never surfaces to callers of ``validate``.
-    """
 
 
 class OverlappingFieldsCanBeMergedRule(ValidationRule):
@@ -104,10 +100,6 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         super().__init__(context)
         self.rule_context = RuleContext()
         self.fragment_scope: VariableScope | None = None
-
-        # Set once the comparison budget is exhausted. Further selection sets are then
-        # skipped, since validation has already been aborted with an error.
-        self._budget_exceeded = False
 
     def enter_fragment_definition(
         self, node: FragmentDefinitionNode, *_args: Any
@@ -140,27 +132,13 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # Their fields' own selection sets are still visited independently.
         if isinstance(parent, InlineFragmentNode):
             return
-        if self._budget_exceeded:
-            return
-        try:
-            conflicts = find_conflicts_within_selection_set(
-                self.context,
-                self.rule_context,
-                self.context.get_parent_type(),
-                selection_set,
-                self.fragment_scope,
-            )
-        except ComparisonBudgetExceededError:
-            self._budget_exceeded = True
-            self.report_error(
-                GraphQLError(
-                    "Query is too complex to validate for overlapping fields:"
-                    f" exceeded {MAX_FIELD_COMPARISONS} field comparisons."
-                    " Validation was aborted.",
-                    selection_set,
-                )
-            )
-            return
+        conflicts = find_conflicts_within_selection_set(
+            self.context,
+            self.rule_context,
+            self.context.get_parent_type(),
+            selection_set,
+            self.fragment_scope,
+        )
         for response_name, reason, fields1, fields2 in conflicts:
             self.report_error(
                 GraphQLError(
@@ -333,9 +311,9 @@ class RuleContext:
         "cached_collect_fields_results",
         "compared_fields_and_fragment_pairs",
         "compared_fragment_pairs",
-        "field_comparisons",
         "fragment_spread_info_by_key",
         "fragment_spread_info_by_node",
+        "remaining_complexity_budget",
         "value_info_by_node",
     )
 
@@ -364,9 +342,7 @@ class RuleContext:
         ] = RefMap()
         self.fragment_spread_info_by_key: dict[str, FragmentSpreadInfo] = {}
 
-        # The number of pairwise field comparisons made so far, which is limited by
-        # the comparison budget.
-        self.field_comparisons = 0
+        self.remaining_complexity_budget = get_complexity_budget()
 
 
 # Algorithm:
@@ -500,6 +476,10 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
+    # Callers can enumerate more field-map/fragment pairs than document nodes.
+    # Count attempts even when an empty collection or the pair cache skips them.
+    spend_complexity_budget(rule_context, 1)
+
     if not collect_fields_result.grouped_field_set:
         return
 
@@ -587,6 +567,9 @@ def collect_conflicts_between_fragments(
     fragment2 = fragment_spread2.definition
     scope1 = fragment_spread1.scope
     scope2 = fragment_spread2.scope
+    # Count attempted fragment pairs, including identity and cache hits.
+    spend_complexity_budget(rule_context, 2)
+
     # No need to compare a fragment to itself.
     if fragment1 is fragment2 and scope1 is scope2:
         return
@@ -860,7 +843,9 @@ def collect_conflicts_between(
         response_name,
         field_details_list1,
         field_details_list2,
-    ) in get_overlapping_fields(collect_fields_result1, collect_fields_result2):
+    ) in get_overlapping_fields(
+        rule_context, collect_fields_result1, collect_fields_result2
+    ):
         for field_details1 in field_details_list1:
             for field_details2 in field_details_list2:
                 conflict = find_conflict(
@@ -878,6 +863,7 @@ def collect_conflicts_between(
 
 
 def get_overlapping_fields(
+    rule_context: RuleContext,
     collect_fields_result1: CollectFieldsResult,
     collect_fields_result2: CollectFieldsResult,
 ) -> list[OverlappingFields]:
@@ -898,6 +884,8 @@ def get_overlapping_fields(
         response_name,
         field_details_list1,
     ) in collect_fields_result1.grouped_field_set.items():
+        # A field map can participate in many distinct comparisons.
+        spend_complexity_budget(rule_context, 1)
         field_details_list2 = grouped_field_set2.get(response_name)
         if field_details_list2:
             overlapping_fields.append(
@@ -924,12 +912,6 @@ def find_conflict(
     Determines if there is a conflict between two particular fields, including comparing
     their sub-fields.
     """
-    # Charge this comparison against the document-wide budget and abort validation once
-    # it is exhausted, guarding against quadratic-blowup denial of service.
-    rule_context.field_comparisons += 1
-    if rule_context.field_comparisons > MAX_FIELD_COMPARISONS:
-        raise ComparisonBudgetExceededError
-
     parent_type1 = field_details1.parent_type
     node1 = field_details1.node
     def1 = field_details1.definition
@@ -953,6 +935,8 @@ def find_conflict(
     type1 = cast("GraphQLOutputType | None", def1 and def1.type)
     type2 = cast("GraphQLOutputType | None", def2 and def2.type)
 
+    # Count attempted field pairs, including pairs skipped by type exclusivity.
+    spend_complexity_budget(rule_context, 2)
     field_info1 = get_field_info(field_details1)
     field_info2 = get_field_info(field_details2)
     comparison = field_info1.comparisons.get(field_info2)
@@ -982,7 +966,7 @@ def find_conflict(
             compared_arguments = comparison.arguments = compare_arguments(
                 rule_context, field_info1.arguments, field_info2.arguments
             )
-        if not same_arguments(compared_arguments, scope1, scope2):
+        if not same_arguments(rule_context, compared_arguments, scope1, scope2):
             return Conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
@@ -997,7 +981,7 @@ def find_conflict(
                     field_info1.stream_arguments,
                     field_info2.stream_arguments,
                 )
-            if same_arguments(compared_arguments, scope1, scope2):
+            if same_arguments(rule_context, compared_arguments, scope1, scope2):
                 # This was allowed in previous alpha versions of GraphQL.js.
                 reason += (
                     ". See https://github.com/graphql/defer-stream-wg/discussions/100"
@@ -1078,6 +1062,8 @@ def compare_arguments(
         return ArgumentComparison(False, values_with_variables)
     values2 = argument_info2.values
     for arg1 in argument_info1.nodes:
+        # A prepared argument list can participate in many field-pair comparisons.
+        spend_complexity_budget(rule_context, 1)
         value2 = values2.get(arg1.name.value)
         if value2 is None:
             return ArgumentComparison(False, values_with_variables)
@@ -1093,6 +1079,7 @@ def compare_arguments(
 
 
 def same_arguments(
+    rule_context: RuleContext,
     comparison: ArgumentComparison,
     scope1: VariableScope | None,
     scope2: VariableScope | None,
@@ -1101,10 +1088,15 @@ def same_arguments(
         return False
     # Equal expressions refer to the same variables within a scope. Across scopes,
     # they agree only when every reference is an operation variable.
-    return scope1 is scope2 or not any(
-        uses_local_variables(value, scope1) or uses_local_variables(value, scope2)
-        for value in comparison.values_with_variables
-    )
+    if scope1 is not scope2:
+        for value in comparison.values_with_variables:
+            # Different scope pairs can revisit the same prepared values.
+            spend_complexity_budget(rule_context, 1)
+            if uses_local_variables(
+                rule_context, value, scope1
+            ) or uses_local_variables(rule_context, value, scope2):
+                return False
+    return True
 
 
 class ValueInfo:
@@ -1120,7 +1112,9 @@ class ValueInfo:
         self.scope_dependencies = None
 
 
-def uses_local_variables(value: ValueInfo, scope: VariableScope | None) -> bool:
+def uses_local_variables(
+    rule_context: RuleContext, value: ValueInfo, scope: VariableScope | None
+) -> bool:
     if scope is None:
         return False
     # Declaration membership does not depend on the fragment arguments.
@@ -1132,9 +1126,13 @@ def uses_local_variables(value: ValueInfo, scope: VariableScope | None) -> bool:
     if cached is not None:
         return cached
     variable_definitions = signature.variable_definitions
-    depends_on_scope = any(
-        variable in variable_definitions for variable in value.variables
-    )
+    depends_on_scope = False
+    for variable in value.variables:
+        # A source value can be checked in several declaration contexts.
+        spend_complexity_budget(rule_context, 1)
+        if variable in variable_definitions:
+            depends_on_scope = True
+            break
     dependencies[signature] = depends_on_scope
     return depends_on_scope
 
@@ -1358,6 +1356,8 @@ def get_fragment_spread(
     scope: VariableScope | None,
 ) -> FragmentSpread:
     """Build a fragment spread with its fragment definition and variable scope."""
+    # New enclosing scopes can repeat spread resolution, including cache hits.
+    spend_complexity_budget(rule_context, 1)
     fragment_spread_info = rule_context.fragment_spread_info_by_node.get(
         fragment_spread_node
     )
@@ -1398,13 +1398,13 @@ def get_fragment_spread(
 
     # The source key fixes the variable names. Any local reference identifies
     # the enclosing scope; otherwise all references are operation variables.
-    variable_scope = (
-        scope
-        if any(
-            uses_local_variables(value, scope) for value in fragment_spread_info.values
-        )
-        else None
-    )
+    variable_scope = None
+    for value in fragment_spread_info.values:
+        # Enclosing scopes can revisit these prepared argument values.
+        spend_complexity_budget(rule_context, 1)
+        if uses_local_variables(rule_context, value, scope):
+            variable_scope = scope
+            break
     by_scope = fragment_spread_info.by_scope
     signature = fragment_spread_info.signature
     if variable_scope in by_scope:
@@ -1486,6 +1486,27 @@ def collect_conflict_nodes(
         if len(nodes) == MAX_CONFLICT_NODES:
             break
     return nodes
+
+
+def get_complexity_budget() -> int:
+    """Get the initial complexity budget for the validation of a document."""
+    if MAX_FIELD_COMPARISONS != 250_000:
+        warnings.warn(
+            "MAX_FIELD_COMPARISONS is deprecated, use MAX_COMPLEXITY_BUDGET instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return 2 * MAX_FIELD_COMPARISONS
+    return MAX_COMPLEXITY_BUDGET
+
+
+def spend_complexity_budget(rule_context: RuleContext, cost: int) -> None:
+    rule_context.remaining_complexity_budget -= cost
+    if rule_context.remaining_complexity_budget < 0:
+        from ..validate import ValidationAbortedError
+
+        msg = "Validation aborted."
+        raise ValidationAbortedError(msg)
 
 
 def maybe_abbreviate(text: str) -> str:

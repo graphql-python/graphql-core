@@ -14,6 +14,19 @@ from .harness import test_schema
 
 
 def describe_validate_supports_full_validation():
+    def handles_a_rule_abort_without_discarding_previous_errors():
+        class AbortingRule(ValidationRule):
+            def enter_document(self, *_args):
+                self.report_error(GraphQLError("Earlier error."))
+                msg = "Validation aborted."
+                raise ValidationAbortedError(msg)
+
+        errors = validate(test_schema, parse("{ human { name } }"), [AbortingRule])
+        assert [error.message for error in errors] == [
+            "Earlier error.",
+            "Validation aborted.",
+        ]
+
     def validates_queries():
         doc = parse(
             """
