@@ -1375,7 +1375,9 @@ def describe_too_deeply_nested_sources():
         _assert_nested_too_deeply(exc_info.value)
 
     def counts_only_the_current_nesting_depth():
-        n = MAX_NESTING_DEPTH - 2
+        # Only together these would exceed the limit. Stay well below it, since older
+        # Python versions can already run out of stack before reaching it.
+        n = MAX_NESTING_DEPTH // 2
         nested = "[" * n + "]" * n
         parse("{" + " ".join(f"a{i}: f(a: {nested})" for i in range(3)) + "}")
 
