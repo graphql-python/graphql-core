@@ -1,4 +1,5 @@
 from functools import partial
+from importlib import import_module
 
 from graphql.utilities import get_introspection_query
 from graphql.validation import MaxIntrospectionDepthRule
@@ -584,7 +585,10 @@ def describe_validate_max_introspection_nodes_rule():
             ],
         )
 
-    def does_not_exceed_the_recursion_limit_on_long_fragment_chains():
+    def does_not_exceed_the_recursion_limit_on_long_fragment_chains(monkeypatch):
+        # The rule on its own copes with this, without the limit in validate().
+        module = import_module("graphql.validation.validate")
+        monkeypatch.setattr(module, "MAX_NESTING_DEPTH", 10_000)
         n = 2000
         chain = "\n".join(
             f"fragment F{i} on __Type {{ name ...F{i + 1} }}" for i in range(n)

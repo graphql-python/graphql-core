@@ -2,11 +2,13 @@ import gc
 import sys
 import weakref
 from functools import cache
+from importlib import import_module
 
 import pytest
 
 from graphql.error import GraphQLError
 from graphql.language import parse
+from graphql.language.parser import MAX_NESTING_DEPTH
 from graphql.utilities import build_schema
 from graphql.validation import (
     FieldsOnCorrectTypeRule,
@@ -343,6 +345,92 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
         ]
         _assert_aborted(errors[-1])
 
+    def _chain(length: int, selection: str = "...F{next}", head: str = "{ ...F0 }"):
+        chain = " ".join(
+            f"fragment F{i} on Query {{ {selection.format(next=i + 1)} }}"
+            for i in range(length)
+        )
+        return parse(f"{head} {chain} fragment F{length} on Query {{ name }}")
+
+    def accepts_chains_up_to_the_maximum_nesting_depth():
+        document = _chain(MAX_NESTING_DEPTH - 2)
+        assert validate(schema, document) == []
+        document = _chain(
+            (MAX_NESTING_DEPTH - 2) // 2, "query {{ ...F{next} }}", "{ ...F0 }"
+        )
+        assert validate(schema, document) == []
+
+    def aborts_on_chains_above_the_maximum_nesting_depth():
+        document = _chain(MAX_NESTING_DEPTH - 1)
+        errors = validate(schema, document)
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    def aborts_on_chains_through_fields_above_the_maximum_nesting_depth():
+        document = _chain(MAX_NESTING_DEPTH // 2, "query {{ ...F{next} }}")
+        errors = validate(schema, document, [FieldsOnCorrectTypeRule])
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    def counts_nesting_within_the_definitions_through_inline_fragments():
+        def nested(inner: str) -> str:
+            return "... on Query { " * 100 + inner + " }" * 100
+
+        document = parse(
+            f"{{ ...A }} fragment A on Query {{ {nested('...B')} }}"
+            f" fragment B on Query {{ {nested('...C')} }}"
+            f" fragment C on Query {{ {nested('name')} }}"
+        )
+        errors = validate(schema, document, [FieldsOnCorrectTypeRule])
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    def does_not_add_up_the_nesting_of_sibling_selections():
+        nested = "... on Query { " * 100 + "name" + " }" * 100
+        document = parse(
+            f"{{ ...A }} fragment A on Query {{ {nested} ...B }}"
+            f" fragment B on Query {{ {nested} ...C }}"
+            f" fragment C on Query {{ {nested} }}"
+        )
+        assert validate(schema, document) == []
+
+    def checks_all_operations():
+        document = _chain(
+            MAX_NESTING_DEPTH - 1, head="query A { name } query B { ...F0 }"
+        )
+        errors = validate(schema, document, [FieldsOnCorrectTypeRule])
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    def checks_fragments_that_no_operation_uses():
+        document = _chain(MAX_NESTING_DEPTH, head="{ name }")
+        errors = validate(schema, document, [FieldsOnCorrectTypeRule])
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    def aborts_on_a_long_fragment_cycle():
+        length = MAX_NESTING_DEPTH + 1
+        spreads = " ".join(
+            f"fragment F{i} on Query {{ ...F{(i + 1) % length} }}"
+            for i in range(length)
+        )
+        errors = validate(
+            schema, parse(f"{{ ...F0 }} {spreads}"), [FieldsOnCorrectTypeRule]
+        )
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    def reports_short_fragment_cycles_and_unknown_fragments_as_before():
+        document = parse(
+            "{ ...A ...A ...Unknown }"
+            " fragment A on Query { ...B ...B ...C }"
+            " fragment B on Query { ...A }"
+            " fragment C on Query { name }"
+        )
+        messages = [error.message for error in validate(schema, document)]
+        assert "Unknown fragment 'Unknown'." in messages
+        assert "Cannot spread fragment 'A' within itself via 'B'." in messages
+
     def does_not_abort_when_the_chain_fits():
         document = parse(
             "{ ...F0 }"
@@ -404,7 +492,9 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
         sys.implementation.name == "pypy",
         reason="The JIT of PyPy can keep these objects alive.",
     )
-    def does_not_keep_the_document_alive():
+    def does_not_keep_the_document_alive(monkeypatch):
+        validate_module = import_module("graphql.validation.validate")
+        monkeypatch.setattr(validate_module, "MAX_NESTING_DEPTH", depth * 2)
         document = parse(
             "{ ...F0 } "
             + " ".join(
