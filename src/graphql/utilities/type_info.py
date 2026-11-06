@@ -698,11 +698,13 @@ class TypeInfo:
 
         :meta private:
         """
-        list_type = get_nullable_type(self.get_input_type())
-        item_type = list_type.of_type if is_list_type(list_type) else None
+        input_type = self.get_input_type()
+        list_type = input_type and get_nullable_type(input_type)
         # List positions never have a default value.
         self._default_value_stack.append(Undefined)
-        self._input_type_stack.append(item_type if is_input_type(item_type) else None)
+        self._input_type_stack.append(
+            list_type.of_type if list_type and is_list_type(list_type) else None
+        )
 
     def enter_object_field(self, node: ObjectFieldNode) -> None:
         """Update this TypeInfo instance for an entered object field node.
