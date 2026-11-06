@@ -116,6 +116,76 @@ def describe_parser():
         ):
             assert parse('{ foo(bar: "baz") }', max_tokens=7)
 
+    def limits_by_a_maximum_number_of_lexical_tokens():
+        parse("{ foo }", max_lexical_tokens=3)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 2 tokens\. Parsing aborted\.",
+        ):
+            parse("{ foo }", max_lexical_tokens=2)
+        parse('{ foo(bar: "baz") }', max_lexical_tokens=8)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 7 tokens\. Parsing aborted\.",
+        ):
+            parse('{ foo(bar: "baz") }', max_lexical_tokens=7)
+
+    def supports_the_deprecated_max_tokens_option():
+        parse("{ foo }", max_tokens=3)
+        with raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 2 tokens\. Parsing aborted\.",
+        ):
+            parse("{ foo }", max_tokens=2)
+
+    def does_not_count_comments_towards_the_maximum_of_lexical_tokens():
+        document = parse("# one\n{ # two\n foo } # three", max_lexical_tokens=3)
+        # The token count includes the comments in any case.
+        assert document.token_count == 6
+        with raises(GraphQLSyntaxError) as exc_info:
+            parse("# one\n{ # two\n foo } # three", max_lexical_tokens=2)
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Document contains more than 2 tokens. Parsing aborted."
+        )
+        assert error.positions == [19]
+
+        parse("# comment\n" * 1000 + "{ foo }", max_lexical_tokens=3)
+
+    def applies_max_lexical_tokens_and_max_tokens_independently():
+        # The deprecated max_tokens also counts comments, so it stays in effect when
+        # max_lexical_tokens is set, whichever of the two is lower.
+        message = r"Document contains more than 2 tokens\. Parsing aborted\."
+        with raises(GraphQLSyntaxError, match=message):
+            parse("{ foo }", max_lexical_tokens=3, max_tokens=2)
+        with raises(GraphQLSyntaxError, match=message):
+            parse("{ foo }", max_lexical_tokens=2, max_tokens=3)
+
+        parse("{ # comment\n foo }", max_lexical_tokens=3, max_tokens=4)
+        with raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 3 tokens\. Parsing aborted\.",
+        ):
+            parse("{ # comment\n foo }", max_lexical_tokens=3, max_tokens=3)
+
+    def applies_the_maximum_of_lexical_tokens_in_all_parse_functions():
+        message = r"Document contains more than 1 tokens\. Parsing aborted\."
+        assert parse_value("[]", max_lexical_tokens=2).kind == "list_value"
+        with raises(GraphQLSyntaxError, match=message):
+            parse_value("[]", max_lexical_tokens=1)
+        assert parse_const_value("[]", max_lexical_tokens=2).kind == "list_value"
+        with raises(GraphQLSyntaxError, match=message):
+            parse_const_value("[]", max_lexical_tokens=1)
+        assert parse_type("[A]", max_lexical_tokens=3).kind == "list_type"
+        with raises(GraphQLSyntaxError, match=message):
+            parse_type("[A]", max_lexical_tokens=1)
+        parse_schema_coordinate("A.b", max_lexical_tokens=3)
+        with raises(GraphQLSyntaxError, match=message):
+            parse_schema_coordinate("A.b", max_lexical_tokens=1)
+
     def counts_comment_tokens_towards_the_maximum():
         # Comment tokens are read and allocated by the lexer but skipped over; they
         # must still count towards max_tokens, otherwise a comment-padded document
