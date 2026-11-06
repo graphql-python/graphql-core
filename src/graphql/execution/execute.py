@@ -82,6 +82,8 @@ __all__ = [
     "Middleware",
 ]
 
+SELECTIONS_NESTED_TOO_DEEPLY = "Selections are nested too deeply. Execution aborted."
+
 
 # Terminology
 #
@@ -487,13 +489,20 @@ class ExecutionContext:
                 operation,
             )
 
-        root_fields = collect_fields(
-            self.schema,
-            self.fragments,
-            self.variable_values,
-            root_type,
-            operation.selection_set,
-        )
+        try:
+            root_fields = collect_fields(
+                self.schema,
+                self.fragments,
+                self.variable_values,
+                root_type,
+                operation.selection_set,
+            )
+        except RecursionError:
+            root_fields = None
+        # Leave the block above first, or the RecursionError would be kept as the
+        # context of this error and keep all the frames of the recursion alive.
+        if root_fields is None:
+            raise GraphQLError(SELECTIONS_NESTED_TOO_DEEPLY, operation)
 
         path = None
 

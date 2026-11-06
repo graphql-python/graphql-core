@@ -13,6 +13,7 @@ from typing import (
 from ..error import GraphQLError, located_error
 from ..execution.collect_fields import collect_fields
 from ..execution.execute import (
+    SELECTIONS_NESTED_TOO_DEEPLY,
     assert_valid_execution_arguments,
     execute,
     get_field_def,
@@ -295,6 +296,14 @@ async def create_source_event_stream(
     except GraphQLError as error:
         # Report it as an ExecutionResult, containing only errors and no data.
         return ExecutionResult(data=None, errors=[error])
+
+    except RecursionError:
+        # This error is never raised, so it has no traceback or context
+        # that would keep all the frames of the recursion alive.
+        return ExecutionResult(
+            data=None,
+            errors=[GraphQLError(SELECTIONS_NESTED_TOO_DEEPLY, context.operation)],
+        )
 
 
 async def execute_subscription(context: ExecutionContext) -> AsyncIterable[Any]:
