@@ -1,5 +1,6 @@
 """Print AST"""
 
+from sys import maxsize
 from typing import Any, Callable, Collection, Dict, List, Optional, Union
 
 from ..language.ast import Node
@@ -7,23 +8,41 @@ from .block_string import print_block_string
 from .print_string import print_string
 from .reducer import reduce
 
-__all__ = ["print_ast"]
+__all__ = ["print_ast", "print_for_error"]
 
 
-def print_ast(ast: Node) -> str:
+def print_ast(ast: Node, max_indent_depth: Optional[int] = None) -> str:
     r"""Convert an AST into a string.
 
     The conversion is done using a set of reasonable formatting rules.
 
+    Indentation and inserted newlines can be disabled at a given depth.
+
     :param ast: The GraphQL AST node to print.
+    :param max_indent_depth: Maximum indentation depth. Not limited by default.
     :returns: A stable string representation of the AST.
 
     >>> from graphql import parse, print_ast
     >>> ast = parse('{ hero { name } }')
     >>> print_ast(ast)
     '{\n  hero {\n    name\n  }\n}'
+    >>> print_ast(ast, max_indent_depth=0)
+    '{ hero { name } }'
     """
-    return render(reduce(ast, print_doc_ast_reducer))
+    return render(
+        reduce(ast, print_doc_ast_reducer),
+        maxsize if max_indent_depth is None else max_indent_depth,
+    )
+
+
+def print_for_error(ast: Node) -> str:
+    """Convert an AST into a string for an error message.
+
+    For internal use only.
+
+    :meta private:
+    """
+    return print_ast(ast, 100)
 
 
 # The wrapping limit applies to total string length, including newlines.
@@ -36,6 +55,7 @@ class PrintBuffer:
     __slots__ = (
         "dedent_after",
         "indent_before",
+        "is_block_string",
         "length",
         "lines",
         "newlines",
@@ -50,8 +70,9 @@ class PrintBuffer:
     tail: "PrintBuffer"
     indent_before: bool
     dedent_after: bool
+    is_block_string: bool
 
-    def __init__(self, value: str = "") -> None:
+    def __init__(self, value: str = "", is_block_string: bool = False) -> None:
         self.length = len(value)
         if "\n" in value:
             lines = value.split("\n")
@@ -64,6 +85,7 @@ class PrintBuffer:
         self.tail = self
         self.indent_before = False
         self.dedent_after = False
+        self.is_block_string = is_block_string
 
     def append(self, result: Union[str, "PrintBuffer"]) -> "PrintBuffer":
         if isinstance(result, str):
@@ -88,22 +110,31 @@ class PrintBuffer:
 EMPTY = PrintBuffer()
 
 
-def render(buffer: Optional[PrintBuffer]) -> str:
+def render(buffer: Optional[PrintBuffer], max_depth: int) -> str:
     output: List[str] = []
     append = output.append
+    depth = 0
     indentation = ""
     part = buffer
     while part is not None:
         lines = part.lines
         if part.indent_before:
-            indentation += "  "
-            append("  ")
+            if depth < max_depth:
+                indentation += "  "
+                append("  ")
+            depth += 1
         if isinstance(lines, str):
             append(lines)
         else:
-            append(f"\n{indentation}".join(lines))
+            newline = (
+                " "
+                if not part.is_block_string and depth >= max_depth
+                else f"\n{indentation}"
+            )
+            append(newline.join(lines))
         if part.dedent_after:
-            indentation = indentation[:-2]
+            depth -= 1
+            indentation = indentation[: depth * 2]
         part = part.next
     return "".join(output)
 
@@ -150,8 +181,10 @@ def print_field(node: Any) -> PrintBuffer:
 
 
 def print_string_value(node: Any) -> PrintBuffer:
-    return PrintBuffer(
-        print_block_string(node.value) if node.block else print_string(node.value)
+    return (
+        PrintBuffer(print_block_string(node.value), True)
+        if node.block
+        else PrintBuffer(print_string(node.value))
     )
 
 

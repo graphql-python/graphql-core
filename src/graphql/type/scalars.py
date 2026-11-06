@@ -13,7 +13,7 @@ from ..language.ast import (
     StringValueNode,
     ValueNode,
 )
-from ..language.printer import print_ast
+from ..language.printer import print_for_error
 from .definition import GraphQLNamedType, GraphQLScalarType
 
 __all__ = [
@@ -96,14 +96,14 @@ def parse_int_literal(value_node: ValueNode, _variables: Any = None) -> int:
     """Parse an integer value node in the AST."""
     if not isinstance(value_node, IntValueNode):
         raise GraphQLError(
-            "Int cannot represent non-integer value: " + print_ast(value_node),
+            "Int cannot represent non-integer value: " + print_for_error(value_node),
             value_node,
         )
     num = int(value_node.value)
     if not GRAPHQL_MIN_INT <= num <= GRAPHQL_MAX_INT:
         raise GraphQLError(
             "Int cannot represent non 32-bit signed integer value: "
-            + print_ast(value_node),
+            + print_for_error(value_node),
             value_node,
         )
     return num
@@ -152,7 +152,7 @@ def parse_float_literal(value_node: ValueNode, _variables: Any = None) -> float:
     """Parse a float value node in the AST."""
     if not isinstance(value_node, (FloatValueNode, IntValueNode)):
         raise GraphQLError(
-            "Float cannot represent non numeric value: " + print_ast(value_node),
+            "Float cannot represent non numeric value: " + print_for_error(value_node),
             value_node,
         )
     return float(value_node.value)
@@ -199,7 +199,8 @@ def parse_string_literal(value_node: ValueNode, _variables: Any = None) -> str:
     """Parse a string value node in the AST."""
     if not isinstance(value_node, StringValueNode):
         raise GraphQLError(
-            "String cannot represent a non string value: " + print_ast(value_node),
+            "String cannot represent a non string value: "
+            + print_for_error(value_node),
             value_node,
         )
     return value_node.value
@@ -242,7 +243,8 @@ def parse_boolean_literal(value_node: ValueNode, _variables: Any = None) -> bool
     """Parse a boolean value node in the AST."""
     if not isinstance(value_node, BooleanValueNode):
         raise GraphQLError(
-            "Boolean cannot represent a non boolean value: " + print_ast(value_node),
+            "Boolean cannot represent a non boolean value: "
+            + print_for_error(value_node),
             value_node,
         )
     return value_node.value
@@ -295,7 +297,7 @@ def parse_id_literal(value_node: ValueNode, _variables: Any = None) -> str:
     if not isinstance(value_node, (StringValueNode, IntValueNode)):
         raise GraphQLError(
             "ID cannot represent a non-string and non-integer value: "
-            + print_ast(value_node),
+            + print_for_error(value_node),
             value_node,
         )
     return value_node.value

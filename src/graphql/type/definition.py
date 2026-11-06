@@ -44,8 +44,8 @@ from ..language import (
     UnionTypeDefinitionNode,
     UnionTypeExtensionNode,
     ValueNode,
-    print_ast,
 )
+from ..language.printer import print_for_error
 from ..pyutils import (
     AwaitableOrValue,
     Path,
@@ -2470,7 +2470,7 @@ class GraphQLEnumType(GraphQLNamedType):
             try:
                 enum_value = self.values[value_node.value]
             except KeyError:
-                value_str = print_ast(value_node)
+                value_str = print_for_error(value_node)
                 raise GraphQLError(
                     f"Value '{value_str}' does not exist in '{self.name}' enum."
                     + (
@@ -2481,7 +2481,7 @@ class GraphQLEnumType(GraphQLNamedType):
                     value_node,
                 )
             return enum_value.value
-        value_str = print_ast(value_node)
+        value_str = print_for_error(value_node)
         raise GraphQLError(
             f"Enum '{self.name}' cannot represent non-enum value: {value_str}."
             + ("" if hide_suggestions else did_you_mean_enum_value(self, value_str)),

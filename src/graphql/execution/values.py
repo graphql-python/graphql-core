@@ -19,9 +19,9 @@ from ..language import (
     TypeExtensionNode,
     VariableDefinitionNode,
     VariableNode,
-    print_ast,
 )
 from ..language.parser import MAX_NESTING_DEPTH
+from ..language.printer import print_for_error
 from ..pyutils import Undefined, inspect, print_path_list
 from ..type import (
     GraphQLDirective,
@@ -184,7 +184,7 @@ def coerce_variable_values(
         if not is_input_type(var_type):
             # Must use input types for variables. This should be caught during
             # validation, however is checked again here for safety.
-            var_type_str = print_ast(var_def_node.type)
+            var_type_str = print_for_error(var_def_node.type)
             on_error(
                 GraphQLError(
                     f"Variable '${var_name}' expected value of type '{var_type_str}'"
@@ -358,7 +358,7 @@ def get_argument_values(
             # execution. This is a runtime check to ensure execution does not
             # continue with an invalid argument value.
             raise GraphQLError(
-                f"Argument '{name}' has invalid value {print_ast(value_node)}.",
+                f"Argument '{name}' has invalid value {print_for_error(value_node)}.",
                 value_node,
             )
         coerced_values[arg_def.out_name or name] = coerced_value

@@ -10,6 +10,7 @@ from graphql.language import (
     ListValueNode,
     NamedTypeNode,
     NameNode,
+    SelectionSetNode,
     Visitor,
     parse,
     parse_schema_coordinate,
@@ -18,13 +19,38 @@ from graphql.language import (
     visit,
 )
 
-from graphql.language.printer import PrintBuffer, joined_length
+from graphql.language.printer import PrintBuffer, joined_length, print_for_error
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
 
 
 def describe_printer_query_document():
+    def limits_indentation_only_when_requested():
+        ast = parse("{ a { b { c } } }")
+        assert print_ast(ast, max_indent_depth=0) == "{ a { b { c } } }"
+        assert print_ast(ast, max_indent_depth=1) == "{\n  a { b { c } }\n}"
+        assert print_ast(ast, max_indent_depth=None) == print_ast(ast)
+
+    def keeps_block_string_line_breaks():
+        ast = parse_value('"""first\nsecond"""')
+        assert print_ast(ast, max_indent_depth=0) == print_ast(ast)
+
+    def caps_error_indentation_at_100_levels():
+        selection_set = SelectionSetNode(selections=())
+        for _level in range(300):
+            selection_set = SelectionSetNode(
+                selections=(
+                    FieldNode(name=NameNode(value="a"), selection_set=selection_set),
+                )
+            )
+        full = print_ast(selection_set)
+        bounded = print_for_error(selection_set)
+        assert "\n" + " " * 201 in full
+        assert "\n" + " " * 200 in bounded
+        assert "\n" + " " * 201 not in bounded
+        assert "".join(bounded.split()) == "".join(full.split())
+
     def prints_deeply_nested_types_without_recursion():
         type_: Any = NamedTypeNode(name=NameNode(value="T"))
         for _depth in range(10_000):

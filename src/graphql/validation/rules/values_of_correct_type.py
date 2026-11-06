@@ -16,8 +16,8 @@ from ...language import (
     ValueNode,
     VisitorAction,
     SKIP,
-    print_ast,
 )
+from ...language.printer import print_for_error
 from ...pyutils import did_you_mean, suggestion_list, Undefined
 from ...type import (
     GraphQLInputObjectType,
@@ -130,7 +130,8 @@ class ValuesOfCorrectTypeRule(ValidationRule):
         if is_non_null_type(type_):
             self.report_error(
                 GraphQLError(
-                    f"Expected value of type '{type_}', found {print_ast(node)}.", node
+                    f"Expected value of type '{type_}', found {print_for_error(node)}.",
+                    node,
                 )
             )
 
@@ -195,7 +196,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             self.report_error(
                 GraphQLError(
                     f"Expected value of type '{location_type}',"
-                    f" found {print_ast(node)}.",
+                    f" found {print_for_error(node)}.",
                     node,
                 )
             )
@@ -218,7 +219,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
                 self.report_error(
                     GraphQLError(
                         f"Expected value of type '{location_type}',"
-                        f" found {print_ast(node)}.",
+                        f" found {print_for_error(node)}.",
                         node,
                     )
                 )
@@ -228,7 +229,7 @@ class ValuesOfCorrectTypeRule(ValidationRule):
             self.report_error(
                 GraphQLError(
                     f"Expected value of type '{location_type}',"
-                    f" found {print_ast(node)}; {error}",
+                    f" found {print_for_error(node)}; {error}",
                     node,
                     # Ensure a reference to the original error is maintained.
                     original_error=error,
