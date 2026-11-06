@@ -1,21 +1,79 @@
-from copy import deepcopy
+from copy import copy, deepcopy
+from typing import Any
 
 from pytest import raises
 
 from graphql.error import GraphQLSyntaxError
 from graphql.language import (
     FieldNode,
+    ListTypeNode,
+    ListValueNode,
+    NamedTypeNode,
     NameNode,
+    Visitor,
     parse,
     parse_schema_coordinate,
+    parse_value,
     print_ast,
+    visit,
 )
+
+from graphql.language.printer import PrintBuffer, joined_length
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
 
 
 def describe_printer_query_document():
+    def prints_deeply_nested_types_without_recursion():
+        type_: Any = NamedTypeNode(name=NameNode(value="T"))
+        for _depth in range(10_000):
+            type_ = ListTypeNode(type=type_)
+
+        assert print_ast(type_) == "[" * 10_000 + "T" + "]" * 10_000
+
+    def prints_absent_variable_and_argument_definitions():
+        class OptionalArrayRemover(Visitor):
+            @staticmethod
+            def enter_operation_definition(node, *_args):
+                node = copy(node)
+                node.variable_definitions = None
+                return node
+
+            @staticmethod
+            def enter_field_definition(node, *_args):
+                node = copy(node)
+                node.arguments = None
+                return node
+
+            @staticmethod
+            def enter_directive_definition(node, *_args):
+                node = copy(node)
+                node.arguments = None
+                return node
+
+        ast = visit(
+            parse("query Q { f } type Query { f: String } directive @d on FIELD"),
+            OptionalArrayRemover(),
+        )
+
+        assert print_ast(ast) == (
+            "query Q {\n  f\n}\n\ntype Query {\n  f: String\n}"
+            "\n\ndirective @d on FIELD"
+        )
+
+    def ignores_empty_items_when_wrapping_arguments():
+        items = [PrintBuffer(), PrintBuffer("a"), PrintBuffer(), PrintBuffer("b")]
+        assert joined_length(items, ", ") == 4
+
+    def does_not_change_shared_input_nodes():
+        value = parse_value("[1, 2]")
+        ast = ListValueNode(values=(value, value))
+
+        assert print_ast(ast) == "[[1, 2], [1, 2]]"
+        assert print_ast(ast) == "[[1, 2], [1, 2]]"
+        assert ast.values == (value, value)
+
     def prints_minimal_ast():
         ast = FieldNode(name=NameNode(value="foo"))
         assert print_ast(ast) == "foo"

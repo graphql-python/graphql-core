@@ -82,6 +82,12 @@ def get_value(node):
 
 
 def describe_visitor():
+    def reports_invalid_child_nodes():
+        corrupt_ast = FieldNode(name="random data")
+        with raises(TypeError) as exc_info:
+            visit(corrupt_ast, Visitor())
+        assert str(exc_info.value) == "Invalid AST Node: 'random data'."
+
     def visit_with_invalid_node():
         with raises(TypeError) as exc_info:
             # noinspection PyTypeChecker
