@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import gc
+import weakref
+from importlib import import_module
 from math import nan
 from typing import Any
 
+from graphql import graphql_sync
 from graphql.error import GraphQLError
 from graphql.execution import ExecutionResult, execute_sync
 from graphql.execution.values import get_variable_values
@@ -24,6 +28,7 @@ from graphql.type import (
     GraphQLSchema,
     GraphQLString,
 )
+from graphql.utilities import build_schema
 from graphql.utilities.value_from_ast_untyped import value_from_ast_untyped
 
 
@@ -1803,3 +1808,120 @@ def describe_execute_handles_inputs():
             )
             assert not isinstance(result, list)
             assert "input" not in result.coerced
+
+
+def describe_too_deeply_nested_variable_values():
+    schema = build_schema("""
+        input Nested {
+          nested: Nested
+          nestedList: [Nested]
+          leaf: Int
+        }
+
+        type Query {
+          field(input: Nested, other: Int): String
+        }
+        """)
+
+    source = "query ($input: Nested) { field(input: $input) }"
+    document = parse(source)
+    operation = document.definitions[0]
+    assert isinstance(operation, OperationDefinitionNode)
+    variable_definitions = operation.variable_definitions
+    assert variable_definitions is not None
+
+    message = "Variable values are nested too deeply."
+
+    def _nested(depth: int, key: str = "nested") -> dict[str, Any]:
+        value: dict[str, Any] = {"leaf": 1}
+        for _ in range(depth):
+            value = {key: [value] if key == "nestedList" else value}
+        return value
+
+    # Far beyond the recursion limit on all interpreters.
+    too_deep = 100_000
+
+    def _assert_nested_too_deeply(error: GraphQLError):
+        assert error.message == message
+        assert error.__traceback__ is None
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    def get_variable_values_returns_an_error():
+        for key in ("nested", "nestedList"):
+            result = get_variable_values(
+                schema, variable_definitions, {"input": _nested(too_deep, key)}
+            )
+            assert isinstance(result, list)
+            assert len(result) == 1
+            _assert_nested_too_deeply(result[0])
+
+    def get_variable_values_keeps_previous_errors():
+        operation = parse(
+            "query ($other: Int, $input: Nested) { field(other: $other) }"
+        ).definitions[0]
+        assert isinstance(operation, OperationDefinitionNode)
+        assert operation.variable_definitions is not None
+        result = get_variable_values(
+            schema,
+            operation.variable_definitions,
+            {"other": "bad", "input": _nested(too_deep)},
+        )
+        assert isinstance(result, list)
+        assert len(result) == 2
+        assert result[0].message.startswith("Variable '$other' has invalid value")
+        _assert_nested_too_deeply(result[1])
+
+    def execute_sync_returns_a_result_with_the_error():
+        result = execute_sync(
+            schema, document, variable_values={"input": _nested(too_deep)}
+        )
+        assert result.data is None
+        assert result.errors
+        assert len(result.errors) == 1
+        _assert_nested_too_deeply(result.errors[0])
+
+    def graphql_sync_returns_a_result_with_the_error():
+        result = graphql_sync(
+            schema, source, variable_values={"input": _nested(too_deep)}
+        )
+        assert result.data is None
+        assert result.errors
+        assert len(result.errors) == 1
+        _assert_nested_too_deeply(result.errors[0])
+
+    def still_accepts_a_depth_that_fits():
+        value = _nested(50)
+        result = get_variable_values(schema, variable_definitions, {"input": value})
+        assert not isinstance(result, list)
+        assert result.coerced == {"input": value}
+
+        def resolve_field(_info, input):  # noqa: A002
+            return "ok" if input == value else "bad"
+
+        assert execute_sync(
+            schema, document, {"field": resolve_field}, variable_values={"input": value}
+        ) == ({"field": "ok"}, None)
+
+    def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
+        refs: list[weakref.ref] = []
+        module = import_module("graphql.utilities.coerce_input_value")
+        coerce_input_value = module.coerce_input_value
+
+        class Tracked:
+            pass
+
+        def tracked_coerce_input_value(*args, **kwargs):
+            tracked = Tracked()
+            refs.append(weakref.ref(tracked))
+            return coerce_input_value(*args, **kwargs)
+
+        monkeypatch.setattr(module, "coerce_input_value", tracked_coerce_input_value)
+        result = get_variable_values(
+            schema, variable_definitions, {"input": _nested(too_deep)}
+        )
+        gc.collect()
+        assert len(refs) > 10
+        assert all(ref() is None for ref in refs)
+        assert isinstance(result, list)
+        _assert_nested_too_deeply(result[0])

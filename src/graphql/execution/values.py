@@ -114,7 +114,8 @@ def get_variable_values(
 
     Prepares a dict of variable values of the correct type based on the provided
     variable definitions and arbitrary input. If the input cannot be parsed to match
-    the variable definitions, a list of GraphQLErrors will be returned instead.
+    the variable definitions, a list of GraphQLErrors will be returned instead. This
+    also applies to input nested too deeply for the recursion limit of the interpreter.
 
     :param schema: GraphQL schema to use.
     :param var_def_nodes: The variable definition AST nodes to coerce.
@@ -193,6 +194,10 @@ def get_variable_values(
             return variable_values
     except GraphQLError as e:
         errors.append(e)
+    except RecursionError:
+        # This error is never raised, so it has no traceback or context
+        # that would keep all the frames of the recursion alive.
+        errors.append(GraphQLError("Variable values are nested too deeply."))
 
     return errors
 
