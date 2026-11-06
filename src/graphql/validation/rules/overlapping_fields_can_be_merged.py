@@ -309,6 +309,22 @@ class ArgumentInfo(NamedTuple):
     values: dict[str, ValueNode]
 
 
+class FragmentSpreadInfo:
+    """The prepared source of equivalent fragment spreads."""
+
+    __slots__ = "by_scope", "signature", "values"
+
+    def __init__(
+        self, signature: FragmentSignature | None, values: list[ValueInfo]
+    ) -> None:
+        self.signature = signature
+        self.values = values
+        # Cache the resulting fragment scope by the arguments' enclosing scope.
+        # A None key means no local references; a None value means the target fragment
+        # declares no variables.
+        self.by_scope: dict[VariableScope | None, VariableScope | None] = {}
+
+
 class RuleContext:
     """The state of the rule that is shared during the validation of a document."""
 
@@ -317,7 +333,8 @@ class RuleContext:
         "compared_fields_and_fragment_pairs",
         "compared_fragment_pairs",
         "field_comparisons",
-        "fragment_scopes",
+        "fragment_spread_info_by_key",
+        "fragment_spread_info_by_node",
         "value_info_by_node",
     )
 
@@ -341,12 +358,10 @@ class RuleContext:
 
         self.value_info_by_node: RefMap[ValueNode, ValueInfo] = RefMap()
 
-        # Cache the resulting fragment scope by the arguments' enclosing scope.
-        # A None key means no local references; a None value means the target fragment
-        # declares no variables.
-        self.fragment_scopes: dict[
-            str, dict[VariableScope | None, VariableScope | None]
-        ] = {}
+        self.fragment_spread_info_by_node: RefMap[
+            FragmentSpreadNode, FragmentSpreadInfo
+        ] = RefMap()
+        self.fragment_spread_info_by_key: dict[str, FragmentSpreadInfo] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
         # the comparison budget.
@@ -1300,35 +1315,55 @@ def get_fragment_spread(
     scope: VariableScope | None,
 ) -> FragmentSpread:
     """Build a fragment spread with its fragment definition and variable scope."""
-    signature = validation_context.get_fragment_signature_by_name()(
-        fragment_spread_node.name.value
+    fragment_spread_info = rule_context.fragment_spread_info_by_node.get(
+        fragment_spread_node
     )
-    argument_info = get_argument_info(fragment_spread_node.arguments)
-    parts: list[str] = []
-    values: list[ValueInfo] = []
-    if signature and argument_info is not None:
-        arg_map = argument_info.values
-        for name in signature.variable_definitions:
-            value = arg_map.get(name)
-            if value is not None:
-                argument = get_value_info(rule_context, value)
+    if fragment_spread_info is None:
+        signature = validation_context.get_fragment_signature_by_name()(
+            fragment_spread_node.name.value
+        )
+        argument_info = get_argument_info(fragment_spread_node.arguments)
+        parts: list[str] = []
+        values: list[ValueInfo] = []
+        if signature and argument_info is not None:
+            arg_map = argument_info.values
+            variable_definitions = signature.variable_definitions
+            # Order only supplied, declared arguments, once per source spread.
+            for name in sorted(
+                name for name in arg_map if name in variable_definitions
+            ):
+                argument = get_value_info(rule_context, arg_map[name])
                 parts += (name, argument.comparison_key)
                 if argument.variables:
                     values.append(argument)
-    source_key = json.dumps(
-        [signature.definition.name.value if signature else None, parts],
-        separators=(",", ":"),
-        ensure_ascii=False,
-    )
-    by_scope = rule_context.fragment_scopes.get(source_key)
-    if by_scope is None:
-        by_scope = rule_context.fragment_scopes[source_key] = {}
+        fragment_spread_info_key = json.dumps(
+            [signature.definition.name.value if signature else None, parts],
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        fragment_spread_info = rule_context.fragment_spread_info_by_key.get(
+            fragment_spread_info_key
+        )
+        if fragment_spread_info is None:
+            fragment_spread_info = FragmentSpreadInfo(signature, values)
+            rule_context.fragment_spread_info_by_key[fragment_spread_info_key] = (
+                fragment_spread_info
+            )
+        rule_context.fragment_spread_info_by_node[fragment_spread_node] = (
+            fragment_spread_info
+        )
 
     # The source key fixes the variable names. Any local reference identifies
     # the enclosing scope; otherwise all references are operation variables.
     variable_scope = (
-        scope if any(uses_local_variables(value, scope) for value in values) else None
+        scope
+        if any(
+            uses_local_variables(value, scope) for value in fragment_spread_info.values
+        )
+        else None
     )
+    by_scope = fragment_spread_info.by_scope
+    signature = fragment_spread_info.signature
     if variable_scope in by_scope:
         fragment_scope = by_scope[variable_scope]
     else:

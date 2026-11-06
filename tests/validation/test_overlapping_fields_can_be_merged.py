@@ -108,6 +108,20 @@ def describe_validate_overlapping_fields_can_be_merged():
         ]
 
     def describe_fragment_arguments_must_produce_fields_that_can_be_merged():
+        def ignores_argument_order_and_undeclared_fragment_arguments():
+            assert_valid(
+                """
+                query Query($x: Int, $y: Int) {
+                  ...WithArgs(y: $y, x: $x, ignored: true)
+                  ...WithArgs(x: $x, y: $y)
+                }
+                fragment WithArgs($y: Int, $x: Int) on Type {
+                  a(x: $x)
+                  b(y: $y)
+                }
+                """
+            )
+
         def allows_conflicting_spreads_at_different_depths():
             assert_valid(
                 """
