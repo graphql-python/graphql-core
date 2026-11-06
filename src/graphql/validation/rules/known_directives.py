@@ -45,20 +45,20 @@ class KnownDirectivesRule(ASTValidationRule):
 
     def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
-        locations_map: dict[str, tuple[DirectiveLocation, ...]] = {}
+        locations_map: dict[str, set[DirectiveLocation]] = {}
 
         schema = context.schema
         defined_directives = (
             schema.directives if schema else cast("list", specified_directives)
         )
         for directive in defined_directives:
-            locations_map[directive.name] = directive.locations
+            locations_map[directive.name] = set(directive.locations)
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                locations_map[def_.name.value] = tuple(
+                locations_map[def_.name.value] = {
                     DirectiveLocation[name.value] for name in def_.locations
-                )
+                }
         self.locations_map = locations_map
 
     def enter_directive(

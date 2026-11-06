@@ -33,19 +33,19 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
     def __init__(self, context: ValidationContext | SDLValidationContext) -> None:
         super().__init__(context)
-        directive_args: dict[str, list[str]] = {}
+        directive_args: dict[str, set[str]] = {}
 
         schema = context.schema
         defined_directives = schema.directives if schema else specified_directives
         for directive in cast("list", defined_directives):
-            directive_args[directive.name] = list(directive.args)
+            directive_args[directive.name] = set(directive.args)
 
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                directive_args[def_.name.value] = [
+                directive_args[def_.name.value] = {
                     arg.name.value for arg in def_.arguments or []
-                ]
+                }
 
         self.directive_args = directive_args
 
@@ -61,7 +61,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
                     suggestions = (
                         []
                         if self.context.hide_suggestions
-                        else suggestion_list(arg_name, known_args)
+                        else suggestion_list(arg_name, list(known_args))
                     )
                     self.report_error(
                         GraphQLError(
