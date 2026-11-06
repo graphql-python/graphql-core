@@ -9,16 +9,22 @@ from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
 from ...error import GraphQLError
 from ...language import (
     ArgumentNode,
+    BooleanValueNode,
+    EnumValueNode,
     FieldNode,
+    FloatValueNode,
     FragmentArgumentNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
+    IntValueNode,
     ListValueNode,
     NameNode,
+    NullValueNode,
     ObjectFieldNode,
     ObjectValueNode,
     SelectionSetNode,
+    StringValueNode,
     ValueNode,
     VariableNode,
     print_ast,
@@ -36,7 +42,6 @@ from ...type import (
     is_object_type,
 )
 from ...utilities import type_from_ast
-from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
 if TYPE_CHECKING:
@@ -920,6 +925,14 @@ def find_conflict(
     return None  # no conflict
 
 
+VALUE_KIND_NAMES: dict[type[ValueNode], str] = {
+    BooleanValueNode: "BooleanValue",
+    EnumValueNode: "EnumValue",
+    FloatValueNode: "FloatValue",
+    IntValueNode: "IntValue",
+}
+
+
 def get_field_info(field_details: FieldDetails) -> FieldInfo:
     """Prepare argument and directive lookups only when a field overlaps."""
     info = field_details.info
@@ -1003,7 +1016,31 @@ def replace_fragment_variables(
 
 
 def stringify_value(value: ValueNode) -> str:
-    return print_ast(sort_value_node(value))
+    return json.dumps(
+        get_value_structure(value), separators=(",", ":"), ensure_ascii=False
+    )
+
+
+def get_value_structure(node: ValueNode) -> list[Any]:
+    """Get a structure of nested lists that serializes like in GraphQL.js.
+
+    The kind names are the ones of GraphQL.js, and object fields are ordered by name.
+    """
+    if isinstance(node, VariableNode):
+        return ["Variable", node.name.value]
+    if isinstance(node, ObjectValueNode):
+        fields = sorted(node.fields, key=lambda field: field.name.value)
+        return [
+            "ObjectValue",
+            [[field.name.value, get_value_structure(field.value)] for field in fields],
+        ]
+    if isinstance(node, ListValueNode):
+        return ["ListValue", [get_value_structure(value) for value in node.values]]
+    if isinstance(node, StringValueNode):
+        return ["StringValue", node.value, node.block is True]
+    if isinstance(node, NullValueNode):
+        return ["NullValue", None]
+    return [VALUE_KIND_NAMES[type(node)], node.value]  # type: ignore
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:

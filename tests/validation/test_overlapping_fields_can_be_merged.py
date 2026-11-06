@@ -7,6 +7,7 @@ from graphql.language import (
     FragmentDefinitionNode,
     OperationDefinitionNode,
     parse,
+    print_ast,
 )
 from graphql.utilities import build_schema
 from graphql.validation import (
@@ -932,6 +933,76 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             schema=schema,
         )
+
+    def compares_nested_input_values_with_empty_collections_and_block_strings():
+        schema = build_schema(
+            """
+            input SomeInput {
+              text: String
+              children: [SomeInput]
+            }
+            type Query {
+              someField(arg: SomeInput): String
+            }
+            """
+        )
+        assert_valid(
+            """
+            {
+              someField(arg: {
+                text: \"\"\"first line
+second line\"\"\"
+                children: [{ text: "value", children: [] }, {}]
+              })
+              someField(arg: {
+                children: [{ children: [], text: "value" }, {}]
+                text: \"\"\"first line
+second line\"\"\"
+              })
+            }
+            """,
+            schema=schema,
+        )
+
+    def distinguishes_value_kinds_string_forms_and_collection_order():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        values = [
+            "1",
+            "1.0",
+            '"1"',
+            '"""1"""',
+            "true",
+            "false",
+            "null",
+            "VALUE",
+            "$value",
+            "[]",
+            "{}",
+            "[1, 2]",
+            "[2, 1]",
+            "{ a: 1 }",
+            "{ b: 1 }",
+            "{ a: 2 }",
+            "{ a: 1, a: 2 }",
+            "{ a: 2, a: 1 }",
+        ]
+        for first in values:
+            for second in values:
+                document = parse(f"{{ field(value: {first}) field(value: {second}) }}")
+                errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+                assert len(errors) == (0 if first == second else 1)
+
+    def compares_object_fields_without_changing_the_source_ast():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        document = parse(
+            """{
+            field(value: { z: [{ b: 2, a: 1 }], a: true, a: false })
+            field(value: { a: true, z: [{ a: 1, b: 2 }], a: false })
+            }"""
+        )
+        before = print_ast(document)
+        assert validate(schema, document, [OverlappingFieldsCanBeMergedRule]) == []
+        assert print_ast(document) == before
 
     def keeps_variable_scopes_separate_when_fields_share_their_argument_nodes():
         schema = build_schema("type Query { value(arg: Int): Int }")
