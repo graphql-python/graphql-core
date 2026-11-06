@@ -569,14 +569,24 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
         )
 
-    def same_stream_directives_supported():
-        assert_valid(
+    def stream_directive_used_on_different_instances_of_the_same_field():
+        assert_errors(
             """
             fragment differentDirectivesWithDifferentAliases on Dog {
               name @stream(label: "streamLabel", initialCount: 1)
               name @stream(label: "streamLabel", initialCount: 1)
             }
-            """
+            """,
+            [
+                {
+                    "message": "Fields 'name' conflict because they have overlapping"
+                    " stream directives."
+                    " See https://github.com/graphql/defer-stream-wg/discussions/100."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
         )
 
     def different_stream_directive_label():
@@ -589,7 +599,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -607,7 +617,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -625,7 +635,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -643,7 +653,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -660,7 +670,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             }""",
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -678,7 +688,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -686,14 +696,24 @@ def describe_validate_overlapping_fields_can_be_merged():
             ],
         )
 
-    def same_stream_directive_both_missing_args():
-        assert_valid(
+    def different_stream_directive_both_missing_args():
+        assert_errors(
             """
             fragment conflictingArgs on Dog {
               name @stream
               name @stream
             }
-            """
+            """,
+            [
+                {
+                    "message": "Fields 'name' conflict because they have overlapping"
+                    " stream directives."
+                    " See https://github.com/graphql/defer-stream-wg/discussions/100."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
         )
 
     def same_aliases_with_different_field_targets():
@@ -1154,7 +1174,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             [
                 {
                     "message": "Fields 'parent' conflict because"
-                    " they have differing stream directives."
+                    " they have overlapping stream directives."
                     " Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -1274,10 +1294,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
             {
               field {
-                ...F
+                ...I
               },
               field {
-                ...I
+                ...F
               }
             }
             fragment F on T {
@@ -1298,19 +1318,19 @@ def describe_validate_overlapping_fields_can_be_merged():
             [
                 {
                     "message": "Fields 'field' conflict"
-                    " because subfields 'x' conflict"
-                    " because 'a' and 'b' are different fields"
-                    " and subfields 'y' conflict"
-                    " because 'c' and 'd' are different fields."
+                    " because subfields 'y' conflict"
+                    " because 'd' and 'c' are different fields"
+                    " and subfields 'x' conflict"
+                    " because 'b' and 'a' are different fields."
                     " Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [
                         (3, 15),
-                        (11, 15),
-                        (15, 15),
-                        (6, 15),
-                        (22, 15),
                         (18, 15),
+                        (22, 15),
+                        (6, 15),
+                        (15, 15),
+                        (11, 15),
                     ],
                     "path": None,
                 }

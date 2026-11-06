@@ -812,12 +812,18 @@ def find_conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
 
-    directives1 = node1.directives
-    directives2 = node2.directives
-    if not same_streams(directives1, directives2):
-        return Conflict(
-            response_name, "they have differing stream directives", [node1], [node2]
-        )
+    stream1 = get_stream_directive(node1.directives)
+    stream2 = get_stream_directive(node2.directives)
+    if stream1 or stream2:
+        reason = "they have overlapping stream directives"
+        if (
+            stream1
+            and stream2
+            and same_arguments(stream1.arguments, scope1, stream2.arguments, scope2)
+        ):
+            # This was allowed in previous alpha versions of GraphQL.js.
+            reason += ". See https://github.com/graphql/defer-stream-wg/discussions/100"
+        return Conflict(response_name, reason, [node1], [node2])
 
     if type1 and type2 and do_types_conflict(type1, type2):
         return Conflict(
@@ -923,22 +929,6 @@ def get_stream_directive(
         if directive.name.value == "stream":
             return directive
     return None
-
-
-def same_streams(
-    directives1: Sequence[DirectiveNode] | None,
-    directives2: Sequence[DirectiveNode] | None,
-) -> bool:
-    stream1 = get_stream_directive(directives1)
-    stream2 = get_stream_directive(directives2)
-    if not stream1 and not stream2:
-        # both fields do not have streams
-        return True
-    if stream1 and stream2:
-        # check if both fields have equivalent streams
-        return same_arguments(stream1.arguments, None, stream2.arguments, None)
-    # fields have a mix of stream and no stream
-    return False
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
