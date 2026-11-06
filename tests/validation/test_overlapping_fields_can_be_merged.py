@@ -1,10 +1,18 @@
 from contextlib import contextmanager
+from copy import copy
 from functools import partial
-from typing import cast
+from typing import Any, cast
 
 from pytest import warns
 
-from graphql.language import FieldNode, FragmentDefinitionNode, parse, print_ast
+from graphql.language import (
+    FieldNode,
+    FragmentDefinitionNode,
+    Visitor,
+    parse,
+    print_ast,
+    visit,
+)
 from graphql.utilities import build_schema
 from graphql.validation import (
     FieldsOnCorrectTypeRule,
@@ -64,6 +72,20 @@ def replace_node(node, **changes):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def compares_manually_constructed_fields_without_optional_argument_arrays():
+        schema = build_schema("type Query { field: String }")
+
+        class ArgumentRemover(Visitor):
+            @staticmethod
+            def enter_field(node: FieldNode, *_args: Any) -> FieldNode:
+                node = copy(node)
+                node.arguments = None  # type: ignore
+                return node
+
+        document = visit(parse("{ field field }"), ArgumentRemover())
+
+        assert validate(schema, document, [OverlappingFieldsCanBeMergedRule]) == []
+
     def compares_wrapped_return_types_across_object_types():
         schema = build_schema("""
             type Query { result: Result }
@@ -403,6 +425,7 @@ second line\"\"\"
     def different_directives_with_different_aliases():
         assert_valid("""
             fragment differentDirectivesWithDifferentAliases on Dog {
+              name
               nameIfTrue: name @include(if: true)
               nameIfFalse: name @include(if: false)
             }
@@ -414,6 +437,7 @@ second line\"\"\"
         # values may have the same desired effect of including/skipping a field
         assert_valid("""
             fragment differentDirectivesWithDifferentAliases on Dog {
+              name
               name @include(if: true)
               name @include(if: false)
             }

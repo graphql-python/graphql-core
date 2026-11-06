@@ -130,7 +130,7 @@ class Conflict(NamedTuple):
 class FieldDetails:
     """A field node and its definition in the parent-type context."""
 
-    __slots__ = "definition", "info", "node", "parent_type"
+    __slots__ = "definition", "info", "is_simple_leaf", "node", "parent_type"
 
     info: Optional["FieldInfo"]
 
@@ -139,11 +139,13 @@ class FieldDetails:
         parent_type: Optional[GraphQLNamedType],
         node: FieldNode,
         definition: Optional[GraphQLField],
+        is_simple_leaf: bool,
     ) -> None:
         self.parent_type = parent_type
         self.node = node
         self.definition = definition
         self.info = None
+        self.is_simple_leaf = is_simple_leaf
 
 
 class ArgumentInfo(NamedTuple):
@@ -709,6 +711,13 @@ def find_conflict(
 
     # Count attempted field pairs, including pairs skipped by type exclusivity.
     spend_complexity_budget(rule_context, 2)
+    if (
+        field_details1.is_simple_leaf
+        and field_details2.is_simple_leaf
+        and type1 is type2
+        and node1.name.value == node2.name.value
+    ):
+        return None
 
     if not are_mutually_exclusive:
         field_info1 = get_field_info(field_details1)
@@ -943,7 +952,14 @@ def collect_fields_impl(
             field_details_list = grouped_field_set.get(response_name)
             if not field_details_list:
                 field_details_list = grouped_field_set[response_name] = []
-            field_details_list.append(FieldDetails(parent_type, selection, field_def))
+            field_details_list.append(
+                FieldDetails(
+                    parent_type,
+                    selection,
+                    field_def,
+                    not selection.arguments and not selection.selection_set,
+                )
+            )
         elif isinstance(selection, FragmentSpreadNode):
             fragment_names[selection.name.value] = True
         elif isinstance(selection, InlineFragmentNode):  # pragma: no cover else
