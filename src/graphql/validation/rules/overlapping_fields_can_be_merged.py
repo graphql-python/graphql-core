@@ -229,12 +229,20 @@ GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
 VariableScope: TypeAlias = dict[str, ValueNode]
 
 
-class FragmentSpread(NamedTuple):
-    """A fragment spread with its conflict key and fragment variable map."""
+class FragmentSpread:
+    """A fragment spread with its fragment definition and variable scope."""
 
-    key: str
-    node: FragmentSpreadNode
-    scope: VariableScope | None
+    __slots__ = "definition", "node", "scope"
+
+    def __init__(
+        self,
+        node: FragmentSpreadNode,
+        scope: VariableScope | None,
+        definition: FragmentDefinitionNode | None,
+    ) -> None:
+        self.node = node
+        self.scope = scope
+        self.definition = definition
 
 
 class CollectFieldsResult:
@@ -272,6 +280,7 @@ class RuleContext:
         "compared_fields_and_fragment_pairs",
         "compared_fragment_pairs",
         "field_comparisons",
+        "fragment_scopes",
     )
 
     def __init__(self) -> None:
@@ -279,9 +288,11 @@ class RuleContext:
         # "between" each other for conflicts. Comparisons may be made many times, so
         # memoizing this can dramatically improve the performance of this validator.
         self.compared_fields_and_fragment_pairs: RefMap[
-            VariableScope | None, OrderedPairSet
+            VariableScope | None, RefMap[VariableScope | None, OrderedPairSet]
         ] = RefMap()
-        self.compared_fragment_pairs = PairSet()
+        self.compared_fragment_pairs: RefMap[
+            VariableScope | None, RefMap[VariableScope | None, PairSet]
+        ] = RefMap()
 
         # A cache for the "field map" and list of fragment spreads found in any given
         # selection set.
@@ -289,6 +300,8 @@ class RuleContext:
             GraphQLNamedType | None,
             RefMap[SelectionSetNode, CollectFieldsResult],
         ] = {}
+
+        self.fragment_scopes: dict[str, VariableScope | None] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
         # the comparison budget.
@@ -380,7 +393,7 @@ def find_conflicts_within_selection_set(
 
     if collect_fields_result.spreads:
         fragment_spreads = get_fragment_spreads(
-            validation_context, collect_fields_result, scope
+            validation_context, rule_context, collect_fields_result, scope
         )
         # (B) Then collect conflicts between these fields and those represented by each
         # spread found.
@@ -428,21 +441,24 @@ def collect_conflicts_between_fields_and_fragment(
     if not collect_fields_result.grouped_field_set:
         return
 
-    # Shared field collections can be compared in different variable scopes.
-    # Keep a separate pair history for each scope of the fields being compared.
-    compared_pairs = rule_context.compared_fields_and_fragment_pairs.get(scope)
+    # Fields and fragments can each be compared in different variable scopes.
+    # Keep a separate pair history for each pair of scopes.
+    fragment = fragment_spread.definition
+    by_fragment_scope = rule_context.compared_fields_and_fragment_pairs.get(scope)
+    if by_fragment_scope is None:
+        by_fragment_scope = RefMap()
+        rule_context.compared_fields_and_fragment_pairs[scope] = by_fragment_scope
+    compared_pairs = by_fragment_scope.get(fragment_spread.scope)
     if compared_pairs is None:
         compared_pairs = OrderedPairSet()
-        rule_context.compared_fields_and_fragment_pairs[scope] = compared_pairs
-    fragment_key = fragment_spread.key
+        by_fragment_scope[fragment_spread.scope] = compared_pairs
 
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
-    if compared_pairs.has(collect_fields_result, fragment_key, are_mutually_exclusive):
+    if compared_pairs.has(collect_fields_result, fragment, are_mutually_exclusive):
         return
-    compared_pairs.add(collect_fields_result, fragment_key, are_mutually_exclusive)
+    compared_pairs.add(collect_fields_result, fragment, are_mutually_exclusive)
 
-    fragment = validation_context.get_fragment(fragment_spread.node.name.value)
     if not fragment:
         return
 
@@ -453,6 +469,7 @@ def collect_conflicts_between_fields_and_fragment(
     )
     referenced_fragment_spreads = get_fragment_spreads(
         validation_context,
+        rule_context,
         collect_fields_result2,
         fragment_spread.scope,
     )
@@ -504,17 +521,31 @@ def collect_conflicts_between_fragments(
     Collect all conflicts found between two fragments, including via spreading in any
     nested fragments.
     """
-    compared_fragment_pairs = rule_context.compared_fragment_pairs
+    fragment1 = fragment_spread1.definition
+    fragment2 = fragment_spread2.definition
+    scope1 = fragment_spread1.scope
+    scope2 = fragment_spread2.scope
     # No need to compare a fragment to itself.
-    if fragment_spread1.key == fragment_spread2.key:
+    if fragment1 is fragment2 and scope1 is scope2:
         return
 
-    if fragment_spread1.node.name.value == fragment_spread2.node.name.value:
-        if compared_fragment_pairs.has(
-            fragment_spread1.key, fragment_spread2.key, False
-        ):
+    # Scope pairs share a comparison history indexed by fragment definitions.
+    all_compared_pairs = rule_context.compared_fragment_pairs
+    by_scope = all_compared_pairs.get(scope1)
+    compared_fragment_pairs = None if by_scope is None else by_scope.get(scope2)
+    if compared_fragment_pairs is None:
+        other_by_scope = all_compared_pairs.get(scope2)
+        if other_by_scope is not None:
+            compared_fragment_pairs = other_by_scope.get(scope1)
+    if compared_fragment_pairs is None:
+        if by_scope is None:
+            by_scope = all_compared_pairs[scope1] = RefMap()
+        compared_fragment_pairs = by_scope[scope2] = PairSet()
+
+    if fragment1 is fragment2:
+        if compared_fragment_pairs.has(fragment1, fragment2, False):
             return
-        compared_fragment_pairs.add(fragment_spread1.key, fragment_spread2.key, False)
+        compared_fragment_pairs.add(fragment1, fragment2, False)
         validation_context.report_error(
             GraphQLError(
                 f"Spreads '{fragment_spread1.node.name.value}' conflict because"
@@ -527,16 +558,10 @@ def collect_conflicts_between_fragments(
         return
 
     # Memoize so two fragments are not compared for conflicts more than once.
-    if compared_fragment_pairs.has(
-        fragment_spread1.key, fragment_spread2.key, are_mutually_exclusive
-    ):
+    if compared_fragment_pairs.has(fragment1, fragment2, are_mutually_exclusive):
         return
-    compared_fragment_pairs.add(
-        fragment_spread1.key, fragment_spread2.key, are_mutually_exclusive
-    )
+    compared_fragment_pairs.add(fragment1, fragment2, are_mutually_exclusive)
 
-    fragment1 = validation_context.get_fragment(fragment_spread1.node.name.value)
-    fragment2 = validation_context.get_fragment(fragment_spread2.node.name.value)
     if not fragment1 or not fragment2:
         return
 
@@ -547,6 +572,7 @@ def collect_conflicts_between_fragments(
     )
     referenced_fragment_spreads1 = get_fragment_spreads(
         validation_context,
+        rule_context,
         collect_fields_result1,
         fragment_spread1.scope,
     )
@@ -557,6 +583,7 @@ def collect_conflicts_between_fragments(
     )
     referenced_fragment_spreads2 = get_fragment_spreads(
         validation_context,
+        rule_context,
         collect_fields_result2,
         fragment_spread2.scope,
     )
@@ -626,6 +653,7 @@ def find_conflicts_between_sub_selection_sets(
     )
     fragment_spreads1 = get_fragment_spreads(
         validation_context,
+        rule_context,
         collect_fields_result1,
         scope1,
     )
@@ -637,6 +665,7 @@ def find_conflicts_between_sub_selection_sets(
     )
     fragment_spreads2 = get_fragment_spreads(
         validation_context,
+        rule_context,
         collect_fields_result2,
         scope2,
     )
@@ -1101,6 +1130,7 @@ def collect_fields_impl(
 
 def get_fragment_spreads(
     validation_context: ValidationContext,
+    rule_context: RuleContext,
     collect_fields_result: CollectFieldsResult,
     scope: VariableScope | None,
 ) -> list[FragmentSpread]:
@@ -1112,17 +1142,31 @@ def get_fragment_spreads(
     if cached is not None:
         return cached
 
-    fragment_spreads: dict[str, FragmentSpread] = {}
+    spreads_by_scope: RefMap[
+        VariableScope | None, RefMap[FragmentDefinitionNode | None, FragmentSpread]
+    ] = RefMap()
+    result: list[FragmentSpread] = []
     for spread_node in collect_fields_result.spreads:
-        spread = get_fragment_spread(validation_context, spread_node, scope)
-        fragment_spreads[spread.key] = spread
-    result = list(fragment_spreads.values())
+        spread = get_fragment_spread(
+            validation_context, rule_context, spread_node, scope
+        )
+        by_definition = spreads_by_scope.get(spread.scope)
+        if by_definition is None:
+            by_definition = spreads_by_scope[spread.scope] = RefMap()
+        previous = by_definition.get(spread.definition)
+        if previous is None:
+            by_definition[spread.definition] = spread
+            result.append(spread)
+        else:
+            # Keep first-occurrence order and the last occurrence's error location.
+            previous.node = spread.node
     by_scope[scope] = result
     return result
 
 
 def get_fragment_spread(
     validation_context: ValidationContext,
+    rule_context: RuleContext,
     fragment_spread_node: FragmentSpreadNode,
     scope: VariableScope | None,
 ) -> FragmentSpread:
@@ -1145,10 +1189,17 @@ def get_fragment_spread(
                 )
                 key += var_name + ": " + stringify_value(scoped_value)
         key += ")"
+    fragment_scopes = rule_context.fragment_scopes
+    if key in fragment_scopes:
+        fragment_scope = fragment_scopes[key]
+    else:
+        fragment_scope = fragment_scopes[key] = get_variable_scope(
+            fragment_signature, key
+        )
     return FragmentSpread(
-        key=key,
-        node=fragment_spread_node,
-        scope=get_variable_scope(fragment_signature, key),
+        fragment_spread_node,
+        fragment_scope,
+        fragment_signature.definition if fragment_signature else None,
     )
 
 
@@ -1199,31 +1250,34 @@ class OrderedPairSet:
 
     Provides a third argument for has/add to allow flagging the pair as weakly or
     strongly present within the collection.
+
+    The elements are matched by object identity (their ``id``), because AST nodes are
+    compared by value. They are kept alive for the duration of the validation.
     """
 
     __slots__ = ("_data",)
 
-    _data: dict[CollectFieldsResult, dict[str, bool]]
+    _data: dict[int, dict[int, bool]]
 
     def __init__(self) -> None:
         self._data = {}
 
-    def has(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> bool:
-        map_ = self._data.get(a)
+    def has(self, a: object, b: object, weakly_present: bool) -> bool:
+        map_ = self._data.get(id(a))
         if map_ is None:
             return False
-        result = map_.get(b)
+        result = map_.get(id(b))
         if result is None:
             return False
 
         return True if weakly_present else weakly_present == result
 
-    def add(self, a: CollectFieldsResult, b: str, weakly_present: bool) -> None:
-        map_ = self._data.get(a)
+    def add(self, a: object, b: object, weakly_present: bool) -> None:
+        map_ = self._data.get(id(a))
         if map_ is None:
-            self._data[a] = {b: weakly_present}
+            self._data[id(a)] = {id(b): weakly_present}
         else:
-            map_[b] = weakly_present
+            map_[id(b)] = weakly_present
 
 
 class PairSet:
@@ -1232,34 +1286,18 @@ class PairSet:
     A way to keep track of pairs of things when the ordering of the pair doesn't matter.
     """
 
-    __slots__ = ("_data",)
-
-    _data: dict[str, dict[str, bool]]
+    __slots__ = ("_ordered_pair_set",)
 
     def __init__(self) -> None:
-        self._data = {}
+        self._ordered_pair_set = OrderedPairSet()
 
-    def has(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
-        return self._has_ordered(a, b, are_mutually_exclusive) or self._has_ordered(
-            b, a, are_mutually_exclusive
-        )
+    def has(self, a: object, b: object, weakly_present: bool) -> bool:
+        # weakly_present being False is a superset of being True, hence if we want to
+        # know if this PairSet "has" these two with no exclusivity, we have to ensure
+        # it was added as such.
+        return self._ordered_pair_set.has(
+            a, b, weakly_present
+        ) or self._ordered_pair_set.has(b, a, weakly_present)
 
-    def _has_ordered(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
-        map_ = self._data.get(a)
-        if map_ is None:
-            return False
-        result = map_.get(b)
-        if result is None:
-            return False
-
-        # are_mutually_exclusive being False is a superset of being True,
-        # hence if we want to know if this PairSet "has" these two with no exclusivity,
-        # we have to ensure it was added as such.
-        return True if are_mutually_exclusive else are_mutually_exclusive == result
-
-    def add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
-        map_ = self._data.get(a)
-        if map_ is None:
-            self._data[a] = {b: are_mutually_exclusive}
-        else:
-            map_[b] = are_mutually_exclusive
+    def add(self, a: object, b: object, weakly_present: bool) -> None:
+        self._ordered_pair_set.add(a, b, weakly_present)

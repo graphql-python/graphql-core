@@ -107,6 +107,31 @@ def describe_validate_overlapping_fields_can_be_merged():
                 ],
             )
 
+        def reports_a_fragment_argument_conflict_once_when_spreads_are_reversed():
+            assert_errors(
+                """
+                query First {
+                  ...WithArgs(x: 3)
+                  ...WithArgs(x: 4)
+                }
+                query Second {
+                  ...WithArgs(x: 4)
+                  ...WithArgs(x: 3)
+                }
+                fragment WithArgs($x: Int) on Type {
+                  a(x: $x)
+                }
+                """,
+                [
+                    {
+                        "message": "Spreads 'WithArgs' conflict because"
+                        " WithArgs(x: 3) and WithArgs(x: 4)"
+                        " have different fragment arguments.",
+                        "locations": [(3, 19), (4, 19)],
+                    }
+                ],
+            )
+
         def checks_fragment_arguments_in_each_variable_scope():
             assert_errors(
                 """
