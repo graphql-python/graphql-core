@@ -95,6 +95,11 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         # Their fields' own selection sets are still visited independently.
         if isinstance(parent, InlineFragmentNode):
             return
+        selections = selection_set.selections
+        if len(selections) <= 1 and not (
+            selections and isinstance(selections[0], InlineFragmentNode)
+        ):
+            return
         conflicts = find_conflicts_within_selection_set(
             self.context,
             self.rule_context,
