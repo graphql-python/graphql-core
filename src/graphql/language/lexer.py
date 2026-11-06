@@ -55,13 +55,16 @@ class Lexer:
     """Character offset where the current line starts."""
     _max_tokens: Optional[int]
     _comment_budget: Optional[int]
+    _max_comments: Optional[int]
+    _comment_count: int
 
     def __init__(self, source: Source):
         """Given a Source object, initialize a Lexer for that source."""
         self.source = source
         self.token = self.last_token = Token(TokenKind.SOF, 0, 0, 0, 0)
         self.line, self.line_start = 1, 0
-        self._max_tokens = self._comment_budget = None
+        self._max_tokens = self._comment_budget = self._max_comments = None
+        self._comment_count = 0
 
     def advance(self) -> Token:
         """Advance the token stream to the next non-ignored token.
@@ -242,6 +245,18 @@ class Lexer:
 
         :meta private:
         """
+        max_comments = self._max_comments
+        if max_comments is not None:
+            comment_count = self._comment_count + 1
+            if comment_count > max_comments:
+                raise GraphQLSyntaxError(
+                    self.source,
+                    start,
+                    f"Document contains more than {max_comments} comments."
+                    " Parsing aborted.",
+                )
+            self._comment_count = comment_count
+
         body = self.source.body
         body_length = len(body)
 
