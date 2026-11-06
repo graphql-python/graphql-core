@@ -58,16 +58,16 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
             for arg_node in directive_node.arguments:
                 arg_name = arg_node.name.value
                 if arg_name not in known_args:
-                    suggestions = suggestion_list(arg_name, known_args)
+                    suggestions = (
+                        []
+                        if self.context.hide_suggestions
+                        else suggestion_list(arg_name, known_args)
+                    )
                     self.report_error(
                         GraphQLError(
                             f"Unknown argument '{arg_name}'"
                             f" on directive '@{directive_name}'."
-                            + (
-                                ""
-                                if self.context.hide_suggestions
-                                else did_you_mean(suggestions)
-                            ),
+                            + did_you_mean(suggestions),
                             arg_node,
                         )
                     )
