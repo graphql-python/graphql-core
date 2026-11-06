@@ -1,4 +1,5 @@
 import gc
+import sys
 import weakref
 from functools import lru_cache
 from importlib import import_module
@@ -111,6 +112,10 @@ def describe_too_deeply_nested_selections_at_the_root():
         monkeypatch.setattr(module, "collect_fields_impl", tracked_collect_fields_impl)
         return refs
 
+    @mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
     def execute_does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
         refs = _track_collect_fields_impl(monkeypatch)
         result = execute_sync(schema, _chain_document("Query"))
@@ -119,6 +124,10 @@ def describe_too_deeply_nested_selections_at_the_root():
         assert all(ref() is None for ref in refs)
         _assert_nested_too_deeply(result)
 
+    @mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
     @mark.asyncio
     async def subscribe_does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
         refs = _track_collect_fields_impl(monkeypatch)
