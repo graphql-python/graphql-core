@@ -51,6 +51,7 @@ async def graphql(  # noqa: PLR0913, PLR0917
     harness: GraphQLHarness = default_harness,
     max_lexical_tokens: int | None = None,
     max_comments: int | None = None,
+    max_source_length: int | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -94,8 +95,8 @@ async def graphql(  # noqa: PLR0913, PLR0917
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
     :param max_tokens: Deprecated, use ``max_lexical_tokens`` together with
-        ``max_comments`` instead. Unlike ``max_lexical_tokens``, this limit also counts
-        comments.
+        ``max_comments`` or ``max_source_length`` instead. Unlike
+        ``max_lexical_tokens``, this limit also counts comments.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
     :param rules: Validation rules to use instead of the specified rules.
@@ -104,9 +105,12 @@ async def graphql(  # noqa: PLR0913, PLR0917
         request pipeline. Defaults to ``default_harness``.
     :param max_lexical_tokens: The maximum number of lexical tokens allowed within the
         document, to limit the CPU time and memory the parser can burn. This limit
-        does not count comments, use ``max_comments`` for these.
+        does not count comments, use ``max_comments`` for these, and it does not limit
+        the length of the source text, use ``max_source_length`` for this.
     :param max_comments: The maximum number of comments allowed within the document,
         to limit the memory used by comments in the token linked list.
+    :param max_source_length: The maximum length of the source text in code points,
+        checked before lexing.
     :returns: An execution result or validation errors.
 
     Execute a complete asynchronous request with variables:
@@ -220,6 +224,7 @@ async def graphql(  # noqa: PLR0913, PLR0917
         harness,
         max_lexical_tokens,
         max_comments,
+        max_source_length,
     )
 
     if default_is_awaitable(result):
@@ -250,6 +255,7 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
     harness: GraphQLHarness = default_harness,
     max_lexical_tokens: int | None = None,
     max_comments: int | None = None,
+    max_source_length: int | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -285,8 +291,8 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
     :param max_tokens: Deprecated, use ``max_lexical_tokens`` together with
-        ``max_comments`` instead. Unlike ``max_lexical_tokens``, this limit also counts
-        comments.
+        ``max_comments`` or ``max_source_length`` instead. Unlike
+        ``max_lexical_tokens``, this limit also counts comments.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
     :param rules: Validation rules to use instead of the specified rules.
@@ -295,9 +301,12 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
         request pipeline. Defaults to ``default_harness``.
     :param max_lexical_tokens: The maximum number of lexical tokens allowed within the
         document, to limit the CPU time and memory the parser can burn. This limit
-        does not count comments, use ``max_comments`` for these.
+        does not count comments, use ``max_comments`` for these, and it does not limit
+        the length of the source text, use ``max_source_length`` for this.
     :param max_comments: The maximum number of comments allowed within the document,
         to limit the memory used by comments in the token linked list.
+    :param max_source_length: The maximum length of the source text in code points,
+        checked before lexing.
     :returns: Completed execution output, or request errors if parsing or
         validation fails.
 
@@ -366,6 +375,7 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
         harness,
         max_lexical_tokens,
         max_comments,
+        max_source_length,
     )
 
     # Assert that the execution was synchronous.
@@ -402,6 +412,7 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
     harness: GraphQLHarness = default_harness,
     max_lexical_tokens: int | None = None,
     max_comments: int | None = None,
+    max_source_length: int | None = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary.
 
@@ -472,6 +483,7 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
             experimental_fragment_arguments=experimental_fragment_arguments,
             max_lexical_tokens=max_lexical_tokens,
             max_comments=max_comments,
+            max_source_length=max_source_length,
         )
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])

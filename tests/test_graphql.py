@@ -100,6 +100,15 @@ def describe_graphql():
         )
         assert result.data is None
 
+    async def passes_source_length_limit_through_to_parse():
+        result = await graphql(schema, "{ a }", max_source_length=4)
+
+        assert result.errors
+        assert result.errors[0].message == (
+            "Syntax Error: Source contains more than 4 code points. Parsing aborted."
+        )
+        assert result.data is None
+
     async def passes_validation_options_through_to_validate():
         result = await graphql(schema, "{ contextEho }", hide_suggestions=True)
 
