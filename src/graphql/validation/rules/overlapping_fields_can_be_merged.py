@@ -1175,12 +1175,15 @@ class PairSet:
         self._data = {}
 
     def has(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
-        key1, key2 = (a, b) if a < b else (b, a)
+        return self._has_ordered(a, b, are_mutually_exclusive) or self._has_ordered(
+            b, a, are_mutually_exclusive
+        )
 
-        map_ = self._data.get(key1)
+    def _has_ordered(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
+        map_ = self._data.get(a)
         if map_ is None:
             return False
-        result = map_.get(key2)
+        result = map_.get(b)
         if result is None:
             return False
 
@@ -1190,10 +1193,8 @@ class PairSet:
         return True if are_mutually_exclusive else are_mutually_exclusive == result
 
     def add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
-        key1, key2 = (a, b) if a < b else (b, a)
-
-        map_ = self._data.get(key1)
+        map_ = self._data.get(a)
         if map_ is None:
-            self._data[key1] = {key2: are_mutually_exclusive}
+            self._data[a] = {b: are_mutually_exclusive}
         else:
-            map_[key2] = are_mutually_exclusive
+            map_[b] = are_mutually_exclusive
