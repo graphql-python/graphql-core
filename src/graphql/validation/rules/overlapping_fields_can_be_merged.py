@@ -151,9 +151,12 @@ class ArgumentInfo(NamedTuple):
 class FieldInfo:
     """Argument data of a field that is compared with other fields."""
 
-    __slots__ = "arguments", "comparisons"
+    __slots__ = "arguments", "comparisons", "named_type"
 
-    def __init__(self, arguments: Optional[ArgumentInfo]) -> None:
+    def __init__(
+        self, named_type: Optional[GraphQLNamedType], arguments: Optional[ArgumentInfo]
+    ) -> None:
+        self.named_type = named_type
         # An empty reason means the field names and arguments match.
         self.comparisons: Dict[FieldInfo, str] = {}
         self.arguments = arguments
@@ -742,9 +745,9 @@ def find_conflict(
             validation_context,
             rule_context,
             are_mutually_exclusive,
-            get_named_type(type1),
+            get_field_info(field_details1).named_type,
             selection_set1,
-            get_named_type(type2),
+            get_field_info(field_details2).named_type,
             selection_set2,
         )
         return subfield_conflicts(conflicts, response_name, node1, node2)
@@ -756,8 +759,10 @@ def get_field_info(field_details: FieldDetails) -> FieldInfo:
     """Prepare argument lookups only when a field overlaps."""
     info = field_details.info
     if info is None:
+        definition = field_details.definition
         info = field_details.info = FieldInfo(
-            get_argument_info(field_details.node.arguments)
+            get_named_type(definition.type if definition else None),
+            get_argument_info(field_details.node.arguments),
         )
     return info
 
@@ -825,6 +830,8 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     Composite types are ignored as their individual field types will be compared later
     recursively. However List and Non-Null types must match.
     """
+    if type1 is type2:
+        return False
     if is_list_type(type1):
         return (
             do_types_conflict(

@@ -64,6 +64,33 @@ def replace_node(node, **changes):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def compares_wrapped_return_types_across_object_types():
+        schema = build_schema("""
+            type Query { result: Result }
+            union Result = A | B
+            type A { value: [Int!]! }
+            type B { value: [String!]! }
+            """)
+        errors = validate(
+            schema,
+            parse("""
+                {
+                  result {
+                    ... on A { value value }
+                    ... on B { value value }
+                  }
+                }
+                """),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        message = (
+            "Fields 'value' conflict because they return conflicting types"
+            " '[Int!]!' and '[String!]!'."
+            " Use different aliases on the fields to fetch both if this was"
+            " intentional."
+        )
+        assert [error.message for error in errors] == [message] * 4
+
     def retains_the_first_described_conflict_when_abbreviating_locations():
         schema = build_schema("type Query { child: Query, left: Int, right: Int }")
 
