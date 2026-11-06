@@ -451,7 +451,9 @@ def find_conflicts_within_selection_set(
         scope,
     )
 
-    if collect_fields_result.spreads:
+    # Prepare fragment uses only for comparisons with fields or another spread.
+    spreads = collect_fields_result.spreads
+    if spreads and (collect_fields_result.grouped_field_set or len(spreads) > 1):
         fragment_spreads = get_fragment_spreads(
             validation_context, rule_context, collect_fields_result, scope
         )

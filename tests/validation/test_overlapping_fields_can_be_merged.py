@@ -1278,6 +1278,24 @@ second line\"\"\"
         assert locations
         assert locations[0].line == 4
 
+    def reuses_prepared_spreads_in_different_variable_scopes():
+        schema = build_schema("type Query { child: Query, value(arg: Int): Int }")
+        document = parse(
+            """
+            {
+              a: child { ...Outer(x: 1) value(arg: 1) }
+              b: child { ...Outer(x: 2) value(arg: 1) }
+            }
+            fragment Outer($x: Int) on Query { ...Inner }
+            fragment Inner on Query { value(arg: 2) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "they have differing arguments" in error.message
+
     def reuses_stream_argument_comparisons_across_fragment_uses():
         schema = build_schema("type Query { child: Query, list: [Int] }")
         document = parse(
