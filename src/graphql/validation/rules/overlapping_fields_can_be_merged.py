@@ -188,6 +188,7 @@ class FieldInfo:
         "has_stream",
         "named_type",
         "stream_arguments",
+        "type_string",
     )
 
     def __init__(
@@ -202,6 +203,7 @@ class FieldInfo:
         self.arguments = arguments
         self.has_stream = has_stream
         self.stream_arguments = stream_arguments
+        self.type_string: str | None = None
 
 
 class FieldComparison:
@@ -997,9 +999,11 @@ def find_conflict(
         return Conflict(response_name, reason, [node1], [node2])
 
     if type1 and type2 and do_types_conflict(rule_context, type1, type2):
+        type1_string = field_info1.type_string = field_info1.type_string or str(type1)
+        type2_string = field_info2.type_string = field_info2.type_string or str(type2)
         return Conflict(
             response_name,
-            f"they return conflicting types '{type1}' and '{type2}'",
+            f"they return conflicting types '{type1_string}' and '{type2_string}'",
             [node1],
             [node2],
         )
