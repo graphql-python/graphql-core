@@ -105,7 +105,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         self.rule_context = RuleContext()
-        self.fragment_var_map: VariableMap | None = None
+        self.fragment_scope: VariableScope | None = None
 
         # Set once the comparison budget is exhausted. Further selection sets are then
         # skipped, since validation has already been aborted with an error.
@@ -122,14 +122,14 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         fragment_signature = self.context.get_fragment_signature_by_name()(
             fragment_name
         )
-        self.fragment_var_map = get_var_map(fragment_signature, fragment_name)
+        self.fragment_scope = get_variable_scope(fragment_signature, fragment_name)
 
     def leave_fragment_definition(self, *_args: Any) -> None:
         """Called when leaving a fragment definition node.
 
         :meta private:
         """
-        self.fragment_var_map = None
+        self.fragment_scope = None
 
     def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
         """Called when entering a selection set node.
@@ -144,7 +144,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
                 self.rule_context,
                 self.context.get_parent_type(),
                 selection_set,
-                self.fragment_var_map,
+                self.fragment_scope,
             )
         except ComparisonBudgetExceededError:
             self._budget_exceeded = True
@@ -207,8 +207,8 @@ class FieldDetails:
 
 FieldDetailsList: TypeAlias = list[FieldDetails]
 GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
-# Variable-map identity distinguishes fragment scopes in the caches.
-VariableMap: TypeAlias = dict[str, ValueNode]
+# Scope identity distinguishes fragment uses in the caches.
+VariableScope: TypeAlias = dict[str, ValueNode]
 
 
 class FragmentSpread(NamedTuple):
@@ -216,7 +216,7 @@ class FragmentSpread(NamedTuple):
 
     key: str
     node: FragmentSpreadNode
-    var_map: VariableMap | None
+    scope: VariableScope | None
 
 
 class CollectFieldsResult:
@@ -254,7 +254,7 @@ class RuleContext:
         # selection set.
         self.cached_collect_fields_results: dict[
             GraphQLNamedType | None,
-            RefMap[SelectionSetNode, RefMap[VariableMap | None, CollectFieldsResult]],
+            RefMap[SelectionSetNode, RefMap[VariableScope | None, CollectFieldsResult]],
         ] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
@@ -320,7 +320,7 @@ def find_conflicts_within_selection_set(
     rule_context: RuleContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> list[Conflict]:
     """Find conflicts within selection set.
 
@@ -332,7 +332,7 @@ def find_conflicts_within_selection_set(
     conflicts: list[Conflict] = []
 
     collect_fields_result = collect_fields(
-        validation_context, rule_context, parent_type, selection_set, var_map
+        validation_context, rule_context, parent_type, selection_set, scope
     )
     grouped_field_set = collect_fields_result.grouped_field_set
     fragment_spreads = collect_fields_result.fragment_spreads
@@ -344,7 +344,7 @@ def find_conflicts_within_selection_set(
         rule_context,
         conflicts,
         grouped_field_set,
-        var_map,
+        scope,
     )
 
     if fragment_spreads:
@@ -357,7 +357,7 @@ def find_conflicts_within_selection_set(
                 conflicts,
                 False,
                 grouped_field_set,
-                var_map,
+                scope,
                 fragment_spread,
             )
             # (C) Then compare this fragment with all other fragments found in this
@@ -383,7 +383,7 @@ def collect_conflicts_between_fields_and_fragment(
     conflicts: list[Conflict],
     are_mutually_exclusive: bool,
     grouped_field_set: GroupedFieldSet,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
     fragment_spread: FragmentSpread,
 ) -> None:
     """Collect conflicts between fields and fragment.
@@ -415,7 +415,7 @@ def collect_conflicts_between_fields_and_fragment(
         validation_context,
         rule_context,
         fragment,
-        fragment_spread.var_map,
+        fragment_spread.scope,
     )
     grouped_field_set2 = collect_fields_result.grouped_field_set
     referenced_fragment_spreads = collect_fields_result.fragment_spreads
@@ -432,9 +432,9 @@ def collect_conflicts_between_fields_and_fragment(
         conflicts,
         are_mutually_exclusive,
         grouped_field_set,
-        var_map,
+        scope,
         grouped_field_set2,
-        fragment_spread.var_map,
+        fragment_spread.scope,
     )
 
     # (E) Then collect any conflicts between the provided collection of fields and any
@@ -446,7 +446,7 @@ def collect_conflicts_between_fields_and_fragment(
             conflicts,
             are_mutually_exclusive,
             grouped_field_set,
-            var_map,
+            scope,
             referenced_fragment_spread,
         )
 
@@ -504,7 +504,7 @@ def collect_conflicts_between_fragments(
         validation_context,
         rule_context,
         fragment1,
-        fragment_spread1.var_map,
+        fragment_spread1.scope,
     )
     grouped_field_set1 = collect_fields_result1.grouped_field_set
     referenced_fragment_spreads1 = collect_fields_result1.fragment_spreads
@@ -513,7 +513,7 @@ def collect_conflicts_between_fragments(
         validation_context,
         rule_context,
         fragment2,
-        fragment_spread2.var_map,
+        fragment_spread2.scope,
     )
     grouped_field_set2 = collect_fields_result2.grouped_field_set
     referenced_fragment_spreads2 = collect_fields_result2.fragment_spreads
@@ -526,9 +526,9 @@ def collect_conflicts_between_fragments(
         conflicts,
         are_mutually_exclusive,
         grouped_field_set1,
-        fragment_spread1.var_map,
+        fragment_spread1.scope,
         grouped_field_set2,
-        fragment_spread2.var_map,
+        fragment_spread2.scope,
     )
 
     # (G) Then collect conflicts between the first fragment and any nested fragments
@@ -562,10 +562,10 @@ def find_conflicts_between_sub_selection_sets(
     are_mutually_exclusive: bool,
     parent_type1: GraphQLNamedType | None,
     selection_set1: SelectionSetNode,
-    var_map1: VariableMap | None,
+    scope1: VariableScope | None,
     parent_type2: GraphQLNamedType | None,
     selection_set2: SelectionSetNode,
-    var_map2: VariableMap | None,
+    scope2: VariableScope | None,
 ) -> list[Conflict]:
     """Find conflicts between sub selection sets.
 
@@ -580,7 +580,7 @@ def find_conflicts_between_sub_selection_sets(
         rule_context,
         parent_type1,
         selection_set1,
-        var_map1,
+        scope1,
     )
     grouped_field_set1 = collect_fields_result1.grouped_field_set
     fragment_spreads1 = collect_fields_result1.fragment_spreads
@@ -590,7 +590,7 @@ def find_conflicts_between_sub_selection_sets(
         rule_context,
         parent_type2,
         selection_set2,
-        var_map2,
+        scope2,
     )
     grouped_field_set2 = collect_fields_result2.grouped_field_set
     fragment_spreads2 = collect_fields_result2.fragment_spreads
@@ -602,9 +602,9 @@ def find_conflicts_between_sub_selection_sets(
         conflicts,
         are_mutually_exclusive,
         grouped_field_set1,
-        var_map1,
+        scope1,
         grouped_field_set2,
-        var_map2,
+        scope2,
     )
 
     # (I) Then collect conflicts between the first collection of fields and those
@@ -617,7 +617,7 @@ def find_conflicts_between_sub_selection_sets(
                 conflicts,
                 are_mutually_exclusive,
                 grouped_field_set1,
-                var_map1,
+                scope1,
                 fragment_spread2,
             )
 
@@ -631,7 +631,7 @@ def find_conflicts_between_sub_selection_sets(
                 conflicts,
                 are_mutually_exclusive,
                 grouped_field_set2,
-                var_map2,
+                scope2,
                 fragment_spread1,
             )
 
@@ -657,7 +657,7 @@ def collect_conflicts_within(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     grouped_field_set: GroupedFieldSet,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
     # A field map is a keyed collection, where each key represents a response name and
@@ -678,9 +678,9 @@ def collect_conflicts_within(
                         False,
                         response_name,
                         field_details,
-                        var_map,
+                        scope,
                         other_field_details,
-                        var_map,
+                        scope,
                     )
                     if conflict:
                         conflicts.append(conflict)
@@ -692,9 +692,9 @@ def collect_conflicts_between(
     conflicts: list[Conflict],
     parent_fields_are_mutually_exclusive: bool,
     grouped_field_set1: GroupedFieldSet,
-    var_map1: VariableMap | None,
+    scope1: VariableScope | None,
     grouped_field_set2: GroupedFieldSet,
-    var_map2: VariableMap | None,
+    scope2: VariableScope | None,
 ) -> None:
     """Collect all Conflicts between two collections of fields.
 
@@ -721,9 +721,9 @@ def collect_conflicts_between(
                         parent_fields_are_mutually_exclusive,
                         response_name,
                         field_details1,
-                        var_map1,
+                        scope1,
                         field_details2,
-                        var_map2,
+                        scope2,
                     )
                     if conflict:
                         conflicts.append(conflict)
@@ -735,9 +735,9 @@ def find_conflict(
     parent_fields_are_mutually_exclusive: bool,
     response_name: str,
     field_details1: FieldDetails,
-    var_map1: VariableMap | None,
+    scope1: VariableScope | None,
     field_details2: FieldDetails,
-    var_map2: VariableMap | None,
+    scope2: VariableScope | None,
 ) -> Conflict | None:
     """Find conflict.
 
@@ -786,7 +786,7 @@ def find_conflict(
             )
 
         # Two field calls must have the same arguments.
-        if not same_arguments(node1.arguments, var_map1, node2.arguments, var_map2):
+        if not same_arguments(node1.arguments, scope1, node2.arguments, scope2):
             return Conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
@@ -818,10 +818,10 @@ def find_conflict(
             are_mutually_exclusive,
             get_named_type(type1),
             selection_set1,
-            var_map1,
+            scope1,
             get_named_type(type2),
             selection_set2,
-            var_map2,
+            scope2,
         )
         return subfield_conflicts(conflicts, response_name, node1, node2)
 
@@ -830,9 +830,9 @@ def find_conflict(
 
 def same_arguments(
     args1: Sequence[ArgumentNode | FragmentArgumentNode] | None,
-    var_map1: VariableMap | None,
+    scope1: VariableScope | None,
     args2: Sequence[ArgumentNode | FragmentArgumentNode] | None,
-    var_map2: VariableMap | None,
+    scope2: VariableScope | None,
 ) -> bool:
     if not args1:
         return not args2
@@ -846,16 +846,16 @@ def same_arguments(
     values2 = {
         arg.name.value: (
             arg.value
-            if var_map2 is None
-            else replace_fragment_variables(arg.value, var_map2)
+            if scope2 is None
+            else replace_fragment_variables(arg.value, scope2)
         )
         for arg in args2
     }
 
     for arg1 in args1:
         value1 = arg1.value
-        if var_map1:
-            value1 = replace_fragment_variables(value1, var_map1)
+        if scope1:
+            value1 = replace_fragment_variables(value1, scope1)
         value2 = values2.get(arg1.name.value)
         if value2 is None or stringify_value(value1) != stringify_value(value2):
             return False
@@ -864,15 +864,15 @@ def same_arguments(
 
 
 def replace_fragment_variables(
-    value_node: ValueNode, var_map: VariableMap
+    value_node: ValueNode, scope: VariableScope
 ) -> ValueNode:
     """Replace fragment variable references in a value node using the variable map."""
     if isinstance(value_node, VariableNode):
-        return var_map.get(value_node.name.value, value_node)
+        return scope.get(value_node.name.value, value_node)
     if isinstance(value_node, ListValueNode):
         return ListValueNode(
             values=tuple(
-                replace_fragment_variables(node, var_map) for node in value_node.values
+                replace_fragment_variables(node, scope) for node in value_node.values
             ),
             loc=value_node.loc,
         )
@@ -881,7 +881,7 @@ def replace_fragment_variables(
             fields=tuple(
                 ObjectFieldNode(
                     name=field.name,
-                    value=replace_fragment_variables(field.value, var_map),
+                    value=replace_fragment_variables(field.value, scope),
                     loc=field.loc,
                 )
                 for field in value_node.fields
@@ -953,7 +953,7 @@ def collect_fields(
     rule_context: RuleContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> CollectFieldsResult:
     """Get fields and referenced fragment spreads
 
@@ -972,7 +972,7 @@ def collect_fields(
     cache = by_selection_set.get(selection_set)
     if cache is None:
         cache = by_selection_set[selection_set] = RefMap()
-    cached = cache.get(var_map)
+    cached = cache.get(scope)
     if cached is None:
         grouped_field_set: GroupedFieldSet = {}
         fragment_spreads: dict[str, FragmentSpread] = {}
@@ -982,10 +982,10 @@ def collect_fields(
             selection_set,
             grouped_field_set,
             fragment_spreads,
-            var_map,
+            scope,
         )
         cached = CollectFieldsResult(grouped_field_set, list(fragment_spreads.values()))
-        cache[var_map] = cached
+        cache[scope] = cached
     return cached
 
 
@@ -993,7 +993,7 @@ def collect_fragment_fields(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     fragment: FragmentDefinitionNode,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> CollectFieldsResult:
     """Get referenced fields and nested fragment spreads
 
@@ -1006,7 +1006,7 @@ def collect_fragment_fields(
         rule_context,
         fragment_type,
         fragment.selection_set,
-        var_map,
+        scope,
     )
 
 
@@ -1016,7 +1016,7 @@ def collect_fields_impl(
     selection_set: SelectionSetNode,
     grouped_field_set: GroupedFieldSet,
     fragment_spreads: dict[str, FragmentSpread],
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> None:
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
@@ -1032,9 +1032,7 @@ def collect_fields_impl(
                 field_details_list = grouped_field_set[response_name] = []
             field_details_list.append(FieldDetails(parent_type, selection, field_def))
         elif isinstance(selection, FragmentSpreadNode):
-            fragment_spread = get_fragment_spread(
-                validation_context, selection, var_map
-            )
+            fragment_spread = get_fragment_spread(validation_context, selection, scope)
             fragment_spreads[fragment_spread.key] = fragment_spread
         elif isinstance(selection, InlineFragmentNode):  # pragma: no branch
             type_condition = selection.type_condition
@@ -1049,14 +1047,14 @@ def collect_fields_impl(
                 selection.selection_set,
                 grouped_field_set,
                 fragment_spreads,
-                var_map,
+                scope,
             )
 
 
 def get_fragment_spread(
     validation_context: ValidationContext,
     fragment_spread_node: FragmentSpreadNode,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> FragmentSpread:
     """Build a fragment spread with a conflict key and resolved fragment variables."""
     key = fragment_spread_node.name.value
@@ -1073,20 +1071,20 @@ def get_fragment_spread(
             value = arg_map.get(var_name)
             if value:
                 scoped_value = (
-                    replace_fragment_variables(value, var_map) if var_map else value
+                    replace_fragment_variables(value, scope) if scope else value
                 )
                 key += var_name + ": " + stringify_value(scoped_value)
         key += ")"
     return FragmentSpread(
         key=key,
         node=fragment_spread_node,
-        var_map=get_var_map(fragment_signature, key),
+        scope=get_variable_scope(fragment_signature, key),
     )
 
 
-def get_var_map(
+def get_variable_scope(
     fragment_signature: FragmentSignature | None, key: str = ""
-) -> VariableMap | None:
+) -> VariableScope | None:
     """Get a map of fragment variables to variables unique to the fragment scope."""
     if not fragment_signature or not fragment_signature.variable_definitions:
         return None
