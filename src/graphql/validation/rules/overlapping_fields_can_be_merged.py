@@ -1,7 +1,7 @@
 """Overlapping fields can be merged rule"""
 
 from itertools import chain
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, Dict, List, NamedTuple, Optional, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
@@ -15,7 +15,6 @@ from ...language import (
     print_ast,
 )
 from ...type import (
-    GraphQLCompositeType,
     GraphQLField,
     GraphQLList,
     GraphQLNamedType,
@@ -60,9 +59,9 @@ class ComparisonBudgetExceededError(Exception):
 def reason_message(reason: "ConflictReasonMessage") -> str:
     if isinstance(reason, list):
         return " and ".join(
-            f"subfields '{response_name}' conflict"
-            f" because {reason_message(sub_reason)}"
-            for response_name, sub_reason in reason
+            f"subfields '{sub_reason.response_name}' conflict"
+            f" because {reason_message(sub_reason.reason)}"
+            for sub_reason in reason
         )
     return reason
 
@@ -124,11 +123,11 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
                 )
             )
             return
-        for (reason_name, reason), fields1, fields2 in conflicts:
+        for response_name, reason, fields1, fields2 in conflicts:
             reason_msg = reason_message(reason)
             self.report_error(
                 GraphQLError(
-                    f"Fields '{reason_name}' conflict because {reason_msg}."
+                    f"Fields '{response_name}' conflict because {reason_msg}."
                     " Use different aliases on the fields to fetch both"
                     " if this was intentional.",
                     fields1 + fields2,
@@ -136,19 +135,59 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
 
 
-Conflict = Tuple["ConflictReason", List[FieldNode], List[FieldNode]]
-# Field name and reason.
-ConflictReason = Tuple[str, "ConflictReasonMessage"]
 # Reason is a string, or a nested list of conflicts.
 if MYPY:  # recursive types not fully supported yet (/python/mypy/issues/731)
     ConflictReasonMessage = Union[str, List]
 else:
-    ConflictReasonMessage = Union[str, List[ConflictReason]]
-# Tuple defining a field node in a context.
-FieldDetails = Tuple[GraphQLCompositeType, FieldNode, Optional[GraphQLField]]
+    ConflictReasonMessage = Union[str, List["ConflictReason"]]
+
+
+class ConflictReason(NamedTuple):
+    """Field name and reason."""
+
+    response_name: str
+    reason: ConflictReasonMessage
+
+
+class Conflict(NamedTuple):
+    """A conflict with the field nodes on both sides."""
+
+    response_name: str
+    reason: ConflictReasonMessage
+    fields1: List[FieldNode]
+    fields2: List[FieldNode]
+
+
+class FieldDetails:
+    """A field node and its definition in the parent-type context."""
+
+    __slots__ = "definition", "node", "parent_type"
+
+    def __init__(
+        self,
+        parent_type: Optional[GraphQLNamedType],
+        node: FieldNode,
+        definition: Optional[GraphQLField],
+    ) -> None:
+        self.parent_type = parent_type
+        self.node = node
+        self.definition = definition
+
+
 FieldDetailsList = List[FieldDetails]
 GroupedFieldSet = Dict[str, FieldDetailsList]
-CollectFieldsResult = Tuple[GroupedFieldSet, List[str]]
+
+
+class CollectFieldsResult:
+    """The fields and fragment names collected from a selection set."""
+
+    __slots__ = "fragment_names", "grouped_field_set"
+
+    def __init__(
+        self, grouped_field_set: GroupedFieldSet, fragment_names: List[str]
+    ) -> None:
+        self.grouped_field_set = grouped_field_set
+        self.fragment_names = fragment_names
 
 
 class RuleContext:
@@ -247,9 +286,11 @@ def find_conflicts_within_selection_set(
     """
     conflicts: List[Conflict] = []
 
-    grouped_field_set, fragment_names = collect_fields(
+    collect_fields_result = collect_fields(
         validation_context, rule_context, parent_type, selection_set
     )
+    grouped_field_set = collect_fields_result.grouped_field_set
+    fragment_names = collect_fields_result.fragment_names
 
     # (A) Find all conflicts "within" the fields of this selection set.
     # Note: this is the *only place* `collect_conflicts_within` is called.
@@ -320,9 +361,11 @@ def collect_conflicts_between_fields_and_fragment(
     if not fragment:
         return None
 
-    grouped_field_set2, referenced_fragment_names = collect_fragment_fields(
+    collect_fields_result = collect_fragment_fields(
         validation_context, rule_context, fragment
     )
+    grouped_field_set2 = collect_fields_result.grouped_field_set
+    referenced_fragment_names = collect_fields_result.fragment_names
 
     # Do not compare a fragment's grouped_field_set to itself.
     if grouped_field_set is grouped_field_set2:
@@ -382,13 +425,17 @@ def collect_conflicts_between_fragments(
     if not fragment1 or not fragment2:
         return None
 
-    grouped_field_set1, referenced_fragment_names1 = collect_fragment_fields(
+    collect_fields_result1 = collect_fragment_fields(
         validation_context, rule_context, fragment1
     )
+    grouped_field_set1 = collect_fields_result1.grouped_field_set
+    referenced_fragment_names1 = collect_fields_result1.fragment_names
 
-    grouped_field_set2, referenced_fragment_names2 = collect_fragment_fields(
+    collect_fields_result2 = collect_fragment_fields(
         validation_context, rule_context, fragment2
     )
+    grouped_field_set2 = collect_fields_result2.grouped_field_set
+    referenced_fragment_names2 = collect_fields_result2.fragment_names
 
     # (F) First, collect all conflicts between these two collections of fields
     # (not including any nested fragments)
@@ -443,12 +490,17 @@ def find_conflicts_between_sub_selection_sets(
     """
     conflicts: List[Conflict] = []
 
-    grouped_field_set1, fragment_names1 = collect_fields(
+    collect_fields_result1 = collect_fields(
         validation_context, rule_context, parent_type1, selection_set1
     )
-    grouped_field_set2, fragment_names2 = collect_fields(
+    grouped_field_set1 = collect_fields_result1.grouped_field_set
+    fragment_names1 = collect_fields_result1.fragment_names
+
+    collect_fields_result2 = collect_fields(
         validation_context, rule_context, parent_type2, selection_set2
     )
+    grouped_field_set2 = collect_fields_result2.grouped_field_set
+    fragment_names2 = collect_fields_result2.fragment_names
 
     # (H) First, collect all conflicts between these two collections of field.
     collect_conflicts_between(
@@ -593,8 +645,12 @@ def find_conflict(
     if rule_context.field_comparisons > MAX_FIELD_COMPARISONS:
         raise ComparisonBudgetExceededError
 
-    parent_type1, node1, def1 = field_details1
-    parent_type2, node2, def2 = field_details2
+    parent_type1 = field_details1.parent_type
+    node1 = field_details1.node
+    def1 = field_details1.definition
+    parent_type2 = field_details2.parent_type
+    node2 = field_details2.node
+    def2 = field_details2.definition
 
     # If it is known that two fields could not possibly apply at the same time, due to
     # the parent types, then it is safe to permit them to diverge in aliased field or
@@ -617,19 +673,23 @@ def find_conflict(
         name1 = node1.name.value
         name2 = node2.name.value
         if name1 != name2:
-            return (
-                (response_name, f"'{name1}' and '{name2}' are different fields"),
+            return Conflict(
+                response_name,
+                f"'{name1}' and '{name2}' are different fields",
                 [node1],
                 [node2],
             )
 
         # Two field calls must have the same arguments.
         if not same_arguments(node1, node2):
-            return (response_name, "they have differing arguments"), [node1], [node2]
+            return Conflict(
+                response_name, "they have differing arguments", [node1], [node2]
+            )
 
     if type1 and type2 and do_types_conflict(type1, type2):
-        return (
-            (response_name, f"they return conflicting types '{type1}' and '{type2}'"),
+        return Conflict(
+            response_name,
+            f"they return conflicting types '{type1}' and '{type2}'",
             [node1],
             [node2],
         )
@@ -730,7 +790,7 @@ def collect_fields(
     """
     cached_collect_fields_results = rule_context.cached_collect_fields_results
     cached = cached_collect_fields_results.get(selection_set)
-    if not cached:
+    if cached is None:
         grouped_field_set: GroupedFieldSet = {}
         fragment_names: Dict[str, bool] = {}
         collect_fields_impl(
@@ -740,7 +800,7 @@ def collect_fields(
             grouped_field_set,
             fragment_names,
         )
-        cached = (grouped_field_set, list(fragment_names))
+        cached = CollectFieldsResult(grouped_field_set, list(fragment_names))
         cached_collect_fields_results[selection_set] = cached
     return cached
 
@@ -758,7 +818,7 @@ def collect_fragment_fields(
     cached_collect_fields_results = rule_context.cached_collect_fields_results
     # Short-circuit building a type from the node if possible.
     cached = cached_collect_fields_results.get(fragment.selection_set)
-    if cached:
+    if cached is not None:
         return cached
 
     fragment_type = type_from_ast(validation_context.schema, fragment.type_condition)
@@ -786,9 +846,7 @@ def collect_fields_impl(
             field_details_list = grouped_field_set.get(response_name)
             if not field_details_list:
                 field_details_list = grouped_field_set[response_name] = []
-            field_details_list.append(
-                cast(FieldDetails, (parent_type, selection, field_def))
-            )
+            field_details_list.append(FieldDetails(parent_type, selection, field_def))
         elif isinstance(selection, FragmentSpreadNode):
             fragment_names[selection.name.value] = True
         elif isinstance(selection, InlineFragmentNode):  # pragma: no cover else
@@ -816,10 +874,14 @@ def subfield_conflicts(
     Conflict.
     """
     if conflicts:
-        return (
-            (response_name, [conflict[0] for conflict in conflicts]),
-            list(chain([node1], *[conflict[1] for conflict in conflicts])),
-            list(chain([node2], *[conflict[2] for conflict in conflicts])),
+        return Conflict(
+            response_name,
+            [
+                ConflictReason(conflict.response_name, conflict.reason)
+                for conflict in conflicts
+            ],
+            list(chain([node1], *[conflict.fields1 for conflict in conflicts])),
+            list(chain([node2], *[conflict.fields2 for conflict in conflicts])),
         )
     return None  # no conflict
 
