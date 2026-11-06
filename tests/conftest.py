@@ -1,5 +1,8 @@
 # pytest configuration
 
+import sys
+from importlib import import_module
+
 import pytest
 
 
@@ -20,6 +23,20 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
+
+
+@pytest.fixture
+def without_nesting_limit(monkeypatch):
+    """Let deep input run into the stack limit, to test how that is handled.
+
+    PyPy does not handle a stack overflow in JIT-compiled code reliably, so the
+    nesting limit stays in place there.
+    """
+    if sys.implementation.name == "pypy":  # pragma: no cover
+        return
+    for name in ("language.parser", "validation.validate", "execution.values"):
+        module = import_module(f"graphql.{name}")
+        monkeypatch.setattr(module, "MAX_NESTING_DEPTH", sys.maxsize)
 
 
 @pytest.fixture
