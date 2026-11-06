@@ -1805,6 +1805,76 @@ second line\"\"\"
             assert errors == [{"message": "Validation aborted."}]
             assert errors[0].locations is None
 
+        def spends_one_unit_per_wrapper_level_of_compared_return_types():
+            rules = [OverlappingFieldsCanBeMergedRule]
+            query = parse("{ result { ... on A { value } ... on B { value } } }")
+
+            for depth in (1, 2, 8):
+                wrapped = "Int!"
+                for _ in range(depth):
+                    wrapped = f"[{wrapped}]!"
+                schema = build_schema(f"""
+                    type Query {{ result: Result }}
+                    union Result = A | B
+                    type A {{ value: {wrapped} }}
+                    type B {{ value: {wrapped} }}
+                    """)
+                # two units for the pair of fields, one per list and non-null type
+                cost = 2 + (1 + 2 * depth)
+                with budget_of(cost):
+                    assert validate(schema, query, rules) == []
+                with budget_of(cost - 1):
+                    assert validate(schema, query, rules) == [
+                        {"message": "Validation aborted."}
+                    ]
+
+        def spends_nothing_for_identical_return_types():
+            schema = build_schema("type Query { wrapped: [[Int!]!]!, named: Int }")
+            rules = [OverlappingFieldsCanBeMergedRule]
+            for query in ("{ wrapped wrapped }", "{ named named }"):
+                document = parse(query)
+                with budget_of(2):
+                    assert validate(schema, document, rules) == []
+                with budget_of(1):
+                    assert validate(schema, document, rules) == [
+                        {"message": "Validation aborted."}
+                    ]
+
+        def aborts_when_comparing_return_types_like_everywhere_else():
+            schema = build_schema("""
+                type Query { conflict: Node, result: Result }
+                type Node { a: Int, b: Int }
+                union Result = A | B
+                type A { value: [Int] }
+                type B { value: [Int] }
+                """)
+            document = parse("""
+                {
+                  conflict { x: a x: b }
+                  result { ... on A { value } ... on B { value } }
+                }
+                """)
+            rules = [OverlappingFieldsCanBeMergedRule]
+            conflict = (
+                "Fields 'x' conflict because 'a' and 'b' are different fields."
+                " Use different aliases on the fields to fetch both if this was"
+                " intentional."
+            )
+            # two field pairs cost four units, and the last unit is for the list type
+            with budget_of(5):
+                errors = validate(schema, document, rules)
+            assert [error.message for error in errors] == [conflict]
+            with budget_of(4):
+                errors = validate(schema, document, rules)
+            assert [error.message for error in errors] == [
+                conflict,
+                "Validation aborted.",
+            ]
+            aborted = errors[-1]
+            assert aborted.locations is None
+            assert aborted.__traceback__ is None
+            assert aborted.__context__ is None
+
         def describe_deprecated_max_field_comparisons():
             def has_the_default_of_half_the_complexity_budget():
                 assert (
