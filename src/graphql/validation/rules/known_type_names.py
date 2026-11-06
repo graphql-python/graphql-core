@@ -53,15 +53,8 @@ class KnownTypeNamesRule(ASTValidationRule):
         super().__init__(context)
         schema = context.schema
         self.existing_types_map = schema.type_map if schema else {}
-
-        defined_types = [
-            def_.name.value
-            for def_ in context.document.definitions
-            if is_type_definition_node(def_)
-        ]
-        self.defined_types = set(defined_types)
-
-        self.type_names = list(self.existing_types_map) + defined_types
+        self.defined_type_names: set[str] | None = None
+        self.type_names: list[str] | None = None
 
     def enter_named_type(
         self,
@@ -76,10 +69,16 @@ class KnownTypeNamesRule(ASTValidationRule):
         :meta private:
         """
         type_name = node.name.value
-        if (
-            type_name not in self.existing_types_map
-            and type_name not in self.defined_types
-        ):
+        if type_name not in self.existing_types_map:
+            defined_type_names = self.defined_type_names
+            if defined_type_names is None:
+                defined_type_names = self.defined_type_names = {
+                    def_.name.value
+                    for def_ in self.context.document.definitions
+                    if is_type_definition_node(def_)
+                }
+            if type_name in defined_type_names:
+                return
             try:
                 definition_node = ancestors[2]
             except IndexError:
@@ -88,16 +87,17 @@ class KnownTypeNamesRule(ASTValidationRule):
             if is_sdl and type_name in standard_type_names:
                 return
 
-            suggested_types = (
-                []
-                if self.context.hide_suggestions
-                else suggestion_list(
+            suggested_types: list[str] = []
+            if not self.context.hide_suggestions:
+                type_names = self.type_names
+                if type_names is None:
+                    type_names = self.type_names = list(
+                        {*self.existing_types_map, *defined_type_names}
+                    )
+                suggested_types = suggestion_list(
                     type_name,
-                    list(standard_type_names) + self.type_names
-                    if is_sdl
-                    else self.type_names,
+                    [*standard_type_names, *type_names] if is_sdl else type_names,
                 )
-            )
             self.report_error(
                 GraphQLError(
                     f"Unknown type '{type_name}'." + did_you_mean(suggested_types),
