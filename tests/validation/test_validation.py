@@ -1,12 +1,20 @@
 import gc
 import weakref
+from functools import lru_cache
+from typing import List
 
-from pytest import raises
+from pytest import mark, raises
 
 from graphql.error import GraphQLError
 from graphql.language import parse
 from graphql.utilities import TypeInfo, build_schema
-from graphql.validation import FieldsOnCorrectTypeRule, ValidationRule, validate
+from graphql.validation import (
+    FieldsOnCorrectTypeRule,
+    NoFragmentCyclesRule,
+    OverlappingFieldsCanBeMergedRule,
+    ValidationRule,
+    validate,
+)
 from graphql.validation import validation_context as validation_context_module
 from graphql.validation.validate import ValidationAbortedError
 
@@ -325,6 +333,101 @@ def describe_validate_limits_fragment_work():
         assert len(validate(schema, document)) == 1
         monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 10_000)
         assert validate(schema, document) == []
+
+
+def describe_validate_aborts_on_too_deeply_nested_fragments():
+    schema = build_schema("type Query { name: String, query: Query }")
+
+    # Far beyond the recursion limit on all interpreters.
+    depth = 10_000
+
+    selections = {
+        "fragment chain": "...F{next}",
+        "chain with fields": "name ...F{next}",
+        "chain through fields": "query {{ ...F{next} }}",
+    }
+
+    @lru_cache(maxsize=None)
+    def _document(shape: str):
+        chain = "\n".join(
+            f"fragment F{i} on Query {{ {selections[shape].format(next=i + 1)} }}"
+            for i in range(depth)
+        )
+        return parse(
+            f"query First {{ missing }} query Second {{ ...F0 }}"
+            f" {chain} fragment F{depth} on Query {{ name }}",
+            no_location=True,
+        )
+
+    def _assert_aborted(error: GraphQLError):
+        assert type(error) is ValidationAbortedError
+        assert error.message == "Validation aborted."
+        assert error.locations is None
+        assert error.__traceback__ is None
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    @mark.parametrize("shape", selections)
+    def keeps_previous_errors_with_the_default_rules(shape: str):
+        errors = validate(schema, _document(shape))
+        assert len(errors) > 1
+        assert errors[0].message == "Cannot query field 'missing' on type 'Query'."
+        _assert_aborted(errors[-1])
+
+    @mark.parametrize(
+        "shape,rule",
+        [
+            ("fragment chain", NoFragmentCyclesRule),
+            ("chain with fields", NoFragmentCyclesRule),
+            ("chain with fields", OverlappingFieldsCanBeMergedRule),
+            ("chain through fields", NoFragmentCyclesRule),
+        ],
+    )
+    def aborts_with_the_failing_rule_alone(shape: str, rule):
+        errors = validate(schema, _document(shape), [rule])
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    @mark.parametrize("shape", selections)
+    def keeps_previous_errors_with_the_failing_rule(shape: str):
+        errors = validate(
+            schema, _document(shape), [FieldsOnCorrectTypeRule, NoFragmentCyclesRule]
+        )
+        assert [error.message for error in errors] == [
+            "Cannot query field 'missing' on type 'Query'.",
+            "Validation aborted.",
+        ]
+        _assert_aborted(errors[-1])
+
+    def does_not_abort_when_the_chain_fits():
+        document = parse(
+            "{ ...F0 }"
+            + " ".join(f"fragment F{i} on Query {{ ...F{i + 1} }}" for i in range(100))
+            + " fragment F100 on Query { name }"
+        )
+        assert validate(schema, document) == []
+
+    def does_not_keep_the_frames_of_the_recursion_alive():
+        refs: List[weakref.ref] = []
+
+        class Tracked:
+            pass
+
+        class RecursingRule(ValidationRule):
+            def enter_document(self, *_args):
+                def recurse():
+                    tracked = Tracked()
+                    refs.append(weakref.ref(tracked))
+                    recurse()
+
+                recurse()
+
+        errors = validate(schema, parse("{ name }"), [RecursingRule])
+        gc.collect()
+        assert len(refs) > 10
+        assert all(ref() is None for ref in refs)
+        assert len(errors) == 1
+        _assert_aborted(errors[0])
 
 
 def describe_operation_and_variable_definition_descriptions():

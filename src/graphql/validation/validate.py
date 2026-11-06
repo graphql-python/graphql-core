@@ -56,6 +56,10 @@ def validate(
     Attackers can send pathologically invalid queries to induce a DoS attack,
     so ``max_errors`` defaults to 100 errors.
 
+    Validation is also aborted if the document nests fragments too deeply for the
+    recursion limit of the interpreter. The errors found until then are kept, and an
+    additional error reports the abort.
+
     Providing a custom TypeInfo instance is deprecated; omit the ``type_info``
     argument so that validate creates the TypeInfo instance. It will be removed in v3.3.
 
@@ -140,6 +144,10 @@ def validate(
         # also not via the context of an error that was handled while aborting.
         error.__context__ = None
         errors.append(error.with_traceback(None))
+    except RecursionError:
+        # This error is never raised, so it has no traceback or context
+        # that would keep all the frames of the recursion alive.
+        errors.append(ValidationAbortedError("Validation aborted."))
     return errors
 
 
