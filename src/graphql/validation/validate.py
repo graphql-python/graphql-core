@@ -1,10 +1,22 @@
 """Validation"""
 
-from typing import Collection, Dict, List, Optional, Tuple, Type
+from typing import Any, Collection, Dict, List, Optional, Tuple, Type
 
 from ..error import GraphQLError
-from ..language import DocumentNode, ParallelVisitor, visit
+from ..language import (
+    SKIP,
+    DocumentNode,
+    FragmentDefinitionNode,
+    FragmentSpreadNode,
+    OperationDefinitionNode,
+    ParallelVisitor,
+    SelectionSetNode,
+    Visitor,
+    VisitorAction,
+    visit,
+)
 from ..language.ast import QUERY_DOCUMENT_KEYS
+from ..language.parser import MAX_NESTING_DEPTH
 from ..pyutils import inspect, is_collection
 from ..type import GraphQLSchema, assert_valid_schema
 from ..utilities import TypeInfo, TypeInfoVisitor
@@ -31,6 +43,101 @@ query_document_keys_to_validate: Dict[str, Tuple[str, ...]] = {
     kind: tuple(key for key in keys if key != "description")
     for kind, keys in QUERY_DOCUMENT_KEYS.items()
 }
+
+
+def get_selection_nesting(
+    selection_set: SelectionSetNode,
+) -> Tuple[int, List[Tuple[str, int]]]:
+    """Get the nesting depth of a selection set, and its spreads with their depth.
+
+    :meta private:
+    """
+    max_depth = 0
+    spreads: List[Tuple[str, int]] = []
+    stack = [(selection_set, 1)]
+    while stack:
+        selection_set, depth = stack.pop()
+        max_depth = max(max_depth, depth)
+        for selection in selection_set.selections:
+            if isinstance(selection, FragmentSpreadNode):
+                spreads.append((selection.name.value, depth))
+            else:
+                nested = selection.selection_set  # type: ignore[attr-defined]
+                if nested:
+                    stack.append((nested, depth + 1))
+    return max_depth, spreads
+
+
+class FragmentNestingVisitor(Visitor):
+    """Abort the validation before the rules recurse too deeply through fragments.
+
+    The parser limits the nesting within a definition only. See ``MAX_NESTING_DEPTH``
+    for why this is needed in addition to handling a stack overflow.
+
+    :meta private:
+    """
+
+    def __init__(self, fragments: Dict[str, FragmentDefinitionNode]) -> None:
+        super().__init__()
+        self.depths: Dict[str, int] = {}
+        depths = self.depths
+        nestings = {
+            name: get_selection_nesting(fragment.selection_set)
+            for name, fragment in fragments.items()
+        }
+        # Walk the spreads without recursion. A spread closing a cycle adds nothing
+        # here, since cycles are reported by the rules.
+        for root in nestings:
+            if root in depths:
+                continue
+            path = [(root, iter(nestings[root][1]))]
+            on_path = {root}
+            while path:
+                name, spreads = path[-1]
+                for spread, _depth in spreads:
+                    if (
+                        spread in nestings
+                        and spread not in depths
+                        and spread not in on_path
+                    ):
+                        path.append((spread, iter(nestings[spread][1])))
+                        on_path.add(spread)
+                        break
+                else:
+                    path.pop()
+                    on_path.remove(name)
+                    depths[name] = self.get_depth(*nestings[name])
+
+    def get_depth(self, depth: int, spreads: List[Tuple[str, int]]) -> int:
+        """Get the depth of a definition from its own depth and its spreads."""
+        depths = self.depths
+        for spread, spread_depth in spreads:
+            depth = max(depth, spread_depth + depths.get(spread, 0))
+        return depth
+
+    def enter_operation_definition(
+        self, node: OperationDefinitionNode, *_args: Any
+    ) -> VisitorAction:
+        """Check the depth of an operation.
+
+        :meta private:
+        """
+        if self.get_depth(*get_selection_nesting(node.selection_set)) > (
+            MAX_NESTING_DEPTH
+        ):
+            raise RecursionError
+        return SKIP
+
+    def enter_fragment_definition(
+        self, node: FragmentDefinitionNode, *_args: Any
+    ) -> VisitorAction:
+        """Check the depth of a fragment.
+
+        :meta private:
+        """
+        if self.depths[node.name.value] > MAX_NESTING_DEPTH:
+            raise RecursionError
+        return SKIP
 
 
 def validate(
@@ -130,7 +237,14 @@ def validate(
 
     # This uses a specialized visitor which runs multiple visitors in parallel,
     # while maintaining the visitor skip and break API.
-    visitors = [rule(context) for rule in rules]
+    visitors: List[Visitor] = [rule(context) for rule in rules]
+    fragments = {
+        definition.name.value: definition
+        for definition in document_ast.definitions
+        if isinstance(definition, FragmentDefinitionNode)
+    }
+    if fragments:
+        visitors.insert(0, FragmentNestingVisitor(fragments))
 
     # Visit the whole document with each instance of all provided rules.
     try:
