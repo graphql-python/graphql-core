@@ -1,11 +1,11 @@
 """Overlapping fields can be merged rule"""
 
 from itertools import chain
-from typing import Any, Dict, List, NamedTuple, Optional, Union, cast
+from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Union, cast
 
 from ...error import GraphQLError
 from ...language import (
-    DirectiveNode,
+    ArgumentNode,
     FieldNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
@@ -161,7 +161,9 @@ class Conflict(NamedTuple):
 class FieldDetails:
     """A field node and its definition in the parent-type context."""
 
-    __slots__ = "definition", "node", "parent_type"
+    __slots__ = "definition", "info", "node", "parent_type"
+
+    info: Optional["FieldInfo"]
 
     def __init__(
         self,
@@ -172,6 +174,23 @@ class FieldDetails:
         self.parent_type = parent_type
         self.node = node
         self.definition = definition
+        self.info = None
+
+
+class ArgumentInfo(NamedTuple):
+    """Argument nodes together with their values by name."""
+
+    nodes: Sequence[ArgumentNode]
+    values: Dict[str, ValueNode]
+
+
+class FieldInfo:
+    """Argument data of a field that is compared with other fields."""
+
+    __slots__ = ("arguments",)
+
+    def __init__(self, arguments: Optional[ArgumentInfo]) -> None:
+        self.arguments = arguments
 
 
 FieldDetailsList = List[FieldDetails]
@@ -663,6 +682,8 @@ def find_conflict(
     type2 = cast(Optional[GraphQLOutputType], def2 and def2.type)
 
     if not are_mutually_exclusive:
+        field_info1 = get_field_info(field_details1)
+        field_info2 = get_field_info(field_details2)
         # Two aliases must refer to the same field.
         name1 = node1.name.value
         name2 = node2.name.value
@@ -675,7 +696,7 @@ def find_conflict(
             )
 
         # Two field calls must have the same arguments.
-        if not same_arguments(node1, node2):
+        if not same_arguments(field_info1.arguments, field_info2.arguments):
             return Conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
@@ -708,27 +729,34 @@ def find_conflict(
     return None  # no conflict
 
 
+def get_field_info(field_details: FieldDetails) -> FieldInfo:
+    """Prepare argument lookups only when a field overlaps."""
+    info = field_details.info
+    if info is None:
+        info = field_details.info = FieldInfo(
+            get_argument_info(field_details.node.arguments)
+        )
+    return info
+
+
+def get_argument_info(args: Optional[Sequence[ArgumentNode]]) -> Optional[ArgumentInfo]:
+    if not args:
+        return None
+    return ArgumentInfo(args, {arg.name.value: arg.value for arg in args})
+
+
 def same_arguments(
-    node1: Union[FieldNode, DirectiveNode], node2: Union[FieldNode, DirectiveNode]
+    argument_info1: Optional[ArgumentInfo], argument_info2: Optional[ArgumentInfo]
 ) -> bool:
-    args1 = node1.arguments
-    args2 = node2.arguments
-
-    if not args1:
-        return not args2
-
-    if not args2:
+    if argument_info1 is None:
+        return argument_info2 is None
+    if argument_info2 is None or len(argument_info1.nodes) != len(argument_info2.nodes):
         return False
 
-    if len(args1) != len(args2):
-        return False  # pragma: no cover
-
-    values2 = {arg.name.value: arg.value for arg in args2}
-
-    for arg1 in args1:
-        value1 = arg1.value
+    values2 = argument_info2.values
+    for arg1 in argument_info1.nodes:
         value2 = values2.get(arg1.name.value)
-        if value2 is None or stringify_value(value1) != stringify_value(value2):
+        if value2 is None or stringify_value(arg1.value) != stringify_value(value2):
             return False
 
     return True

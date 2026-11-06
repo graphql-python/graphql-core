@@ -47,6 +47,25 @@ def replace_node(node, **changes):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def different_args_first_has_two_second_missing_one():
+        assert_errors(
+            """
+            fragment conflictingArgs on Dog {
+              doesKnowCommand(dogCommand: SIT, atExpertLevel: true)
+              doesKnowCommand(dogCommand: SIT)
+            }
+            """,
+            [
+                {
+                    "message": "Fields 'doesKnowCommand' conflict because"
+                    " they have differing arguments."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
+        )
+
     def keeps_field_definitions_separate_when_selection_set_shared_between_types():
         schema = build_schema("""
             type Query { node: Union }
