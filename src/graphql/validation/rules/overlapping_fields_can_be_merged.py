@@ -1,5 +1,6 @@
 """Overlapping fields can be merged rule"""
 
+import json
 from itertools import chain
 from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Union, cast
 
@@ -10,9 +11,12 @@ from ...language import (
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
+    ListValueNode,
+    ObjectValueNode,
     SelectionSetNode,
+    StringValueNode,
     ValueNode,
-    print_ast,
+    VariableNode,
 )
 from ...type import (
     GraphQLField,
@@ -28,7 +32,6 @@ from ...type import (
     is_object_type,
 )
 from ...utilities import type_from_ast
-from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
 MYPY = False
@@ -763,7 +766,26 @@ def same_arguments(
 
 
 def stringify_value(value: ValueNode) -> str:
-    return print_ast(sort_value_node(value))
+    return json.dumps(
+        get_value_structure(value), separators=(",", ":"), ensure_ascii=False
+    )
+
+
+def get_value_structure(node: ValueNode) -> List[Any]:
+    """Get a structure of nested lists with object fields ordered by name."""
+    if isinstance(node, VariableNode):
+        return [node.kind, node.name.value]
+    if isinstance(node, ObjectValueNode):
+        fields = sorted(node.fields, key=lambda field: field.name.value)
+        return [
+            node.kind,
+            [[field.name.value, get_value_structure(field.value)] for field in fields],
+        ]
+    if isinstance(node, ListValueNode):
+        return [node.kind, [get_value_structure(value) for value in node.values]]
+    if isinstance(node, StringValueNode):
+        return [node.kind, node.value, node.block is True]
+    return [node.kind, getattr(node, "value", None)]
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
