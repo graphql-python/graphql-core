@@ -908,6 +908,63 @@ def describe_validate_overlapping_fields_can_be_merged():
             schema=schema,
         )
 
+    def keeps_variable_scopes_separate_when_fields_share_their_argument_nodes():
+        schema = build_schema("type Query { value(arg: Int): Int }")
+        document = parse(
+            """
+            { ...First(x: 1) ...Second(x: 1) }
+            fragment First($x: Int) on Query { value(arg: $x) }
+            fragment Second($x: Int) on Query { value(arg: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        first, second = (
+            definition
+            for definition in document.definitions
+            if isinstance(definition, FragmentDefinitionNode)
+        )
+        shared_document = replace(
+            document,
+            definitions=tuple(
+                replace(
+                    second,
+                    selection_set=replace(
+                        second.selection_set,
+                        selections=tuple(
+                            replace(node) for node in first.selection_set.selections
+                        ),
+                    ),
+                )
+                if definition is second
+                else definition
+                for definition in document.definitions
+            ),
+        )
+        errors = validate(schema, shared_document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 1
+        assert "they have differing arguments" in errors[0].message
+
+    def compares_unknown_field_names_consistently_across_fragment_uses():
+        schema = build_schema("type Query { child: Query }")
+        document = parse(
+            """
+            {
+              a: child { ...A(x: 1) ...B(x: 1) }
+              b: child { ...A(x: 2) ...B(x: 2) }
+              c: child { ...A(x: 1) ...C(x: 1) }
+              d: child { ...A(x: 2) ...C(x: 2) }
+            }
+            fragment A($x: Int) on Query { alias: missing }
+            fragment B($x: Int) on Query { alias: missing }
+            fragment C($x: Int) on Query { alias: other }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "'missing' and 'other' are different fields" in error.message
+
     def keeps_field_definitions_separate_when_selection_set_shared_between_types():
         schema = build_schema(
             """

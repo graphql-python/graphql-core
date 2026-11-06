@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
 from ...error import GraphQLError
 from ...language import (
     ArgumentNode,
-    DirectiveNode,
     FieldNode,
     FragmentArgumentNode,
     FragmentDefinitionNode,
@@ -192,7 +191,9 @@ ConflictReasonMessage: TypeAlias = str | list[ConflictReason]
 class FieldDetails:
     """A field node and its definition in the parent-type context."""
 
-    __slots__ = "definition", "node", "parent_type"
+    __slots__ = "definition", "info", "node", "parent_type"
+
+    info: FieldInfo | None
 
     def __init__(
         self,
@@ -203,6 +204,23 @@ class FieldDetails:
         self.parent_type = parent_type
         self.node = node
         self.definition = definition
+        self.info = None
+
+
+class FieldInfo:
+    """Argument and stream metadata of a field that is compared with other fields."""
+
+    __slots__ = "arguments", "has_stream", "stream_arguments"
+
+    def __init__(
+        self,
+        arguments: ArgumentInfo | None,
+        has_stream: bool,
+        stream_arguments: ArgumentInfo | None,
+    ) -> None:
+        self.arguments = arguments
+        self.has_stream = has_stream
+        self.stream_arguments = stream_arguments
 
 
 FieldDetailsList: TypeAlias = list[FieldDetails]
@@ -234,6 +252,16 @@ class CollectFieldsResult:
         self.grouped_field_set = grouped_field_set
         self.spreads = spreads
         self.by_scope = None
+
+
+ArgumentNodes: TypeAlias = "Sequence[ArgumentNode] | Sequence[FragmentArgumentNode]"
+
+
+class ArgumentInfo(NamedTuple):
+    """Argument nodes together with their values by name."""
+
+    nodes: ArgumentNodes
+    values: dict[str, ValueNode]
 
 
 class RuleContext:
@@ -794,6 +822,9 @@ def find_conflict(
     type1 = cast("GraphQLOutputType | None", def1 and def1.type)
     type2 = cast("GraphQLOutputType | None", def2 and def2.type)
 
+    field_info1 = get_field_info(field_details1)
+    field_info2 = get_field_info(field_details2)
+
     if not are_mutually_exclusive:
         # Two aliases must refer to the same field.
         name1 = node1.name.value
@@ -807,19 +838,24 @@ def find_conflict(
             )
 
         # Two field calls must have the same arguments.
-        if not same_arguments(node1.arguments, scope1, node2.arguments, scope2):
+        if not same_arguments(
+            field_info1.arguments, scope1, field_info2.arguments, scope2
+        ):
             return Conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
 
-    stream1 = get_stream_directive(node1.directives)
-    stream2 = get_stream_directive(node2.directives)
-    if stream1 or stream2:
+    if field_info1.has_stream or field_info2.has_stream:
         reason = "they have overlapping stream directives"
         if (
-            stream1
-            and stream2
-            and same_arguments(stream1.arguments, scope1, stream2.arguments, scope2)
+            field_info1.has_stream
+            and field_info2.has_stream
+            and same_arguments(
+                field_info1.stream_arguments,
+                scope1,
+                field_info2.stream_arguments,
+                scope2,
+            )
         ):
             # This was allowed in previous alpha versions of GraphQL.js.
             reason += ". See https://github.com/graphql/defer-stream-wg/discussions/100"
@@ -855,36 +891,55 @@ def find_conflict(
     return None  # no conflict
 
 
+def get_field_info(field_details: FieldDetails) -> FieldInfo:
+    """Prepare argument and directive lookups only when a field overlaps."""
+    info = field_details.info
+    if info is None:
+        node = field_details.node
+        stream = next(
+            (
+                directive
+                for directive in node.directives or ()
+                if directive.name.value == "stream"
+            ),
+            None,
+        )
+        info = field_details.info = FieldInfo(
+            get_argument_info(node.arguments),
+            stream is not None,
+            get_argument_info(stream.arguments) if stream else None,
+        )
+    return info
+
+
+def get_argument_info(args: ArgumentNodes | None) -> ArgumentInfo | None:
+    if not args:
+        return None
+    return ArgumentInfo(args, {arg.name.value: arg.value for arg in args})
+
+
 def same_arguments(
-    args1: Sequence[ArgumentNode | FragmentArgumentNode] | None,
+    argument_info1: ArgumentInfo | None,
     scope1: VariableScope | None,
-    args2: Sequence[ArgumentNode | FragmentArgumentNode] | None,
+    argument_info2: ArgumentInfo | None,
     scope2: VariableScope | None,
 ) -> bool:
-    if not args1:
-        return not args2
-
-    if not args2:
+    if argument_info1 is None:
+        return argument_info2 is None
+    if argument_info2 is None or len(argument_info1.nodes) != len(argument_info2.nodes):
         return False
 
-    if len(args1) != len(args2):
-        return False
-
-    values2 = {
-        arg.name.value: (
-            arg.value
-            if scope2 is None
-            else replace_fragment_variables(arg.value, scope2)
-        )
-        for arg in args2
-    }
-
-    for arg1 in args1:
+    values2 = argument_info2.values
+    for arg1 in argument_info1.nodes:
         value1 = arg1.value
         if scope1:
             value1 = replace_fragment_variables(value1, scope1)
         value2 = values2.get(arg1.name.value)
-        if value2 is None or stringify_value(value1) != stringify_value(value2):
+        if value2 is None:
+            return False
+        if scope2:
+            value2 = replace_fragment_variables(value2, scope2)
+        if stringify_value(value1) != stringify_value(value2):
             return False
 
     return True
@@ -920,15 +975,6 @@ def replace_fragment_variables(
 
 def stringify_value(value: ValueNode) -> str:
     return print_ast(sort_value_node(value))
-
-
-def get_stream_directive(
-    directives: Sequence[DirectiveNode] | None,
-) -> DirectiveNode | None:
-    for directive in directives or ():
-        if directive.name.value == "stream":
-            return directive
-    return None
 
 
 def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
