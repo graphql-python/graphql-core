@@ -80,6 +80,17 @@ def describe_graphql():
         assert result.errors
         assert result.errors[0].message == "no location"
 
+    async def passes_token_limits_through_to_parse():
+        for result in (
+            await graphql(schema, "{ a }", max_tokens=2),
+            await graphql(schema, "{ a }", max_lexical_tokens=2),
+        ):
+            assert result.errors
+            assert result.errors[0].message == (
+                "Syntax Error: Document contains more than 2 tokens. Parsing aborted."
+            )
+            assert result.data is None
+
     async def passes_validation_options_through_to_validate():
         result = await graphql(schema, "{ contextEho }", hide_suggestions=True)
 

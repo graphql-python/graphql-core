@@ -49,6 +49,7 @@ async def graphql(  # noqa: PLR0913, PLR0917
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
     harness: GraphQLHarness = default_harness,
+    max_lexical_tokens: int | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation asynchronously.
 
@@ -91,14 +92,17 @@ async def graphql(  # noqa: PLR0913, PLR0917
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: The maximum number of tokens allowed within the document,
-        to limit the CPU time and memory the parser can burn.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead. Unlike
+        ``max_lexical_tokens``, this limit also counts comments.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
     :param rules: Validation rules to use instead of the specified rules.
     :param max_errors: Maximum number of validation errors before validation stops.
     :param harness: Custom parse, validate, execute, and subscribe functions for this
         request pipeline. Defaults to ``default_harness``.
+    :param max_lexical_tokens: The maximum number of lexical tokens allowed within the
+        document, to limit the CPU time and memory the parser can burn. This limit
+        does not count comments.
     :returns: An execution result or validation errors.
 
     Execute a complete asynchronous request with variables:
@@ -210,6 +214,7 @@ async def graphql(  # noqa: PLR0913, PLR0917
         rules,
         max_errors,
         harness,
+        max_lexical_tokens,
     )
 
     if default_is_awaitable(result):
@@ -238,6 +243,7 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
     harness: GraphQLHarness = default_harness,
+    max_lexical_tokens: int | None = None,
 ) -> ExecutionResult:
     """Execute a GraphQL operation synchronously.
 
@@ -272,14 +278,17 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: The maximum number of tokens allowed within the document,
-        to limit the CPU time and memory the parser can burn.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead. Unlike
+        ``max_lexical_tokens``, this limit also counts comments.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
     :param rules: Validation rules to use instead of the specified rules.
     :param max_errors: Maximum number of validation errors before validation stops.
     :param harness: Custom parse, validate, execute, and subscribe functions for this
         request pipeline. Defaults to ``default_harness``.
+    :param max_lexical_tokens: The maximum number of lexical tokens allowed within the
+        document, to limit the CPU time and memory the parser can burn. This limit
+        does not count comments.
     :returns: Completed execution output, or request errors if parsing or
         validation fails.
 
@@ -346,6 +355,7 @@ def graphql_sync(  # noqa: PLR0913, PLR0917
         rules,
         max_errors,
         harness,
+        max_lexical_tokens,
     )
 
     # Assert that the execution was synchronous.
@@ -380,6 +390,7 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
     rules: Collection[type[ASTValidationRule]] | None = None,
     max_errors: int | None = None,
     harness: GraphQLHarness = default_harness,
+    max_lexical_tokens: int | None = None,
 ) -> AwaitableOrValue[ExecutionResult]:
     """Execute a query, return asynchronously only if necessary.
 
@@ -448,6 +459,7 @@ def graphql_impl(  # noqa: PLR0913, PLR0917
             no_location=no_location,
             max_tokens=max_tokens,
             experimental_fragment_arguments=experimental_fragment_arguments,
+            max_lexical_tokens=max_lexical_tokens,
         )
     except GraphQLError as error:
         return ExecutionResult(data=None, errors=[error])

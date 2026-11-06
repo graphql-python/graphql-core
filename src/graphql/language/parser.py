@@ -98,6 +98,7 @@ def parse(
     max_tokens: int | None = None,
     experimental_fragment_arguments: bool = False,
     allow_empty_selection_sets: bool = True,
+    max_lexical_tokens: int | None = None,
 ) -> DocumentNode:
     """Given a GraphQL source, parse it into a Document.
 
@@ -107,11 +108,13 @@ def parse(
     they correspond to. The ``no_location`` option disables that behavior for
     performance or testing.
 
-    Parser CPU and memory usage is linear to the number of tokens in a document,
-    however in extreme cases it becomes quadratic due to memory exhaustion.
+    Parser CPU and memory usage is linear to the number of lexical tokens in a
+    document, however in extreme cases it becomes quadratic due to memory exhaustion.
     Parsing happens before validation so even invalid queries can burn lots of
     CPU time and memory.
-    To prevent this you can set a maximum number of tokens allowed within a document.
+    To prevent this you can set a maximum number of lexical tokens allowed within a
+    document. This does not limit the length of the source text or of an individual
+    token.
 
     EXPERIMENTAL:
 
@@ -148,16 +151,22 @@ def parse(
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
-        in a document, however in extreme cases it becomes quadratic due to memory
-        exhaustion. Parsing happens before validation, so even invalid queries can
-        burn lots of CPU time and memory. To prevent this, you can set a maximum
-        number of tokens allowed within a document.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead; this option
+        will be removed in a future version. Unlike ``max_lexical_tokens``, this limit
+        also counts comments, and it is enforced while skipping a run of comments.
+        It applies independently of ``max_lexical_tokens``.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
     :param allow_empty_selection_sets: Allows selection sets without selections
         (the default). Deprecated, since empty selection sets are now always allowed;
         this option will be removed in a future version.
+    :param max_lexical_tokens: Parser CPU and memory usage is linear to the number of
+        lexical tokens in a document, however in extreme cases it becomes quadratic
+        due to memory exhaustion. Parsing happens before validation, so even invalid
+        queries can burn lots of CPU time and memory. To prevent this, you can set a
+        maximum number of lexical tokens allowed within a document. This limit does
+        not count comments, and it does not limit the length of the source text or of
+        an individual token.
     :returns: The parsed GraphQL document AST.
 
     Parse a GraphQL document with the default parser options:
@@ -173,7 +182,7 @@ def parse(
     ...     '{ t { ...A(var: true) } }'
     ...     ' fragment A($var: Boolean = false) on T { name }',
     ...     experimental_fragment_arguments=True,
-    ...     max_tokens=80,
+    ...     max_lexical_tokens=80,
     ...     no_location=True,
     ... )
     >>> directive_document = parse('directive @foo @bar on FIELD')
@@ -192,6 +201,7 @@ def parse(
         max_tokens=max_tokens,
         experimental_fragment_arguments=experimental_fragment_arguments,
         allow_empty_selection_sets=allow_empty_selection_sets,
+        max_lexical_tokens=max_lexical_tokens,
     )
     return parser.parse_document()
 
@@ -201,6 +211,7 @@ def parse_value(
     no_location: bool = False,
     max_tokens: int | None = None,
     experimental_fragment_arguments: bool = False,
+    max_lexical_tokens: int | None = None,
 ) -> ValueNode:
     """Parse the AST for a given string containing a GraphQL value.
 
@@ -213,13 +224,19 @@ def parse_value(
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
-        in a document, however in extreme cases it becomes quadratic due to memory
-        exhaustion. Parsing happens before validation, so even invalid queries can
-        burn lots of CPU time and memory. To prevent this, you can set a maximum
-        number of tokens allowed within a document.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead; this option
+        will be removed in a future version. Unlike ``max_lexical_tokens``, this limit
+        also counts comments, and it is enforced while skipping a run of comments.
+        It applies independently of ``max_lexical_tokens``.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
+    :param max_lexical_tokens: Parser CPU and memory usage is linear to the number of
+        lexical tokens in a document, however in extreme cases it becomes quadratic
+        due to memory exhaustion. Parsing happens before validation, so even invalid
+        queries can burn lots of CPU time and memory. To prevent this, you can set a
+        maximum number of lexical tokens allowed within a document. This limit does
+        not count comments, and it does not limit the length of the source text or of
+        an individual token.
     :returns: The parsed GraphQL value AST.
 
     >>> from graphql import parse_value
@@ -232,6 +249,7 @@ def parse_value(
         no_location=no_location,
         max_tokens=max_tokens,
         experimental_fragment_arguments=experimental_fragment_arguments,
+        max_lexical_tokens=max_lexical_tokens,
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_value_literal(False)
@@ -244,6 +262,7 @@ def parse_const_value(
     no_location: bool = False,
     max_tokens: int | None = None,
     experimental_fragment_arguments: bool = False,
+    max_lexical_tokens: int | None = None,
 ) -> ConstValueNode:
     """Parse the AST for a given string containing a GraphQL constant value.
 
@@ -255,13 +274,19 @@ def parse_const_value(
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
-        in a document, however in extreme cases it becomes quadratic due to memory
-        exhaustion. Parsing happens before validation, so even invalid queries can
-        burn lots of CPU time and memory. To prevent this, you can set a maximum
-        number of tokens allowed within a document.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead; this option
+        will be removed in a future version. Unlike ``max_lexical_tokens``, this limit
+        also counts comments, and it is enforced while skipping a run of comments.
+        It applies independently of ``max_lexical_tokens``.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
+    :param max_lexical_tokens: Parser CPU and memory usage is linear to the number of
+        lexical tokens in a document, however in extreme cases it becomes quadratic
+        due to memory exhaustion. Parsing happens before validation, so even invalid
+        queries can burn lots of CPU time and memory. To prevent this, you can set a
+        maximum number of lexical tokens allowed within a document. This limit does
+        not count comments, and it does not limit the length of the source text or of
+        an individual token.
     :returns: The parsed GraphQL constant value AST.
 
     >>> from graphql import parse_const_value
@@ -278,6 +303,7 @@ def parse_const_value(
         no_location=no_location,
         max_tokens=max_tokens,
         experimental_fragment_arguments=experimental_fragment_arguments,
+        max_lexical_tokens=max_lexical_tokens,
     )
     parser.expect_token(TokenKind.SOF)
     value = parser.parse_const_value_literal()
@@ -290,6 +316,7 @@ def parse_type(
     no_location: bool = False,
     max_tokens: int | None = None,
     experimental_fragment_arguments: bool = False,
+    max_lexical_tokens: int | None = None,
 ) -> TypeNode:
     """Parse the AST for a given string containing a GraphQL Type.
 
@@ -306,13 +333,19 @@ def parse_type(
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
-        in a document, however in extreme cases it becomes quadratic due to memory
-        exhaustion. Parsing happens before validation, so even invalid queries can
-        burn lots of CPU time and memory. To prevent this, you can set a maximum
-        number of tokens allowed within a document.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead; this option
+        will be removed in a future version. Unlike ``max_lexical_tokens``, this limit
+        also counts comments, and it is enforced while skipping a run of comments.
+        It applies independently of ``max_lexical_tokens``.
     :param experimental_fragment_arguments: Allows fragment variable definitions
         and arguments on fragment spreads to be parsed (experimental).
+    :param max_lexical_tokens: Parser CPU and memory usage is linear to the number of
+        lexical tokens in a document, however in extreme cases it becomes quadratic
+        due to memory exhaustion. Parsing happens before validation, so even invalid
+        queries can burn lots of CPU time and memory. To prevent this, you can set a
+        maximum number of lexical tokens allowed within a document. This limit does
+        not count comments, and it does not limit the length of the source text or of
+        an individual token.
     :returns: The parsed GraphQL type AST.
 
     >>> from graphql import parse_type
@@ -325,6 +358,7 @@ def parse_type(
         no_location=no_location,
         max_tokens=max_tokens,
         experimental_fragment_arguments=experimental_fragment_arguments,
+        max_lexical_tokens=max_lexical_tokens,
     )
     parser.expect_token(TokenKind.SOF)
     type_ = parser.parse_type_reference()
@@ -336,6 +370,7 @@ def parse_schema_coordinate(
     source: SourceType,
     no_location: bool = False,
     max_tokens: int | None = None,
+    max_lexical_tokens: int | None = None,
 ) -> SchemaCoordinateNode:
     """Parse the AST for a given string containing a GraphQL schema coordinate.
 
@@ -354,11 +389,17 @@ def parse_schema_coordinate(
     :param no_location: By default, the parser creates AST nodes that know the
         location in the source that they correspond to. Setting this parameter to
         ``True`` disables that behavior for performance or testing.
-    :param max_tokens: Parser CPU and memory usage is linear to the number of tokens
-        in a document, however in extreme cases it becomes quadratic due to memory
-        exhaustion. Parsing happens before validation, so even invalid queries can
-        burn lots of CPU time and memory. To prevent this, you can set a maximum
-        number of tokens allowed within a document.
+    :param max_tokens: Deprecated, use ``max_lexical_tokens`` instead; this option
+        will be removed in a future version. Unlike ``max_lexical_tokens``, this limit
+        also counts comments, and it is enforced while skipping a run of comments.
+        It applies independently of ``max_lexical_tokens``.
+    :param max_lexical_tokens: Parser CPU and memory usage is linear to the number of
+        lexical tokens in a document, however in extreme cases it becomes quadratic
+        due to memory exhaustion. Parsing happens before validation, so even invalid
+        queries can burn lots of CPU time and memory. To prevent this, you can set a
+        maximum number of lexical tokens allowed within a document. This limit does
+        not count comments, and it does not limit the length of the source text or of
+        an individual token.
     :returns: The parsed GraphQL schema coordinate AST.
 
     >>> from graphql import parse_schema_coordinate
@@ -369,7 +410,13 @@ def parse_schema_coordinate(
     if not is_source(source):
         source = Source(cast("str", source))
     lexer = SchemaCoordinateLexer(source)
-    parser = Parser(source, no_location=no_location, max_tokens=max_tokens, lexer=lexer)
+    parser = Parser(
+        source,
+        no_location=no_location,
+        max_tokens=max_tokens,
+        lexer=lexer,
+        max_lexical_tokens=max_lexical_tokens,
+    )
     parser.expect_token(TokenKind.SOF)
     coordinate = parser.parse_schema_coordinate()
     parser.expect_token(TokenKind.EOF)
@@ -390,10 +437,13 @@ class Parser:
 
     _no_location: bool
     _max_tokens: int | None
+    _max_lexical_tokens: int | None
+    _has_token_limit: bool
     _experimental_fragment_arguments: bool
     _allow_empty_selection_sets: bool
     _lexer: Lexer
     _token_counter: int
+    _lexical_token_counter: int
 
     def __init__(
         self,
@@ -403,12 +453,15 @@ class Parser:
         experimental_fragment_arguments: bool = False,
         lexer: Lexer | None = None,
         allow_empty_selection_sets: bool = True,
+        max_lexical_tokens: int | None = None,
     ) -> None:
         if not is_source(source):
             source = Source(cast("str", source))
 
         self._no_location = no_location
         self._max_tokens = max_tokens
+        self._max_lexical_tokens = max_lexical_tokens
+        self._has_token_limit = max_tokens is not None or max_lexical_tokens is not None
         self._experimental_fragment_arguments = experimental_fragment_arguments
         self._allow_empty_selection_sets = allow_empty_selection_sets
         # You may override the lexer used to lex the source; this is used by schema
@@ -416,7 +469,7 @@ class Parser:
         self._lexer = lexer if lexer is not None else Lexer(source)
         # Let the lexer enforce max_tokens while it skips over a run of comments.
         self._lexer._max_tokens = self._lexer._comment_budget = max_tokens  # noqa: SLF001
-        self._token_counter = 0
+        self._token_counter = self._lexical_token_counter = 0
 
     def parse_name(self) -> NameNode:
         """Convert a name lex token into a name parse node."""
@@ -1520,6 +1573,9 @@ class Parser:
         ``max_tokens`` while still allocating one token per comment. The lexer also
         enforces ``max_tokens`` while it skips over a run of comments, so that such a
         document is aborted before the whole run has been read.
+
+        The separate count for ``max_lexical_tokens`` leaves out the comments. It is
+        only kept when that limit is set, so that parsing without limits pays nothing.
         """
         lexer = self._lexer
         token = lexer.advance()
@@ -1532,17 +1588,29 @@ class Parser:
             skipped = skipped.next
         if token.kind is not TokenKind.EOF:
             self._token_counter += 1
-        max_tokens = self._max_tokens
-        if max_tokens is not None:
-            if self._token_counter > max_tokens:
-                raise GraphQLSyntaxError(
-                    lexer.source,
-                    token.start,
-                    f"Document contains more than {max_tokens} tokens."
-                    " Parsing aborted.",
-                )
-            # The number of comments the lexer may still skip before the next token.
-            lexer._comment_budget = max_tokens - self._token_counter  # noqa: SLF001
+        if self._has_token_limit:
+            max_lexical_tokens = self._max_lexical_tokens
+            if max_lexical_tokens is not None and token.kind is not TokenKind.EOF:
+                self._lexical_token_counter += 1
+                if self._lexical_token_counter > max_lexical_tokens:
+                    raise GraphQLSyntaxError(
+                        lexer.source,
+                        token.start,
+                        f"Document contains more than {max_lexical_tokens} tokens."
+                        " Parsing aborted.",
+                    )
+            max_tokens = self._max_tokens
+            if max_tokens is not None:
+                if self._token_counter > max_tokens:
+                    raise GraphQLSyntaxError(
+                        lexer.source,
+                        token.start,
+                        f"Document contains more than {max_tokens} tokens."
+                        " Parsing aborted.",
+                    )
+                # The number of comments the lexer may still skip before the next
+                # token.
+                lexer._comment_budget = max_tokens - self._token_counter  # noqa: SLF001
 
 
 def get_token_desc(token: Token) -> str:
