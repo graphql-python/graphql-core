@@ -843,6 +843,7 @@ def describe_validate_overlapping_fields_can_be_merged():
         assert_valid(
             """
             fragment differentDirectivesWithDifferentAliases on Dog {
+              name
               name @include(if: true)
               name @include(if: false)
             }

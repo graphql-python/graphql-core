@@ -10,6 +10,7 @@ from ...error import GraphQLError
 from ...language import (
     ArgumentNode,
     BooleanValueNode,
+    DirectiveNode,
     EnumValueNode,
     FieldNode,
     FloatValueNode,
@@ -168,7 +169,14 @@ class Conflict(NamedTuple):
 class FieldDetails:
     """A field node and its definition in the parent-type context."""
 
-    __slots__ = "definition", "info", "node", "parent_type"
+    __slots__ = (
+        "definition",
+        "info",
+        "is_simple_leaf",
+        "node",
+        "parent_type",
+        "stream_directive",
+    )
 
     info: FieldInfo | None
 
@@ -177,11 +185,15 @@ class FieldDetails:
         parent_type: GraphQLNamedType | None,
         node: FieldNode,
         definition: GraphQLField | None,
+        is_simple_leaf: bool,
+        stream_directive: DirectiveNode | None,
     ) -> None:
         self.parent_type = parent_type
         self.node = node
         self.definition = definition
         self.info = None
+        self.is_simple_leaf = is_simple_leaf
+        self.stream_directive = stream_directive
 
 
 class FieldInfo:
@@ -190,7 +202,6 @@ class FieldInfo:
     __slots__ = (
         "arguments",
         "comparisons",
-        "has_stream",
         "named_type",
         "stream_arguments",
         "type_string",
@@ -200,13 +211,11 @@ class FieldInfo:
         self,
         named_type: GraphQLNamedType | None,
         arguments: ArgumentInfo | None,
-        has_stream: bool,
         stream_arguments: ArgumentInfo | None,
     ) -> None:
         self.comparisons: dict[FieldInfo, FieldComparison] = {}
         self.named_type = named_type
         self.arguments = arguments
-        self.has_stream = has_stream
         self.stream_arguments = stream_arguments
         self.type_string: str | None = None
 
@@ -930,9 +939,11 @@ def find_conflict(
     parent_type1 = field_details1.parent_type
     node1 = field_details1.node
     def1 = field_details1.definition
+    stream_directive1 = field_details1.stream_directive
     parent_type2 = field_details2.parent_type
     node2 = field_details2.node
     def2 = field_details2.definition
+    stream_directive2 = field_details2.stream_directive
 
     # If it is known that two fields could not possibly apply at the same time, due to
     # the parent types, then it is safe to permit them to diverge in aliased field or
@@ -952,6 +963,13 @@ def find_conflict(
 
     # Count attempted field pairs, including pairs skipped by type exclusivity.
     spend_complexity_budget(rule_context, 2)
+    if (
+        field_details1.is_simple_leaf
+        and field_details2.is_simple_leaf
+        and type1 is type2
+        and node1.name.value == node2.name.value
+    ):
+        return None
     field_info1 = get_field_info(field_details1)
     field_info2 = get_field_info(field_details2)
     comparison = field_info1.comparisons.get(field_info2)
@@ -986,9 +1004,9 @@ def find_conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
 
-    if field_info1.has_stream or field_info2.has_stream:
+    if stream_directive1 or stream_directive2:
         reason = "they have overlapping stream directives"
-        if field_info1.has_stream and field_info2.has_stream:
+        if stream_directive1 and stream_directive2:
             compared_arguments = comparison.stream_arguments
             if compared_arguments is None:
                 compared_arguments = comparison.stream_arguments = compare_arguments(
@@ -1039,21 +1057,12 @@ def get_field_info(field_details: FieldDetails) -> FieldInfo:
     """Prepare argument and directive lookups only when a field overlaps."""
     info = field_details.info
     if info is None:
-        node = field_details.node
-        stream = next(
-            (
-                directive
-                for directive in node.directives or ()
-                if directive.name.value == "stream"
-            ),
-            None,
-        )
         definition = field_details.definition
+        stream_directive = field_details.stream_directive
         info = field_details.info = FieldInfo(
             get_named_type(definition.type if definition else None),
-            get_argument_info(node.arguments),
-            stream is not None,
-            get_argument_info(stream.arguments) if stream else None,
+            get_argument_info(field_details.node.arguments),
+            get_argument_info(stream_directive.arguments) if stream_directive else None,
         )
     return info
 
@@ -1318,7 +1327,30 @@ def collect_fields_impl(
             field_details_list = grouped_field_set.get(response_name)
             if not field_details_list:
                 field_details_list = grouped_field_set[response_name] = []
-            field_details_list.append(FieldDetails(parent_type, selection, field_def))
+            directives = selection.directives
+            stream_directive = (
+                next(
+                    (
+                        directive
+                        for directive in directives
+                        if directive.name.value == "stream"
+                    ),
+                    None,
+                )
+                if directives
+                else None
+            )
+            field_details_list.append(
+                FieldDetails(
+                    parent_type,
+                    selection,
+                    field_def,
+                    not selection.arguments
+                    and not selection.selection_set
+                    and stream_directive is None,
+                    stream_directive,
+                )
+            )
         elif isinstance(selection, FragmentSpreadNode):
             fragment_spreads.append(selection)
         elif isinstance(selection, InlineFragmentNode):  # pragma: no branch
