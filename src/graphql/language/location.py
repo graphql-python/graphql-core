@@ -74,6 +74,8 @@ def get_locations(locations: Sequence[Tuple["Source", int]]) -> List[SourceLocat
 
     :meta private:
     """
+    if len(locations) < 2:
+        return [source.get_location(start) for source, start in locations]
     # Keyed by the id of the source, because sources are compared by value.
     # The values and the given locations keep the sources alive.
     by_source: Dict[int, Tuple["Source", List[Tuple[int, int]]]] = {}
