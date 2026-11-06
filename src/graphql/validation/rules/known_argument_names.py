@@ -1,6 +1,6 @@
 """Known argument names on directives rule"""
 
-from typing import cast, Any, Dict, List, Union
+from typing import cast, Any, Dict, List, Set, Union
 
 from ...error import GraphQLError
 from ...language import (
@@ -30,19 +30,19 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
 
     def __init__(self, context: Union[ValidationContext, SDLValidationContext]):
         super().__init__(context)
-        directive_args: Dict[str, List[str]] = {}
+        directive_args: Dict[str, Set[str]] = {}
 
         schema = context.schema
         defined_directives = schema.directives if schema else specified_directives
         for directive in cast(List, defined_directives):
-            directive_args[directive.name] = list(directive.args)
+            directive_args[directive.name] = set(directive.args)
 
         ast_definitions = context.document.definitions
         for def_ in ast_definitions:
             if isinstance(def_, DirectiveDefinitionNode):
-                directive_args[def_.name.value] = [
+                directive_args[def_.name.value] = {
                     arg.name.value for arg in def_.arguments or []
-                ]
+                }
 
         self.directive_args = directive_args
 
@@ -55,7 +55,7 @@ class KnownArgumentNamesOnDirectivesRule(ASTValidationRule):
             for arg_node in directive_node.arguments:
                 arg_name = arg_node.name.value
                 if arg_name not in known_args:
-                    suggestions = suggestion_list(arg_name, known_args)
+                    suggestions = suggestion_list(arg_name, list(known_args))
                     self.report_error(
                         GraphQLError(
                             f"Unknown argument '{arg_name}'"
