@@ -47,6 +47,32 @@ def replace_node(node, **changes):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def accepts_several_overlapping_fields_with_identical_values():
+        schema = build_schema("type Query { field(value: Int): String }")
+        assert_valid(
+            "{ field(value: 1) field(value: 1) field(value: 1) }", schema=schema
+        )
+
+    def reuses_field_pair_comparisons_when_a_pair_is_compared_again():
+        schema = build_schema("type Query { value(arg: Int): Int }")
+        assert_valid(
+            """
+            { ...F ...G }
+            fragment F on Query { value(arg: 1) ...G }
+            fragment G on Query { value(arg: 1) }
+            """,
+            schema=schema,
+        )
+        document = parse("""
+            { ...F ...G }
+            fragment F on Query { value(arg: 1) ...G }
+            fragment G on Query { value(arg: 2) }
+            """)
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "they have differing arguments" in error.message
+
     def compares_nested_input_values_with_empty_collections_and_block_strings():
         schema = build_schema("""
             input SomeInput {

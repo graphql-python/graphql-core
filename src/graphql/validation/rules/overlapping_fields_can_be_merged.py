@@ -190,9 +190,11 @@ class ArgumentInfo(NamedTuple):
 class FieldInfo:
     """Argument data of a field that is compared with other fields."""
 
-    __slots__ = ("arguments",)
+    __slots__ = "arguments", "comparisons"
 
     def __init__(self, arguments: Optional[ArgumentInfo]) -> None:
+        # An empty reason means the field names and arguments match.
+        self.comparisons: Dict[FieldInfo, str] = {}
         self.arguments = arguments
 
 
@@ -222,6 +224,7 @@ class RuleContext:
         "cached_collect_fields_results",
         "compared_fragment_pairs",
         "field_comparisons",
+        "stringified_values",
     )
 
     def __init__(self) -> None:
@@ -237,6 +240,10 @@ class RuleContext:
         self.cached_collect_fields_results: Dict[
             Optional[GraphQLNamedType], Dict[int, CollectFieldsResult]
         ] = {}
+
+        # The comparison keys of value nodes, by the id of the node, because AST nodes
+        # are compared by value and the document keeps them alive.
+        self.stringified_values: Dict[int, str] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
         # the comparison budget.
@@ -687,22 +694,22 @@ def find_conflict(
     if not are_mutually_exclusive:
         field_info1 = get_field_info(field_details1)
         field_info2 = get_field_info(field_details2)
-        # Two aliases must refer to the same field.
-        name1 = node1.name.value
-        name2 = node2.name.value
-        if name1 != name2:
-            return Conflict(
-                response_name,
-                f"'{name1}' and '{name2}' are different fields",
-                [node1],
-                [node2],
-            )
-
-        # Two field calls must have the same arguments.
-        if not same_arguments(field_info1.arguments, field_info2.arguments):
-            return Conflict(
-                response_name, "they have differing arguments", [node1], [node2]
-            )
+        reason = field_info1.comparisons.get(field_info2)
+        if reason is None:
+            # Two aliases must refer to the same field with the same arguments.
+            name1 = node1.name.value
+            name2 = node2.name.value
+            if name1 != name2:
+                reason = f"'{name1}' and '{name2}' are different fields"
+            elif same_arguments(
+                rule_context, field_info1.arguments, field_info2.arguments
+            ):
+                reason = ""
+            else:
+                reason = "they have differing arguments"
+            field_info1.comparisons[field_info2] = reason
+        if reason:
+            return Conflict(response_name, reason, [node1], [node2])
 
     if type1 and type2 and do_types_conflict(type1, type2):
         return Conflict(
@@ -749,7 +756,9 @@ def get_argument_info(args: Optional[Sequence[ArgumentNode]]) -> Optional[Argume
 
 
 def same_arguments(
-    argument_info1: Optional[ArgumentInfo], argument_info2: Optional[ArgumentInfo]
+    rule_context: RuleContext,
+    argument_info1: Optional[ArgumentInfo],
+    argument_info2: Optional[ArgumentInfo],
 ) -> bool:
     if argument_info1 is None:
         return argument_info2 is None
@@ -759,16 +768,22 @@ def same_arguments(
     values2 = argument_info2.values
     for arg1 in argument_info1.nodes:
         value2 = values2.get(arg1.name.value)
-        if value2 is None or stringify_value(arg1.value) != stringify_value(value2):
+        if value2 is None or stringify_value(
+            rule_context, arg1.value
+        ) != stringify_value(rule_context, value2):
             return False
 
     return True
 
 
-def stringify_value(value: ValueNode) -> str:
-    return json.dumps(
-        get_value_structure(value), separators=(",", ":"), ensure_ascii=False
-    )
+def stringify_value(rule_context: RuleContext, value: ValueNode) -> str:
+    stringified_values = rule_context.stringified_values
+    result = stringified_values.get(id(value))
+    if result is None:
+        result = stringified_values[id(value)] = json.dumps(
+            get_value_structure(value), separators=(",", ":"), ensure_ascii=False
+        )
+    return result
 
 
 def get_value_structure(node: ValueNode) -> List[Any]:
