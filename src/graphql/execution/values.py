@@ -457,6 +457,9 @@ def get_argument_values(
     ...
     """
     coerced_values: dict[str, Any] = {}
+    if not type_def.args:
+        return coerced_values
+
     arg_node_map = {arg.name.value: arg for arg in node.arguments or []}
 
     for name, arg_def in type_def.args.items():

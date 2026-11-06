@@ -135,7 +135,7 @@ class ProvidedRequiredArgumentsRule(ProvidedRequiredArgumentsOnDirectivesRule):
         :meta private:
         """
         field_def = self.context.get_field_def()
-        if not field_def:
+        if not field_def or not field_def.args:
             return SKIP
         arg_nodes = field_node.arguments or ()
 
