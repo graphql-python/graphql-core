@@ -996,7 +996,7 @@ def find_conflict(
                 )
         return Conflict(response_name, reason, [node1], [node2])
 
-    if type1 and type2 and do_types_conflict(type1, type2):
+    if type1 and type2 and do_types_conflict(rule_context, type1, type2):
         return Conflict(
             response_name,
             f"they return conflicting types '{type1}' and '{type2}'",
@@ -1201,7 +1201,9 @@ def get_value_structure(node: ValueNode, variables: list[str]) -> list[Any]:
     return [VALUE_KIND_NAMES[type(node)], node.value]  # type: ignore
 
 
-def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
+def do_types_conflict(
+    rule_context: RuleContext, type1: GraphQLOutputType, type2: GraphQLOutputType
+) -> bool:
     """Check whether two types conflict
 
     Two types conflict if both types could not apply to a value simultaneously.
@@ -1210,9 +1212,10 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     """
     if type1 is type2:
         return False
+    spend_complexity_budget(rule_context, 1)
     if is_list_type(type1):
         return (
-            do_types_conflict(type1.of_type, type2.of_type)
+            do_types_conflict(rule_context, type1.of_type, type2.of_type)
             if is_list_type(type2)
             else True
         )
@@ -1220,7 +1223,7 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
         return True
     if is_non_null_type(type1):
         return (
-            do_types_conflict(type1.of_type, type2.of_type)
+            do_types_conflict(rule_context, type1.of_type, type2.of_type)
             if is_non_null_type(type2)
             else True
         )
