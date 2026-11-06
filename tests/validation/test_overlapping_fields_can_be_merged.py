@@ -54,6 +54,59 @@ def budget_of(limit):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def reports_fragment_argument_conflicts_when_one_spread_omits_arguments():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse(
+            """
+            { ...Local ...Local(x: 1) }
+            fragment Local($x: Int) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        assert [error.message for error in validate(schema, document)] == [
+            (
+                "Spreads 'Local' conflict because Local and Local(x: 1)"
+                " have different fragment arguments."
+            )
+        ]
+
+    def compares_spreads_that_supply_only_some_declared_arguments():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse(
+            """
+            { ...Local(x: 1) ...Local(x: 1, y: 2) ...Local(x: 1) }
+            fragment Local($x: Int, $y: Int) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert [error.message for error in errors] == [
+            (
+                "Spreads 'Local' conflict because Local(x: 1) and Local(x: 1, y: 2)"
+                " have different fragment arguments."
+            )
+        ]
+
+    def keeps_similarly_named_variables_from_different_scopes_distinct():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse(
+            """
+            query ($__1_x: Int) {
+              ...Local(x: 1)
+              field(value: $__1_x)
+            }
+            fragment Local($x: Int) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        assert [error.message for error in validate(schema, document)] == [
+            (
+                "Fields 'field' conflict because they have differing arguments."
+                " Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
+
     def describe_fragment_arguments_must_produce_fields_that_can_be_merged():
         def allows_conflicting_spreads_at_different_depths():
             assert_valid(
@@ -1003,6 +1056,41 @@ second line\"\"\"
         before = print_ast(document)
         assert validate(schema, document, [OverlappingFieldsCanBeMergedRule]) == []
         assert print_ast(document) == before
+
+    def distinguishes_local_references_after_operation_references():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        for value, error_count in (
+            ("[$outside, $outside]", 0),
+            ("[$outside, $x]", 1),
+        ):
+            document = parse(
+                f"""
+                query ($outside: Input) {{ ...Left(x: 1) ...Right(x: 1) }}
+                fragment Left($x: Input) on Query {{ ...Shared(value: {value}) }}
+                fragment Right($x: Input) on Query {{ ...Shared(value: {value}) }}
+                fragment Shared($value: Input) on Query {{ field(value: $value) }}
+                """,
+                experimental_fragment_arguments=True,
+            )
+            errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+            assert len(errors) == error_count
+            if error_count:
+                assert "different fragment arguments" in errors[0].message
+
+    def compares_nested_fragment_arguments_in_their_enclosing_variable_scope():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        assert_valid(
+            """
+            query First($outside: Input) { ...Outer(x: 1) }
+            query Second($outside: Input) { ...Outer(x: 2) }
+            fragment Outer($x: Input) on Query {
+              ...Inner(value: { values: [$x, $outside, 1], other: true })
+              ...Inner(value: { other: true, values: [$x, $outside, 1] })
+            }
+            fragment Inner($value: Input) on Query { field(value: $value) }
+            """,
+            schema=schema,
+        )
 
     def keeps_variable_scopes_separate_when_fields_share_their_argument_nodes():
         schema = build_schema("type Query { value(arg: Int): Int }")

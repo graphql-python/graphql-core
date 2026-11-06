@@ -19,9 +19,7 @@ from ...language import (
     InlineFragmentNode,
     IntValueNode,
     ListValueNode,
-    NameNode,
     NullValueNode,
-    ObjectFieldNode,
     ObjectValueNode,
     SelectionSetNode,
     StringValueNode,
@@ -126,7 +124,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         fragment_signature = self.context.get_fragment_signature_by_name()(
             fragment_name
         )
-        self.fragment_scope = get_variable_scope(fragment_signature, fragment_name)
+        self.fragment_scope = get_variable_scope(fragment_signature)
 
     def leave_fragment_definition(self, *_args: Any) -> None:
         """Called when leaving a fragment definition node.
@@ -230,8 +228,19 @@ class FieldInfo:
 
 FieldDetailsList: TypeAlias = list[FieldDetails]
 GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
-# Scope identity distinguishes fragment uses in the caches.
-VariableScope: TypeAlias = dict[str, ValueNode]
+
+
+class VariableScope:
+    """The variable scope of a fragment use.
+
+    Equivalent spreads share a scope. The signature identifies declarations;
+    object identity distinguishes scopes with different fragment arguments.
+    """
+
+    __slots__ = ("signature",)
+
+    def __init__(self, signature: FragmentSignature) -> None:
+        self.signature = signature
 
 
 class FragmentSpread:
@@ -255,7 +264,7 @@ class CollectFieldsResult:
 
     __slots__ = "by_scope", "grouped_field_set", "spreads"
 
-    by_scope: RefMap[VariableScope | None, list[FragmentSpread]] | None
+    by_scope: dict[VariableScope | None, list[FragmentSpread]] | None
 
     def __init__(
         self,
@@ -292,12 +301,12 @@ class RuleContext:
         # A memoization for when fields and a fragment or two fragments are compared
         # "between" each other for conflicts. Comparisons may be made many times, so
         # memoizing this can dramatically improve the performance of this validator.
-        self.compared_fields_and_fragment_pairs: RefMap[
-            VariableScope | None, RefMap[VariableScope | None, OrderedPairSet]
-        ] = RefMap()
-        self.compared_fragment_pairs: RefMap[
-            VariableScope | None, RefMap[VariableScope | None, PairSet]
-        ] = RefMap()
+        self.compared_fields_and_fragment_pairs: dict[
+            VariableScope | None, dict[VariableScope | None, OrderedPairSet]
+        ] = {}
+        self.compared_fragment_pairs: dict[
+            VariableScope | None, dict[VariableScope | None, PairSet]
+        ] = {}
 
         # A cache for the "field map" and list of fragment spreads found in any given
         # selection set.
@@ -306,7 +315,12 @@ class RuleContext:
             RefMap[SelectionSetNode, CollectFieldsResult],
         ] = {}
 
-        self.fragment_scopes: dict[str, VariableScope | None] = {}
+        # Cache the resulting fragment scope by the arguments' enclosing scope.
+        # A None key means no local references; a None value means the target fragment
+        # declares no variables.
+        self.fragment_scopes: dict[
+            str, dict[VariableScope | None, VariableScope | None]
+        ] = {}
 
         # The number of pairwise field comparisons made so far, which is limited by
         # the comparison budget.
@@ -451,7 +465,7 @@ def collect_conflicts_between_fields_and_fragment(
     fragment = fragment_spread.definition
     by_fragment_scope = rule_context.compared_fields_and_fragment_pairs.get(scope)
     if by_fragment_scope is None:
-        by_fragment_scope = RefMap()
+        by_fragment_scope = {}
         rule_context.compared_fields_and_fragment_pairs[scope] = by_fragment_scope
     compared_pairs = by_fragment_scope.get(fragment_spread.scope)
     if compared_pairs is None:
@@ -544,7 +558,7 @@ def collect_conflicts_between_fragments(
             compared_fragment_pairs = other_by_scope.get(scope1)
     if compared_fragment_pairs is None:
         if by_scope is None:
-            by_scope = all_compared_pairs[scope1] = RefMap()
+            by_scope = all_compared_pairs[scope1] = {}
         compared_fragment_pairs = by_scope[scope2] = PairSet()
 
     if fragment1 is fragment2:
@@ -925,14 +939,6 @@ def find_conflict(
     return None  # no conflict
 
 
-VALUE_KIND_NAMES: dict[type[ValueNode], str] = {
-    BooleanValueNode: "BooleanValue",
-    EnumValueNode: "EnumValue",
-    FloatValueNode: "FloatValue",
-    IntValueNode: "IntValue",
-}
-
-
 def get_field_info(field_details: FieldDetails) -> FieldInfo:
     """Prepare argument and directive lookups only when a field overlaps."""
     info = field_details.info
@@ -973,69 +979,80 @@ def same_arguments(
 
     values2 = argument_info2.values
     for arg1 in argument_info1.nodes:
-        value1 = arg1.value
-        if scope1:
-            value1 = replace_fragment_variables(value1, scope1)
         value2 = values2.get(arg1.name.value)
         if value2 is None:
             return False
-        if scope2:
-            value2 = replace_fragment_variables(value2, scope2)
-        if stringify_value(value1) != stringify_value(value2):
+        value_info1 = get_value_info(arg1.value)
+        if value_info1.comparison_key != get_value_info(value2).comparison_key:
+            return False
+        if scope1 is not scope2 and (
+            uses_local_variables(value_info1, scope1)
+            or uses_local_variables(value_info1, scope2)
+        ):
             return False
 
     return True
 
 
-def replace_fragment_variables(
-    value_node: ValueNode, scope: VariableScope
-) -> ValueNode:
-    """Replace fragment variable references in a value node using the variable map."""
-    if isinstance(value_node, VariableNode):
-        return scope.get(value_node.name.value, value_node)
-    if isinstance(value_node, ListValueNode):
-        return ListValueNode(
-            values=tuple(
-                replace_fragment_variables(node, scope) for node in value_node.values
-            ),
-            loc=value_node.loc,
-        )
-    if isinstance(value_node, ObjectValueNode):
-        return ObjectValueNode(
-            fields=tuple(
-                ObjectFieldNode(
-                    name=field.name,
-                    value=replace_fragment_variables(field.value, scope),
-                    loc=field.loc,
-                )
-                for field in value_node.fields
-            ),
-            loc=value_node.loc,
-        )
-    return value_node
+class ValueInfo:
+    """The comparison key and the variable names of a value node."""
+
+    __slots__ = "comparison_key", "variables"
+
+    def __init__(self, comparison_key: str, variables: list[str]) -> None:
+        self.comparison_key = comparison_key
+        self.variables = variables
 
 
-def stringify_value(value: ValueNode) -> str:
-    return json.dumps(
-        get_value_structure(value), separators=(",", ":"), ensure_ascii=False
+def uses_local_variables(value: ValueInfo, scope: VariableScope | None) -> bool:
+    if scope is None:
+        return False
+    variable_definitions = scope.signature.variable_definitions
+    return any(variable in variable_definitions for variable in value.variables)
+
+
+def get_value_info(value: ValueNode) -> ValueInfo:
+    """Keep variable names in the representation and compare their scopes separately."""
+    variables: list[str] = []
+    comparison_key = json.dumps(
+        get_value_structure(value, variables),
+        separators=(",", ":"),
+        ensure_ascii=False,
     )
+    return ValueInfo(comparison_key, variables)
 
 
-def get_value_structure(node: ValueNode) -> list[Any]:
+VALUE_KIND_NAMES: dict[type[ValueNode], str] = {
+    BooleanValueNode: "BooleanValue",
+    EnumValueNode: "EnumValue",
+    FloatValueNode: "FloatValue",
+    IntValueNode: "IntValue",
+}
+
+
+def get_value_structure(node: ValueNode, variables: list[str]) -> list[Any]:
     """Get a structure of nested lists that serializes like in GraphQL.js.
 
     The kind names are the ones of GraphQL.js, and object fields are ordered by name.
+    The names of the variables are added to the given list.
     """
     if isinstance(node, VariableNode):
+        variables.append(node.name.value)
         return ["Variable", node.name.value]
     if isinstance(node, ObjectValueNode):
         fields = sorted(node.fields, key=lambda field: field.name.value)
         return [
             "ObjectValue",
-            [[field.name.value, get_value_structure(field.value)] for field in fields],
+            [
+                [field.name.value, get_value_structure(field.value, variables)]
+                for field in fields
+            ],
         ]
     if isinstance(node, ListValueNode):
-        return ["ListValue", [get_value_structure(value) for value in node.values]]
+        return [
+            "ListValue",
+            [get_value_structure(value, variables) for value in node.values],
+        ]
     if isinstance(node, StringValueNode):
         return ["StringValue", node.value, node.block is True]
     if isinstance(node, NullValueNode):
@@ -1174,14 +1191,14 @@ def get_fragment_spreads(
     """Resolve the spreads of a source collection in the enclosing variable scope."""
     by_scope = collect_fields_result.by_scope
     if by_scope is None:
-        by_scope = collect_fields_result.by_scope = RefMap()
+        by_scope = collect_fields_result.by_scope = {}
     cached = by_scope.get(scope)
     if cached is not None:
         return cached
 
-    spreads_by_scope: RefMap[
+    spreads_by_scope: dict[
         VariableScope | None, RefMap[FragmentDefinitionNode | None, FragmentSpread]
-    ] = RefMap()
+    ] = {}
     result: list[FragmentSpread] = []
     for spread_node in collect_fields_result.spreads:
         spread = get_fragment_spread(
@@ -1207,51 +1224,53 @@ def get_fragment_spread(
     fragment_spread_node: FragmentSpreadNode,
     scope: VariableScope | None,
 ) -> FragmentSpread:
-    """Build a fragment spread with a conflict key and resolved fragment variables."""
-    key = fragment_spread_node.name.value
-    fragment_signature = validation_context.get_fragment_signature_by_name()(
+    """Build a fragment spread with its fragment definition and variable scope."""
+    signature = validation_context.get_fragment_signature_by_name()(
         fragment_spread_node.name.value
     )
-    if fragment_signature is not None:
-        arg_map: dict[str, ValueNode] = {}
-        if fragment_spread_node.arguments:
-            for arg in fragment_spread_node.arguments:
-                arg_map[arg.name.value] = arg.value
-        key += "("
-        for var_name in fragment_signature.variable_definitions:
-            value = arg_map.get(var_name)
-            if value:
-                scoped_value = (
-                    replace_fragment_variables(value, scope) if scope else value
-                )
-                key += var_name + ": " + stringify_value(scoped_value)
-        key += ")"
-    fragment_scopes = rule_context.fragment_scopes
-    if key in fragment_scopes:
-        fragment_scope = fragment_scopes[key]
+    argument_info = get_argument_info(fragment_spread_node.arguments)
+    parts: list[str] = []
+    values: list[ValueInfo] = []
+    if signature and argument_info is not None:
+        arg_map = argument_info.values
+        for name in signature.variable_definitions:
+            value = arg_map.get(name)
+            if value is not None:
+                argument = get_value_info(value)
+                parts += (name, argument.comparison_key)
+                if argument.variables:
+                    values.append(argument)
+    source_key = json.dumps(
+        [signature.definition.name.value if signature else None, parts],
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    by_scope = rule_context.fragment_scopes.get(source_key)
+    if by_scope is None:
+        by_scope = rule_context.fragment_scopes[source_key] = {}
+
+    # The source key fixes the variable names. Any local reference identifies
+    # the enclosing scope; otherwise all references are operation variables.
+    variable_scope = (
+        scope if any(uses_local_variables(value, scope) for value in values) else None
+    )
+    if variable_scope in by_scope:
+        fragment_scope = by_scope[variable_scope]
     else:
-        fragment_scope = fragment_scopes[key] = get_variable_scope(
-            fragment_signature, key
-        )
+        fragment_scope = by_scope[variable_scope] = get_variable_scope(signature)
     return FragmentSpread(
         fragment_spread_node,
         fragment_scope,
-        fragment_signature.definition if fragment_signature else None,
+        signature.definition if signature else None,
     )
 
 
 def get_variable_scope(
-    fragment_signature: FragmentSignature | None, key: str = ""
+    fragment_signature: FragmentSignature | None,
 ) -> VariableScope | None:
-    """Get a map of fragment variables to variables unique to the fragment scope."""
     if not fragment_signature or not fragment_signature.variable_definitions:
         return None
-    return {
-        variable_name: VariableNode(
-            name=NameNode(value=json.dumps([key, variable_name], separators=(",", ":")))
-        )
-        for variable_name in fragment_signature.variable_definitions
-    }
+    return VariableScope(fragment_signature)
 
 
 def get_fragment_spread_description(node: FragmentSpreadNode) -> str:
