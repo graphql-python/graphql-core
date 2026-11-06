@@ -18,6 +18,30 @@ except NameError:  # pragma: no cover (Python < 3.10)
 
 def describe_map_async_iterator():
     @mark.asyncio
+    @mark.parametrize("close_fails", [False, True], ids=["closes", "close_fails"])
+    async def closes_a_source_without_throw_preserving_the_original_error(close_fails):
+        class Iterable:
+            closed = False
+
+            def __aiter__(self):
+                return self
+
+            async def aclose(self):
+                self.closed = True
+                if close_fails:
+                    raise ValueError("Close failed")
+
+        iterable = Iterable()
+        mapped = MapAsyncIterator(iterable, lambda value: value)
+        original = RuntimeError("Original error")
+
+        with raises(RuntimeError) as exc_info:
+            await mapped.athrow(original)
+
+        assert exc_info.value is original
+        assert iterable.closed is True
+
+    @mark.asyncio
     async def maps_over_async_generator():
         async def source():
             yield 1

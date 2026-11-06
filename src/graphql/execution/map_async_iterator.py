@@ -2,6 +2,7 @@
 
 from asyncio import CancelledError, Event, Task, ensure_future, wait
 from concurrent.futures import FIRST_COMPLETED
+from contextlib import suppress
 from inspect import isasyncgen, isawaitable
 from types import TracebackType
 from typing import Any, AsyncIterable, Callable, Optional, Set, Type, Union
@@ -118,7 +119,9 @@ class MapAsyncIterator:
         if athrow:
             await athrow(type_ if value is None else value)
         else:
-            await self.aclose()
+            # Keep the original error when closing the source also fails.
+            with suppress(Exception):
+                await self.aclose()
             if value is None:
                 if traceback is None:
                     raise type_  # pragma: no cover
