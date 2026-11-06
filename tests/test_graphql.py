@@ -91,6 +91,15 @@ def describe_graphql():
             )
             assert result.data is None
 
+    async def passes_comment_limit_through_to_parse():
+        result = await graphql(schema, "# comment\n{ a }", max_comments=0)
+
+        assert result.errors
+        assert result.errors[0].message == (
+            "Syntax Error: Document contains more than 0 comments. Parsing aborted."
+        )
+        assert result.data is None
+
     async def passes_validation_options_through_to_validate():
         result = await graphql(schema, "{ contextEho }", hide_suggestions=True)
 

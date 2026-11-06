@@ -15,6 +15,7 @@ from graphql.language import (
     FieldNode,
     FragmentDefinitionNode,
     IntValueNode,
+    Lexer,
     ListTypeNode,
     ListValueNode,
     MemberCoordinateNode,
@@ -41,6 +42,7 @@ from graphql.language import (
     parse_type,
     parse_value,
 )
+from graphql.language.parser import Parser
 from graphql.pyutils import inspect
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
@@ -106,6 +108,8 @@ def describe_parser():
     def exposes_the_token_count():
         assert parse("{ foo }").token_count == 3
         assert parse('{ foo(bar: "baz") }').token_count == 8
+        # Unlike in GraphQL.js, the token count includes the comments.
+        assert parse("# first\n# second\n{ foo }").token_count == 5
 
     def limits_by_a_maximum_number_of_tokens():
         parse("{ foo }", max_tokens=3)
@@ -192,6 +196,83 @@ def describe_parser():
         parse_schema_coordinate("A.b", max_lexical_tokens=3)
         with pytest.raises(GraphQLSyntaxError, match=message):
             parse_schema_coordinate("A.b", max_lexical_tokens=1)
+
+    def limits_by_a_maximum_number_of_comments():
+        source = "# first\n# second\n{ foo }"
+
+        parse(source, max_comments=2)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            parse(source, max_comments=1)
+
+        parse(" , , { foo }", max_comments=0)
+
+    def limits_comments_before_reaching_the_next_lexical_token():
+        source = "# comment\n" * 10 + "{ foo }"
+
+        parse(source, max_lexical_tokens=3)
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(source, max_comments=9)
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Document contains more than 9 comments. Parsing aborted."
+        )
+        assert error.positions == [90]
+
+    def counts_comments_once_across_lookahead_and_includes_trailing_comments():
+        source = '"description" # before\ntype Query { foo: Int } # after'
+
+        parse(source, max_comments=2)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            parse(source, max_comments=1)
+
+    def keeps_comment_limits_and_counts_local_to_each_lexer():
+        limited = Parser("# first\n# second\n{ foo }", max_comments=1)
+        other = Parser("# comment\n{ foo }", max_comments=1)
+
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            limited.parse_document()
+        other.parse_document()
+
+    def rejects_a_comment_before_creating_or_linking_its_token():
+        lexer = Lexer(Source("# first\n# second\n{ foo }"))
+
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            Parser("", lexer=lexer, max_comments=1).parse_document()
+
+        assert lexer.token.kind is TokenKind.SOF
+        assert lexer.token.next
+        assert lexer.token.next.kind is TokenKind.COMMENT
+        assert lexer.token.next.next is None
+
+    def applies_the_maximum_of_comments_in_all_parse_functions():
+        message = r"Document contains more than 0 comments\. Parsing aborted\."
+        assert parse_value("# c\n[]", max_comments=1).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_value("# c\n[]", max_comments=0)
+        assert parse_const_value("# c\n[]", max_comments=1).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_const_value("# c\n[]", max_comments=0)
+        assert parse_type("# c\nA", max_comments=1).kind == "named_type"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_type("# c\nA", max_comments=0)
+        # The lexer for schema coordinates does not allow comments at all.
+        parse_schema_coordinate("A.b", max_comments=0)
 
     def counts_comment_tokens_towards_the_maximum():
         # Comment tokens are read and allocated by the lexer but skipped over; they
