@@ -1,6 +1,8 @@
 import gc
+import sys
 import weakref
 from functools import lru_cache
+from importlib import import_module
 from typing import List
 
 from pytest import mark, raises
@@ -514,6 +516,28 @@ def describe_validate_aborts_on_too_deeply_nested_fragments():
         assert len(refs) > 10
         assert all(ref() is None for ref in refs)
         assert len(errors) == 1
+        _assert_aborted(errors[0])
+
+    @mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
+    def does_not_keep_the_document_alive(monkeypatch):
+        validate_module = import_module("graphql.validation.validate")
+        monkeypatch.setattr(validate_module, "MAX_NESTING_DEPTH", depth * 2)
+        document = parse(
+            "{ ...F0 } "
+            + " ".join(
+                f"fragment F{i} on Query {{ ...F{i + 1} }}" for i in range(depth)
+            )
+            + f" fragment F{depth} on Query {{ name }}",
+            no_location=True,
+        )
+        ref = weakref.ref(document)
+        errors = validate(schema, document, [NoFragmentCyclesRule])
+        del document
+        gc.collect()
+        assert ref() is None
         _assert_aborted(errors[0])
 
 
