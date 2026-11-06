@@ -1,3 +1,4 @@
+import sys
 from copy import deepcopy
 
 import pytest
@@ -11,14 +12,43 @@ from graphql.language import (
     SelectionSetNode,
     parse,
     parse_schema_coordinate,
+    parse_value,
     print_ast,
 )
+from graphql.language.printer import print_for_error
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
 from ..utils import dedent
 
 
 def describe_printer_query_document():
+    def limits_indentation_depth_when_requested():
+        ast = parse("{ a { b { c } } }")
+        assert print_ast(ast, max_indent_depth=0) == "{ a { b { c } } }"
+        assert print_ast(ast, max_indent_depth=1) == "{\n  a { b { c } }\n}"
+        assert print_ast(ast, max_indent_depth=None) == print_ast(ast)
+
+    def preserves_block_strings_when_indentation_is_disabled():
+        value = parse_value('"""first\nsecond"""')
+
+        assert print_ast(value, max_indent_depth=0) == '"""\nfirst\nsecond\n"""'
+
+    def limits_error_indentation_to_100_levels():
+        source = "[" * 200 + "0" + "]" * 200
+        # The frames of the tests and the frame size differ between interpreters.
+        recursion_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(recursion_limit * 4)
+        try:
+            ast = parse_value(source)
+        finally:
+            sys.setrecursionlimit(recursion_limit)
+        printed = print_for_error(ast)
+
+        assert "\n" + " " * 201 in print_ast(ast)
+        assert "\n" + " " * 200 in printed
+        assert "\n" + " " * 201 not in printed
+        assert "".join(printed.split()) == source
+
     def prints_minimal_ast():
         ast = FieldNode(name=NameNode(value="foo"))
         assert print_ast(ast) == "foo"
@@ -39,6 +69,7 @@ def describe_printer_query_document():
         ast = SelectionSetNode(selections=(field, field))
 
         assert print_ast(ast) == "{\n  field\n  field\n}"
+        assert print_ast(ast, max_indent_depth=0) == "{ field field }"
         assert ast.selections == (field, field)
         assert field.name is name
 
