@@ -1057,6 +1057,12 @@ second line\"\"\"
         assert validate(schema, document, [OverlappingFieldsCanBeMergedRule]) == []
         assert print_ast(document) == before
 
+    def accepts_several_overlapping_fields_with_identical_values():
+        schema = build_schema("type Query { field(value: Int): String }")
+        assert_valid(
+            "{ field(value: 1) field(value: 1) field(value: 1) }", schema=schema
+        )
+
     def distinguishes_local_references_after_operation_references():
         schema = build_schema("scalar Input type Query { field(value: Input): String }")
         for value, error_count in (
@@ -1091,6 +1097,46 @@ second line\"\"\"
             """,
             schema=schema,
         )
+
+    def reuses_value_comparisons_while_checking_each_variable_scope():
+        schema = build_schema("type Query { child: Query, value(arg: Int): Int }")
+        document = parse(
+            """
+            {
+              same: child { ...F(x: 1) child { ...F(x: 1) } }
+              different: child { ...F(x: 1) child { ...F(x: 2) } }
+            }
+            fragment F($x: Int) on Query {
+              value(arg: $x)
+              child { value(arg: $x) }
+            }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 1
+        assert "they have differing arguments" in errors[0].message
+        locations = errors[0].locations
+        assert locations
+        assert locations[0].line == 4
+
+    def reuses_stream_argument_comparisons_across_fragment_uses():
+        schema = build_schema("type Query { child: Query, list: [Int] }")
+        document = parse(
+            """
+            {
+              a: child { ...A(x: 1) ...B(x: 1) }
+              b: child { ...A(x: 2) ...B(x: 2) }
+            }
+            fragment A($x: Int) on Query { list @stream }
+            fragment B($x: Int) on Query { list @stream }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "they have overlapping stream directives. See" in error.message
 
     def keeps_variable_scopes_separate_when_fields_share_their_argument_nodes():
         schema = build_schema("type Query { value(arg: Int): Int }")

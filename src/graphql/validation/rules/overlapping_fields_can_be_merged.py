@@ -213,7 +213,7 @@ class FieldDetails:
 class FieldInfo:
     """Argument and stream metadata of a field that is compared with other fields."""
 
-    __slots__ = "arguments", "has_stream", "stream_arguments"
+    __slots__ = "arguments", "comparisons", "has_stream", "stream_arguments"
 
     def __init__(
         self,
@@ -221,9 +221,32 @@ class FieldInfo:
         has_stream: bool,
         stream_arguments: ArgumentInfo | None,
     ) -> None:
+        self.comparisons: dict[FieldInfo, FieldComparison] = {}
         self.arguments = arguments
         self.has_stream = has_stream
         self.stream_arguments = stream_arguments
+
+
+class FieldComparison:
+    """The source comparisons of a field pair, made when they are needed first."""
+
+    __slots__ = "arguments", "same_name", "stream_arguments"
+
+    same_name: bool | None
+    arguments: ArgumentComparison | None
+    stream_arguments: ArgumentComparison | None
+
+    def __init__(self) -> None:
+        self.same_name = None
+        self.arguments = None
+        self.stream_arguments = None
+
+
+class ArgumentComparison(NamedTuple):
+    """The result of comparing the source arguments of a field pair."""
+
+    same_structure: bool
+    values_with_variables: list[ValueInfo]
 
 
 FieldDetailsList: TypeAlias = list[FieldDetails]
@@ -295,6 +318,7 @@ class RuleContext:
         "compared_fragment_pairs",
         "field_comparisons",
         "fragment_scopes",
+        "value_info_by_node",
     )
 
     def __init__(self) -> None:
@@ -314,6 +338,8 @@ class RuleContext:
             GraphQLNamedType | None,
             RefMap[SelectionSetNode, CollectFieldsResult],
         ] = {}
+
+        self.value_info_by_node: RefMap[ValueNode, ValueInfo] = RefMap()
 
         # Cache the resulting fragment scope by the arguments' enclosing scope.
         # A None key means no local references; a None value means the target fragment
@@ -872,12 +898,19 @@ def find_conflict(
 
     field_info1 = get_field_info(field_details1)
     field_info2 = get_field_info(field_details2)
+    comparison = field_info1.comparisons.get(field_info2)
+    if comparison is None:
+        comparison = field_info1.comparisons[field_info2] = FieldComparison()
 
     if not are_mutually_exclusive:
         # Two aliases must refer to the same field.
         name1 = node1.name.value
         name2 = node2.name.value
-        if name1 != name2:
+        # Field names do not depend on the fragment scope.
+        same_name = comparison.same_name
+        if same_name is None:
+            same_name = comparison.same_name = name1 == name2
+        if not same_name:
             return Conflict(
                 response_name,
                 f"'{name1}' and '{name2}' are different fields",
@@ -886,27 +919,31 @@ def find_conflict(
             )
 
         # Two field calls must have the same arguments.
-        if not same_arguments(
-            field_info1.arguments, scope1, field_info2.arguments, scope2
-        ):
+        compared_arguments = comparison.arguments
+        if compared_arguments is None:
+            compared_arguments = comparison.arguments = compare_arguments(
+                rule_context, field_info1.arguments, field_info2.arguments
+            )
+        if not same_arguments(compared_arguments, scope1, scope2):
             return Conflict(
                 response_name, "they have differing arguments", [node1], [node2]
             )
 
     if field_info1.has_stream or field_info2.has_stream:
         reason = "they have overlapping stream directives"
-        if (
-            field_info1.has_stream
-            and field_info2.has_stream
-            and same_arguments(
-                field_info1.stream_arguments,
-                scope1,
-                field_info2.stream_arguments,
-                scope2,
-            )
-        ):
-            # This was allowed in previous alpha versions of GraphQL.js.
-            reason += ". See https://github.com/graphql/defer-stream-wg/discussions/100"
+        if field_info1.has_stream and field_info2.has_stream:
+            compared_arguments = comparison.stream_arguments
+            if compared_arguments is None:
+                compared_arguments = comparison.stream_arguments = compare_arguments(
+                    rule_context,
+                    field_info1.stream_arguments,
+                    field_info2.stream_arguments,
+                )
+            if same_arguments(compared_arguments, scope1, scope2):
+                # This was allowed in previous alpha versions of GraphQL.js.
+                reason += (
+                    ". See https://github.com/graphql/defer-stream-wg/discussions/100"
+                )
         return Conflict(response_name, reason, [node1], [node2])
 
     if type1 and type2 and do_types_conflict(type1, type2):
@@ -966,60 +1003,98 @@ def get_argument_info(args: ArgumentNodes | None) -> ArgumentInfo | None:
     return ArgumentInfo(args, {arg.name.value: arg.value for arg in args})
 
 
-def same_arguments(
+def compare_arguments(
+    rule_context: RuleContext,
     argument_info1: ArgumentInfo | None,
-    scope1: VariableScope | None,
     argument_info2: ArgumentInfo | None,
-    scope2: VariableScope | None,
-) -> bool:
-    if argument_info1 is None:
-        return argument_info2 is None
-    if argument_info2 is None or len(argument_info1.nodes) != len(argument_info2.nodes):
-        return False
+) -> ArgumentComparison:
+    """Compare names and source values once per field pair.
 
+    Retain only values containing variables, whose meaning can differ between fragment
+    scopes.
+    """
+    values_with_variables: list[ValueInfo] = []
+    if argument_info1 is None:
+        return ArgumentComparison(argument_info2 is None, values_with_variables)
+    if argument_info2 is None or len(argument_info1.nodes) != len(argument_info2.nodes):
+        return ArgumentComparison(False, values_with_variables)
     values2 = argument_info2.values
     for arg1 in argument_info1.nodes:
         value2 = values2.get(arg1.name.value)
         if value2 is None:
-            return False
-        value_info1 = get_value_info(arg1.value)
-        if value_info1.comparison_key != get_value_info(value2).comparison_key:
-            return False
-        if scope1 is not scope2 and (
-            uses_local_variables(value_info1, scope1)
-            or uses_local_variables(value_info1, scope2)
+            return ArgumentComparison(False, values_with_variables)
+        value_info1 = get_value_info(rule_context, arg1.value)
+        if (
+            value_info1.comparison_key
+            != get_value_info(rule_context, value2).comparison_key
         ):
-            return False
+            return ArgumentComparison(False, values_with_variables)
+        if value_info1.variables:
+            values_with_variables.append(value_info1)
+    return ArgumentComparison(True, values_with_variables)
 
-    return True
+
+def same_arguments(
+    comparison: ArgumentComparison,
+    scope1: VariableScope | None,
+    scope2: VariableScope | None,
+) -> bool:
+    if not comparison.same_structure:
+        return False
+    # Equal expressions refer to the same variables within a scope. Across scopes,
+    # they agree only when every reference is an operation variable.
+    return scope1 is scope2 or not any(
+        uses_local_variables(value, scope1) or uses_local_variables(value, scope2)
+        for value in comparison.values_with_variables
+    )
 
 
 class ValueInfo:
     """The comparison key and the variable names of a value node."""
 
-    __slots__ = "comparison_key", "variables"
+    __slots__ = "comparison_key", "scope_dependencies", "variables"
+
+    scope_dependencies: RefMap[FragmentSignature, bool] | None
 
     def __init__(self, comparison_key: str, variables: list[str]) -> None:
         self.comparison_key = comparison_key
         self.variables = variables
+        self.scope_dependencies = None
 
 
 def uses_local_variables(value: ValueInfo, scope: VariableScope | None) -> bool:
     if scope is None:
         return False
-    variable_definitions = scope.signature.variable_definitions
-    return any(variable in variable_definitions for variable in value.variables)
+    # Declaration membership does not depend on the fragment arguments.
+    dependencies = value.scope_dependencies
+    if dependencies is None:
+        dependencies = value.scope_dependencies = RefMap()
+    signature = scope.signature
+    cached = dependencies.get(signature)
+    if cached is not None:
+        return cached
+    variable_definitions = signature.variable_definitions
+    depends_on_scope = any(
+        variable in variable_definitions for variable in value.variables
+    )
+    dependencies[signature] = depends_on_scope
+    return depends_on_scope
 
 
-def get_value_info(value: ValueNode) -> ValueInfo:
+def get_value_info(rule_context: RuleContext, value: ValueNode) -> ValueInfo:
     """Keep variable names in the representation and compare their scopes separately."""
+    cached = rule_context.value_info_by_node.get(value)
+    if cached is not None:
+        return cached
     variables: list[str] = []
     comparison_key = json.dumps(
         get_value_structure(value, variables),
         separators=(",", ":"),
         ensure_ascii=False,
     )
-    return ValueInfo(comparison_key, variables)
+    value_info = ValueInfo(comparison_key, variables)
+    rule_context.value_info_by_node[value] = value_info
+    return value_info
 
 
 VALUE_KIND_NAMES: dict[type[ValueNode], str] = {
@@ -1236,7 +1311,7 @@ def get_fragment_spread(
         for name in signature.variable_definitions:
             value = arg_map.get(name)
             if value is not None:
-                argument = get_value_info(value)
+                argument = get_value_info(rule_context, value)
                 parts += (name, argument.comparison_key)
                 if argument.variables:
                     values.append(argument)
