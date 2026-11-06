@@ -22,11 +22,14 @@ from ..language import (
     VariableDefinitionNode,
     VariableNode,
 )
+from ..language.parser import MAX_NESTING_DEPTH
 from ..pyutils import Undefined, print_path_list
 from ..type import (
     GraphQLDirective,
     GraphQLField,
     GraphQLSchema,
+    is_input_object_type,
+    is_list_type,
     is_non_null_type,
     is_required_argument,
 )
@@ -46,7 +49,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Collection, Mapping
 
     from ..language import ArgumentNode, FragmentArgumentNode
-    from ..type import GraphQLArgument
+    from ..type import GraphQLArgument, GraphQLInputType
 
 __all__ = [
     "FragmentVariableValueSource",
@@ -202,6 +205,34 @@ def get_variable_values(
     return errors
 
 
+def input_is_nested_too_deeply(value: Any, type_: GraphQLInputType) -> bool:
+    """Check whether coercing the given value would recurse too deeply.
+
+    See ``MAX_NESTING_DEPTH`` for why this is needed in addition to handling a stack
+    overflow. Only the nesting that the type follows counts, so a deep value of a
+    custom scalar is fine.
+
+    :meta private:
+    """
+    stack = [(value, type_, 0)]
+    while stack:
+        value, type_, depth = stack.pop()
+        if depth > MAX_NESTING_DEPTH:
+            return True
+        if is_non_null_type(type_):
+            type_ = type_.of_type
+        if is_list_type(type_):
+            items = value if isinstance(value, (list, tuple)) else [value]
+            stack.extend((item, type_.of_type, depth + 1) for item in items)
+        elif is_input_object_type(type_) and isinstance(value, dict):
+            stack.extend(
+                (value[name], field.type, depth + 1)
+                for name, field in type_.fields.items()
+                if name in value
+            )
+    return False
+
+
 def coerce_variable_values(
     schema: GraphQLSchema,
     var_def_nodes: Collection[VariableDefinitionNode],
@@ -256,6 +287,8 @@ def coerce_variable_values(
         else:
             sources[var_name] = VariableValueSource(var_signature, value)
 
+        if input_is_nested_too_deeply(value, var_type):
+            raise RecursionError
         coerced_value = coerce_input_value(value, var_type)
         if coerced_value is not Undefined:
             coerced[var_name] = coerced_value
