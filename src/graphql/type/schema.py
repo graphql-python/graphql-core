@@ -23,12 +23,14 @@ from .definition import (
     GraphQLAbstractType,
     GraphQLCompositeType,
     GraphQLField,
+    GraphQLInputObjectType,
     GraphQLInputType,
     GraphQLInterfaceType,
     GraphQLNamedType,
     GraphQLObjectType,
     GraphQLType,
-    get_named_type,
+    GraphQLUnionType,
+    GraphQLWrappingType,
     is_input_object_type,
     is_interface_type,
     is_object_type,
@@ -739,26 +741,37 @@ class TypeSet(dict[GraphQLNamedType, None]):
 
     def collect_referenced_types(self, type_: GraphQLType) -> None:
         """Recursive function supplementing the type starting from an initial type."""
-        named_type = get_named_type(type_)
+        named_type: GraphQLType | None = None
+        if type_:
+            named_type = type_
+            while isinstance(named_type, GraphQLWrappingType):
+                named_type = named_type.of_type
 
         if named_type in self:
             return
 
+        if TYPE_CHECKING:
+            named_type = cast("GraphQLNamedType", named_type)
         self[named_type] = None
 
-        collect_referenced_types = self.collect_referenced_types
-        if is_union_type(named_type):
+        if isinstance(named_type, GraphQLUnionType):
+            collect_referenced_types = self.collect_referenced_types
             for member_type in named_type.types:
                 collect_referenced_types(member_type)
-        elif is_object_type(named_type) or is_interface_type(named_type):
+        elif isinstance(named_type, (GraphQLObjectType, GraphQLInterfaceType)):
+            collect_referenced_types = self.collect_referenced_types
             for interface_type in named_type.interfaces:
                 collect_referenced_types(interface_type)
 
             for field in named_type.fields.values():
                 collect_referenced_types(field.type)
-                for arg in field.args.values():
+                args = field.args
+                if type(args) is dict and not args:
+                    continue
+                for arg in args.values():
                     collect_referenced_types(arg.type)
-        elif is_input_object_type(named_type):
+        elif isinstance(named_type, GraphQLInputObjectType):
+            collect_referenced_types = self.collect_referenced_types
             for field in named_type.fields.values():
                 collect_referenced_types(field.type)
 
