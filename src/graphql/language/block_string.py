@@ -80,30 +80,24 @@ def is_printable_as_block_string(value: str) -> bool:
     if not value:
         return True  # emtpy string is printable
 
-    is_empty_line = True
-    has_indent = False
-    has_common_indent = True
-    seen_non_empty_line = False
+    # str.isprintable() is a fast pre-check that rules out all control characters
+    if not value.isprintable() and re.search(r"[\x00-\x08\x0b-\x0f]", value):
+        return False  # has control characters
 
-    for c in value:
-        if c == "\n":
-            if is_empty_line and not seen_non_empty_line:
-                return False  # has leading new line
-            seen_non_empty_line = True
-            is_empty_line = True
-            has_indent = False
-        elif c in " \t":
-            has_indent = has_indent or is_empty_line
-        elif c <= "\x0f":
-            return False
-        else:
-            has_common_indent = has_common_indent and has_indent
-            is_empty_line = False
+    lines = value.split("\n")
+    is_multi_line = len(lines) > 1
 
-    if is_empty_line:
+    if is_multi_line and not lines[0].strip(" \t"):
+        return False  # has leading new line
+
+    if not lines[-1].strip(" \t"):
         return False  # has trailing empty lines
 
-    if has_common_indent and seen_non_empty_line:  # noqa: SIM103
+    if (  # noqa: SIM103
+        is_multi_line
+        and value[0] in " \t"
+        and all(line[:1] in " \t" or not line.strip(" \t") for line in lines)
+    ):
         return False  # has internal indent
 
     return True
