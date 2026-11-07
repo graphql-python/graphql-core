@@ -20,7 +20,10 @@ from ..pyutils import (
 from ..type import (
     GraphQLArgument,
     GraphQLInputField,
+    GraphQLInputObjectType,
     GraphQLInputType,
+    GraphQLList,
+    GraphQLNonNull,
     assert_leaf_type,
     is_input_object_type,
     is_list_type,
@@ -213,28 +216,21 @@ def coerce_input_literal(
         variable_value = get_coerced_variable_value(
             value_node, variable_values, fragment_variable_values
         )
-        if (variable_value is None or variable_value is Undefined) and is_non_null_type(
-            type_
+        if (variable_value is None or variable_value is Undefined) and isinstance(
+            type_, GraphQLNonNull
         ):
             return Undefined  # Invalid: intentionally return no value.
         # Note: This does no further checking that this variable is correct.
         # This assumes validation has checked this variable is of the correct type.
         return variable_value
 
-    if is_non_null_type(type_):
-        if isinstance(value_node, NullValueNode):
-            return Undefined  # Invalid: intentionally return no value.
-        return coerce_input_literal(
-            value_node,
-            type_.of_type,
-            variable_values,
-            fragment_variable_values,
-        )
-
     if isinstance(value_node, NullValueNode):
-        return None  # Explicitly return the value null.
+        # Null is invalid for non-null types, and explicitly null otherwise.
+        return Undefined if isinstance(type_, GraphQLNonNull) else None
+    if isinstance(type_, GraphQLNonNull):
+        type_ = type_.of_type
 
-    if is_list_type(type_):
+    if isinstance(type_, GraphQLList):
         item_type = type_.of_type
         if not isinstance(value_node, ListValueNode):
             # Lists accept a non-list value as a list of one.
@@ -248,6 +244,7 @@ def coerce_input_literal(
                 return Undefined  # Invalid: intentionally return no value.
             return [item_value]
         coerced_list: list[Any] = []
+        append_item = coerced_list.append
         for item_node in value_node.values:
             item_value = coerce_input_literal(
                 item_node,
@@ -258,19 +255,19 @@ def coerce_input_literal(
             if item_value is Undefined:
                 if (
                     isinstance(item_node, VariableNode)
-                    and not is_non_null_type(item_type)
+                    and not isinstance(item_type, GraphQLNonNull)
                     and _variable_value_is_null(
                         item_node, variable_values, fragment_variable_values
                     )
                 ):
                     # A missing variable within a list is coerced to null.
-                    coerced_list.append(None)
+                    append_item(None)
                     continue
                 return Undefined  # Invalid: intentionally return no value.
-            coerced_list.append(item_value)
+            append_item(item_value)
         return coerced_list
 
-    if is_input_object_type(type_):
+    if isinstance(type_, GraphQLInputObjectType):
         if not isinstance(value_node, ObjectValueNode):
             return Undefined  # Invalid: intentionally return no value.
 
@@ -278,14 +275,15 @@ def coerce_input_literal(
         field_defs = type_.fields
         field_nodes = {field.name.value: field for field in value_node.fields}
         # Ensure every provided field is defined.
-        if any(field_name not in field_defs for field_name in field_nodes):
+        if not field_defs.keys() >= field_nodes.keys():
             return Undefined  # Invalid: intentionally return no value.
+        get_field_node = field_nodes.get
         for field_name, field in field_defs.items():
-            field_node = field_nodes.get(field_name)
+            field_node = get_field_node(field_name)
             if field_node is None or (
-                isinstance(field_node.value, VariableNode)
+                isinstance(field_value_node := field_node.value, VariableNode)
                 and _is_missing_variable(
-                    field_node.value, variable_values, fragment_variable_values
+                    field_value_node, variable_values, fragment_variable_values
                 )
             ):
                 if is_required_input_field(field):
@@ -296,7 +294,7 @@ def coerce_input_literal(
                     coerced_dict[field.out_name or field_name] = coerced_default_value
             else:
                 field_value = coerce_input_literal(
-                    field_node.value,
+                    field_value_node,
                     field.type,
                     variable_values,
                     fragment_variable_values,
@@ -322,7 +320,8 @@ def coerce_input_literal(
 
     leaf_type = assert_leaf_type(type_)
     try:
-        if leaf_type.coerce_input_literal is not None:
+        coerce_literal = leaf_type.coerce_input_literal
+        if coerce_literal is not None:
             # A bare variable was handled above, so only list and object literals
             # can still contain variables; other literals are already constant.
             const_node = (
@@ -330,7 +329,7 @@ def coerce_input_literal(
                 if isinstance(value_node, (ListValueNode, ObjectValueNode))
                 else cast("ConstValueNode", value_node)
             )
-            return leaf_type.coerce_input_literal(const_node)
+            return coerce_literal(const_node)
         return leaf_type.parse_literal(
             value_node, variable_values.coerced if variable_values else None
         )
