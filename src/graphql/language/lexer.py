@@ -664,7 +664,8 @@ class Lexer:
         :meta private:
         """
         body = self.source.body
-        position = self._match_name_continue(body, start + 1).end()
+        # the pattern can match an empty string, so the match is never None
+        position = self._match_name_continue(body, start + 1).end()  # type: ignore[union-attr]
 
         return self.create_token(TokenKind.NAME, start, position, body[start:position])
 
