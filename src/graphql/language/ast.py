@@ -161,10 +161,13 @@ class Token:
         value: str | None = None,
     ) -> None:
         self.kind = kind
-        self.start, self.end = start, end
-        self.line, self.column = line, column
+        self.start = start
+        self.end = end
+        self.line = line
+        self.column = column
         self.value = value
-        self.prev = self.next = None
+        self.prev = None
+        self.next = None
 
     def __str__(self) -> str:
         return self.desc
