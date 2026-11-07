@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, NamedTuple
 
 from ..error import GraphQLSyntaxError
 from .ast import Token
 from .block_string import dedent_block_string_lines
-from .character_classes import is_digit, is_name_continue, is_name_start
+from .character_classes import is_digit, is_name_start
 from .token_kind import TokenKind
 
 if TYPE_CHECKING:
@@ -69,6 +70,8 @@ class Lexer:
         self.line, self.line_start = 1, 0
         self._max_tokens = self._comment_budget = self._max_comments = None
         self._comment_count = 0
+        # NameContinue is ASCII letters, digits and underscore only
+        self._match_name_continue = re.compile("[0-9A-Z_a-z]*").match
 
     def advance(self) -> Token:
         """Advance the token stream to the next non-ignored token.
@@ -163,9 +166,7 @@ class Lexer:
 
         :meta private:
         """
-        line = self.line
-        col = 1 + start - self.line_start
-        return Token(kind, start, end, line, col, value)
+        return Token(kind, start, end, self.line, 1 + start - self.line_start, value)
 
     def read_next_token(self, start: int) -> Token:
         """Get the next token from the source starting at the given position.
@@ -663,14 +664,7 @@ class Lexer:
         :meta private:
         """
         body = self.source.body
-        body_length = len(body)
-        position = start + 1
-
-        while position < body_length:
-            char = body[position]
-            if not is_name_continue(char):
-                break
-            position += 1
+        position = self._match_name_continue(body, start + 1).end()
 
         return self.create_token(TokenKind.NAME, start, position, body[start:position])
 
