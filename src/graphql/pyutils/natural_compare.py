@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from itertools import cycle
 
 __all__ = ["natural_comparison_key"]
 
@@ -15,7 +14,9 @@ def natural_comparison_key(key: str) -> tuple:
 
     See: https://en.wikipedia.org/wiki/Natural_sort_order
     """
-    return tuple(
-        (int(part), part) if is_digit else part
-        for part, is_digit in zip(_re_digits.split(key), cycle((False, True)))
-    )
+    # letters only (no decimal digits) is the common case, check it cheaply first
+    if type(key) is str and key.isalpha():
+        return (key,)
+    parts = _re_digits.split(key)
+    parts[1::2] = [(int(part), part) for part in parts[1::2]]
+    return tuple(parts)
