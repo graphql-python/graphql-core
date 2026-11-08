@@ -12,6 +12,7 @@ from ..language import (
     FragmentSpreadNode,
     InlineFragmentNode,
     OperationDefinitionNode,
+    SelectionNode,
     SelectionSetNode,
 )
 from ..pyutils import RefSet
@@ -362,7 +363,7 @@ def get_defer_usage(
 
 def should_include_node(
     context: CollectFieldsContext,
-    node: FragmentSpreadNode | FieldNode | InlineFragmentNode,
+    node: SelectionNode,
     variable_values: VariableValues,
     fragment_variable_values: FragmentVariableValues | None = None,
 ) -> bool:
