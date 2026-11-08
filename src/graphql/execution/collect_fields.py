@@ -12,6 +12,7 @@ from ..language import (
     FragmentSpreadNode,
     InlineFragmentNode,
     OperationDefinitionNode,
+    SelectionNode,
     SelectionSetNode,
 )
 from ..pyutils import RefSet
@@ -225,19 +226,17 @@ def visit_selection_sets(
         on_selection_set(selection_set)
 
     for selection in selection_set.selections:
+        if selection.directives and not should_include_node(
+            context, selection, variable_values, fragment_variable_values
+        ):
+            continue
         if isinstance(selection, FieldNode):
-            if not should_include_node(
-                context, selection, variable_values, fragment_variable_values
-            ):
-                continue
             key = get_field_entry_key(selection)
             grouped_field_set[key].append(
                 FieldDetails(selection, defer_usage, fragment_variable_values)
             )
         elif isinstance(selection, InlineFragmentNode):
-            if not should_include_node(
-                context, selection, variable_values, fragment_variable_values
-            ) or not does_fragment_condition_match(schema, selection, runtime_type):
+            if not does_fragment_condition_match(schema, selection, runtime_type):
                 continue
 
             new_defer_usage = get_defer_usage(
@@ -268,12 +267,6 @@ def visit_selection_sets(
                 )
         elif isinstance(selection, FragmentSpreadNode):  # pragma: no branch
             frag_name = selection.name.value
-
-            if not should_include_node(
-                context, selection, variable_values, fragment_variable_values
-            ):
-                continue
-
             fragment = fragments.get(frag_name)
             if fragment is None or not does_fragment_condition_match(
                 schema, fragment.definition, runtime_type
@@ -370,7 +363,7 @@ def get_defer_usage(
 
 def should_include_node(
     context: CollectFieldsContext,
-    node: FragmentSpreadNode | FieldNode | InlineFragmentNode,
+    node: SelectionNode,
     variable_values: VariableValues,
     fragment_variable_values: FragmentVariableValues | None = None,
 ) -> bool:
@@ -379,18 +372,15 @@ def should_include_node(
     Determines if a field should be included based on the @include and @skip
     directives, where @skip has higher precedence than @include.
     """
-    skip_directive_node = (
-        next(
-            (
-                directive
-                for directive in node.directives
-                if directive.name.value == GraphQLSkipDirective.name
-            ),
-            None,
-        )
-        if node.directives
-        else None
-    )
+    skip_directive_node: DirectiveNode | None = None
+    include_directive_node: DirectiveNode | None = None
+    for directive in node.directives or ():
+        name = directive.name.value
+        if skip_directive_node is None and name == GraphQLSkipDirective.name:
+            skip_directive_node = directive
+        elif include_directive_node is None and name == GraphQLIncludeDirective.name:
+            include_directive_node = directive
+
     if skip_directive_node and context.forbid_skip_and_include:
         context.forbidden_directive_instances.append(skip_directive_node)
         return False
@@ -408,18 +398,6 @@ def should_include_node(
     if skip and skip["if"]:
         return False
 
-    include_directive_node = (
-        next(
-            (
-                directive
-                for directive in node.directives
-                if directive.name.value == GraphQLIncludeDirective.name
-            ),
-            None,
-        )
-        if node.directives
-        else None
-    )
     if include_directive_node and context.forbid_skip_and_include:
         context.forbidden_directive_instances.append(include_directive_node)
         return False
