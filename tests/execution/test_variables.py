@@ -1934,6 +1934,12 @@ def describe_too_deeply_nested_variable_values():
             deep_type = GraphQLList(deep_type)
         assert input_is_nested_too_deeply(deep_value, deep_type)
         assert input_is_nested_too_deeply(1, deep_type)
+        # an empty list ends the nesting, every other value is nested too deeply
+        assert not input_is_nested_too_deeply([], list_type)
+        assert not input_is_nested_too_deeply([[], [[], []], []], deep_type)
+        assert input_is_nested_too_deeply([[], [[], []], 1], deep_type)
+        assert input_is_nested_too_deeply([1, [[], []], []], deep_type)
+        assert input_is_nested_too_deeply([[], [[], 1, []], []], deep_type)
 
     def ignores_values_that_are_no_objects_for_input_object_types():
         input_type = GraphQLInputObjectType(
