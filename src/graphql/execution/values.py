@@ -214,19 +214,27 @@ def input_is_nested_too_deeply(value: Any, type_: GraphQLInputType) -> bool:
 
     :meta private:
     """
-    stack = [(value, type_, 0)]
+    # Each frame is one nesting level: its values, their type, their depth and the
+    # index of the next value to check, so that memory grows with depth, not width.
+    stack: list[tuple[Any, GraphQLInputType, int, int]] = [((value,), type_, 0, 0)]
     while stack:
-        value, type_, depth = stack.pop()
+        values, type_, depth, index = stack.pop()
         if depth > MAX_NESTING_DEPTH:
             return True
         if is_non_null_type(type_):
             type_ = type_.of_type
+        if not (is_list_type(type_) or is_input_object_type(type_)):
+            continue  # values of this type cannot nest, so the level is done
+        if index + 1 < len(values):
+            stack.append((values, type_, depth, index + 1))
+        value = values[index]
         if is_list_type(type_):
-            items = value if isinstance(value, (list, tuple)) else [value]
-            stack.extend((item, type_.of_type, depth + 1) for item in items)
+            items = value if isinstance(value, (list, tuple)) else (value,)
+            if items:
+                stack.append((items, type_.of_type, depth + 1, 0))
         elif is_input_object_type(type_) and isinstance(value, dict):
             stack.extend(
-                (value[name], field.type, depth + 1)
+                ((value[name],), field.type, depth + 1, 0)
                 for name, field in type_.fields.items()
                 if name in value
             )
