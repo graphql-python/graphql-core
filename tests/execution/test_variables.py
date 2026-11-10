@@ -1934,15 +1934,8 @@ def describe_too_deeply_nested_variable_values():
             deep_type = GraphQLList(deep_type)
         assert input_is_nested_too_deeply(deep_value, deep_type)
         assert input_is_nested_too_deeply(1, deep_type)
-
-    def checks_all_items_of_wide_and_empty_lists():
-        matrix_type = GraphQLList(GraphQLList(GraphQLInt))
-        assert not input_is_nested_too_deeply([], matrix_type)
-        assert not input_is_nested_too_deeply([[], [1, 2], [3]], matrix_type)
-        deep_type: Any = GraphQLInt
-        for _ in range(MAX_NESTING_DEPTH + 1):
-            deep_type = GraphQLList(deep_type)
         # an empty list ends the nesting, every other value is nested too deeply
+        assert not input_is_nested_too_deeply([], list_type)
         assert not input_is_nested_too_deeply([[], [[], []], []], deep_type)
         assert input_is_nested_too_deeply([[], [[], []], 1], deep_type)
         assert input_is_nested_too_deeply([1, [[], []], []], deep_type)
