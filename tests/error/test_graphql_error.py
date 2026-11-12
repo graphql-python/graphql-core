@@ -119,6 +119,19 @@ def describe_graphql_error():
         e = GraphQLError("msg", original_error=original)
         assert e.__context__ is context
 
+    def passes_the_suppressed_context_of_an_original_error():
+        context = ValueError("hidden")
+        try:
+            raise context
+        except ValueError:
+            try:
+                raise RuntimeError("effect") from None
+            except RuntimeError as runtime_error:
+                original = runtime_error
+        e = GraphQLError("msg", original_error=original)
+        assert e.__context__ is context
+        assert e.__suppress_context__ is True
+
     def passes_the_cause_of_an_original_error():
         cause = ValueError("cause")
         try:
