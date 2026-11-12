@@ -314,6 +314,7 @@ class GraphQLError(Exception):
                     self.__cause__ = original_error.__cause__
                 elif original_error.__context__:
                     self.__context__ = original_error.__context__
+                    self.__suppress_context__ = original_error.__suppress_context__
 
         if extensions is None and underlying_error is not None:
             original_extensions = getattr(underlying_error, "extensions", None)
