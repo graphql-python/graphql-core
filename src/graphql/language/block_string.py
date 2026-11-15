@@ -80,6 +80,9 @@ def is_printable_as_block_string(value: str) -> bool:
     if not value:
         return True  # emtpy string is printable
 
+    if value.isprintable():  # single line without control characters or tabs
+        return not value.isspace()  # only spaces would be a trailing empty line
+
     is_empty_line = True
     has_indent = False
     has_common_indent = True
