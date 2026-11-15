@@ -1,3 +1,4 @@
+from collections import deque
 from typing import cast, List, Union
 
 from pytest import raises
@@ -161,6 +162,29 @@ def describe_graphql_error():
         assert e.source is source
         assert e.positions == [4]
         assert e.locations == [(2, 3)]
+
+    def converts_tuple_of_nodes_to_positions_and_locations():
+        operation = parse("{ first second }").definitions[0]
+        nodes = cast(OperationDefinitionNode, operation).selection_set.selections
+        assert isinstance(nodes, tuple)
+        e = GraphQLError("msg", nodes)
+        assert e.nodes == list(nodes)
+        assert e.positions == [2, 8]
+        assert e.locations == [(1, 3), (1, 9)]
+
+    def converts_other_collection_of_nodes_to_positions_and_locations():
+        e = GraphQLError("msg", deque([field_node, operation_node]))
+        assert e.nodes == [field_node, operation_node]
+        assert e.source is source
+        assert e.positions == [4, 0]
+        assert e.locations == [(2, 3), (1, 1)]
+
+    def converts_empty_tuple_of_nodes_to_none():
+        e = GraphQLError("msg", ())
+        assert e.nodes is None
+        assert e.source is None
+        assert e.positions is None
+        assert e.locations is None
 
     def converts_node_with_loc_start_zero_to_positions_and_locations():
         e = GraphQLError("msg", operation_node)

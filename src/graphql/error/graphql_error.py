@@ -230,7 +230,8 @@ class GraphQLError(Exception):
 
         # Compute list of blame nodes.
         if nodes and not isinstance(nodes, list):
-            nodes = [nodes]  # type: ignore
+            # The parser creates tuples of nodes, so any collection is accepted.
+            nodes = list(nodes) if isinstance(nodes, Collection) else [nodes]
         self.nodes = nodes or None  # type: ignore
         node_locations = (
             [node.loc for node in nodes if node.loc] if nodes else []  # type: ignore
