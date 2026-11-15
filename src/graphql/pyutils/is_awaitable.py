@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import inspect
-from types import CoroutineType, GeneratorType
+from types import GeneratorType
 from typing import TYPE_CHECKING, Any, TypeGuard
 
 if TYPE_CHECKING:
@@ -19,18 +19,13 @@ def is_awaitable(value: Any) -> TypeGuard[Awaitable]:
 
     Instead of testing whether the object is an instance of abc.Awaitable, we
     check the existence of an `__await__` attribute. This is much faster.
+    Coroutine objects need no extra check, since they all have `__await__`.
     """
-    return (
-        # check for coroutine objects
-        isinstance(value, CoroutineType)
-        # check for old-style generator based coroutine objects
-        or (
-            isinstance(value, GeneratorType)  # for Python < 3.11
-            and bool(value.gi_code.co_flags & CO_ITERABLE_COROUTINE)
-        )
-        # check for other awaitables (e.g. futures)
-        or hasattr(value, "__await__")
-    )
+    # check for old-style generator based coroutine objects (for Python < 3.11)
+    if type(value) is GeneratorType:
+        return value.gi_code.co_flags & CO_ITERABLE_COROUTINE != 0
+    # check for coroutines and other awaitables (e.g. futures)
+    return hasattr(value, "__await__")
 
 
 def is_async_iterable(value: Any) -> TypeGuard[AsyncIterable]:
