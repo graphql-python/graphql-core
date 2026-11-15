@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
 from ...execution.collect_fields import (
@@ -17,7 +17,11 @@ from ...language import (
     OperationDefinitionNode,
     OperationType,
 )
-from . import ValidationRule
+from ...type import GraphQLDeferDirective
+from . import ValidationContext, ValidationRule
+
+if TYPE_CHECKING:
+    from ...language import SelectionSetNode
 
 __all__ = ["SingleFieldSubscriptionsRule"]
 
@@ -49,6 +53,33 @@ class SingleFieldSubscriptionsRule(ValidationRule):
     []
     """
 
+    def __init__(self, context: ValidationContext) -> None:
+        super().__init__(context)
+        self._fragments: dict[str, FragmentDetails] | None = None
+
+    def spend_selection_set_work(self, selection_set: SelectionSetNode) -> None:
+        """Reserve traversal and directive work before visiting a selection set.
+
+        :meta private:
+        """
+        spend_fragment_work = self.context.spend_fragment_work
+        selections = selection_set.selections
+        spend_fragment_work(len(selections))
+        for selection in selections:
+            directives = selection.directives
+            if directives:
+                spend_fragment_work(len(directives))
+                defer = next(
+                    (
+                        directive
+                        for directive in directives
+                        if directive.name.value == GraphQLDeferDirective.name
+                    ),
+                    None,
+                )
+                if defer and defer.arguments:
+                    spend_fragment_work(len(defer.arguments))
+
     def enter_operation_definition(
         self, node: OperationDefinitionNode, *_args: Any
     ) -> None:
@@ -63,12 +94,13 @@ class SingleFieldSubscriptionsRule(ValidationRule):
         if subscription_type:
             operation_name = node.name.value if node.name else None
             variable_values: VariableValues = VariableValues({}, {})
-            document = self.context.document
-            fragments: dict[str, FragmentDetails] = {
-                definition.name.value: FragmentDetails(definition)
-                for definition in document.definitions
-                if isinstance(definition, FragmentDefinitionNode)
-            }
+            fragments = self._fragments
+            if fragments is None:
+                fragments = self._fragments = {
+                    definition.name.value: FragmentDetails(definition)
+                    for definition in self.context.document.definitions
+                    if isinstance(definition, FragmentDefinitionNode)
+                }
             grouped_field_set, _new_defer_usages, forbidden_directive_instances = (
                 collect_fields(
                     schema,
@@ -78,6 +110,7 @@ class SingleFieldSubscriptionsRule(ValidationRule):
                     node,
                     self.context.hide_suggestions,
                     True,
+                    self.spend_selection_set_work,
                 )
             )
             if forbidden_directive_instances:

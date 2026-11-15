@@ -87,6 +87,12 @@ def get_value(node):
 
 
 def describe_visitor():
+    def reports_invalid_child_nodes():
+        corrupt_ast = FieldNode(name="random data")  # type: ignore[arg-type]
+        with pytest.raises(TypeError) as exc_info:
+            visit(corrupt_ast, Visitor())
+        assert str(exc_info.value) == "Invalid AST Node: 'random data'."
+
     def visit_with_invalid_node():
         with pytest.raises(TypeError) as exc_info:
             visit("invalid", Visitor())  # type: ignore

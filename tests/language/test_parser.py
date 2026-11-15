@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import gc
+import sys
+import weakref
 from typing import Any, TypeAlias, cast
 
 import pytest
@@ -15,6 +18,7 @@ from graphql.language import (
     FieldNode,
     FragmentDefinitionNode,
     IntValueNode,
+    Lexer,
     ListTypeNode,
     ListValueNode,
     MemberCoordinateNode,
@@ -41,6 +45,7 @@ from graphql.language import (
     parse_type,
     parse_value,
 )
+from graphql.language.parser import MAX_NESTING_DEPTH, Parser
 from graphql.pyutils import inspect
 
 from ..fixtures import kitchen_sink_query  # noqa: F401
@@ -61,6 +66,61 @@ def assert_syntax_error(
 
 
 def describe_parser():
+    def limits_by_a_maximum_source_length_before_lexing():
+        source = "{ foo }"
+        parse(source, max_source_length=len(source))
+
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(
+                Source(f"{source} ", "MyQuery.graphql"), max_source_length=len(source)
+            )
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Source contains more than 7 code points. Parsing aborted."
+        )
+        assert error.positions == [7]
+        assert error.locations == [(1, 8)]
+
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Source contains more than 0 code points\. Parsing aborted\.",
+        ):
+            parse("~", max_source_length=0)
+
+        unicode_source = '"\U0001f600"'
+        # In GraphQL.js the length of this source is 4 UTF-16 code units.
+        assert len(unicode_source) == 3
+        parse_value(unicode_source, max_source_length=3)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Source contains more than 2 code points\. Parsing aborted\.",
+        ):
+            parse_value(unicode_source, max_source_length=2)
+
+    def limits_the_actual_source_used_by_a_custom_lexer():
+        lexer = Lexer(Source("{ foo } "))
+
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Source contains more than 7 code points\. Parsing aborted\.",
+        ):
+            Parser("", lexer=lexer, max_source_length=7)
+
+    def applies_the_maximum_source_length_in_all_parse_functions():
+        message = r"Source contains more than 1 code points\. Parsing aborted\."
+        assert parse_const_value("[]", max_source_length=2).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_const_value("[]", max_source_length=1)
+        assert parse_type("[A]", max_source_length=3).kind == "list_type"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_type("[A]", max_source_length=1)
+        parse_schema_coordinate("A.b", max_source_length=3)
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_schema_coordinate("A.b", max_source_length=1)
+
     def parse_provides_useful_errors():
         with pytest.raises(GraphQLSyntaxError) as exc_info:
             parse("{")
@@ -106,6 +166,8 @@ def describe_parser():
     def exposes_the_token_count():
         assert parse("{ foo }").token_count == 3
         assert parse('{ foo(bar: "baz") }').token_count == 8
+        # Unlike in GraphQL.js, the token count includes the comments.
+        assert parse("# first\n# second\n{ foo }").token_count == 5
 
     def limits_by_a_maximum_number_of_tokens():
         parse("{ foo }", max_tokens=3)
@@ -122,6 +184,211 @@ def describe_parser():
             r" Document contains more than 7 tokens\. Parsing aborted\.",
         ):
             parse('{ foo(bar: "baz") }', max_tokens=7)
+
+    def limits_by_a_maximum_number_of_lexical_tokens():
+        parse("{ foo }", max_lexical_tokens=3)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 2 tokens\. Parsing aborted\.",
+        ):
+            parse("{ foo }", max_lexical_tokens=2)
+        parse('{ foo(bar: "baz") }', max_lexical_tokens=8)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 7 tokens\. Parsing aborted\.",
+        ):
+            parse('{ foo(bar: "baz") }', max_lexical_tokens=7)
+
+    def supports_the_deprecated_max_tokens_option():
+        parse("{ foo }", max_tokens=3)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 2 tokens\. Parsing aborted\.",
+        ):
+            parse("{ foo }", max_tokens=2)
+
+    def does_not_count_comments_towards_the_maximum_of_lexical_tokens():
+        document = parse("# one\n{ # two\n foo } # three", max_lexical_tokens=3)
+        # The token count includes the comments in any case.
+        assert document.token_count == 6
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("# one\n{ # two\n foo } # three", max_lexical_tokens=2)
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Document contains more than 2 tokens. Parsing aborted."
+        )
+        assert error.positions == [19]
+
+        parse("# comment\n" * 1000 + "{ foo }", max_lexical_tokens=3)
+
+    def applies_max_lexical_tokens_and_max_tokens_independently():
+        # The deprecated max_tokens also counts comments, so it stays in effect when
+        # max_lexical_tokens is set, whichever of the two is lower.
+        message = r"Document contains more than 2 tokens\. Parsing aborted\."
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse("{ foo }", max_lexical_tokens=3, max_tokens=2)
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse("{ foo }", max_lexical_tokens=2, max_tokens=3)
+
+        parse("{ # comment\n foo }", max_lexical_tokens=3, max_tokens=4)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 3 tokens\. Parsing aborted\.",
+        ):
+            parse("{ # comment\n foo }", max_lexical_tokens=3, max_tokens=3)
+
+    def applies_the_maximum_of_lexical_tokens_in_all_parse_functions():
+        message = r"Document contains more than 1 tokens\. Parsing aborted\."
+        assert parse_value("[]", max_lexical_tokens=2).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_value("[]", max_lexical_tokens=1)
+        assert parse_const_value("[]", max_lexical_tokens=2).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_const_value("[]", max_lexical_tokens=1)
+        assert parse_type("[A]", max_lexical_tokens=3).kind == "list_type"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_type("[A]", max_lexical_tokens=1)
+        parse_schema_coordinate("A.b", max_lexical_tokens=3)
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_schema_coordinate("A.b", max_lexical_tokens=1)
+
+    def limits_by_a_maximum_number_of_comments():
+        source = "# first\n# second\n{ foo }"
+
+        parse(source, max_comments=2)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            parse(source, max_comments=1)
+
+        parse(" , , { foo }", max_comments=0)
+
+    def limits_comments_before_reaching_the_next_lexical_token():
+        source = "# comment\n" * 10 + "{ foo }"
+
+        parse(source, max_lexical_tokens=3)
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(source, max_comments=9)
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Document contains more than 9 comments. Parsing aborted."
+        )
+        assert error.positions == [90]
+
+    def counts_comments_once_across_lookahead_and_includes_trailing_comments():
+        source = '"description" # before\ntype Query { foo: Int } # after'
+
+        parse(source, max_comments=2)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            parse(source, max_comments=1)
+
+    def keeps_comment_limits_and_counts_local_to_each_lexer():
+        limited = Parser("# first\n# second\n{ foo }", max_comments=1)
+        other = Parser("# comment\n{ foo }", max_comments=1)
+
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            limited.parse_document()
+        other.parse_document()
+
+    def rejects_a_comment_before_creating_or_linking_its_token():
+        lexer = Lexer(Source("# first\n# second\n{ foo }"))
+
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match="Syntax Error:"
+            r" Document contains more than 1 comments\. Parsing aborted\.",
+        ):
+            Parser("", lexer=lexer, max_comments=1).parse_document()
+
+        assert lexer.token.kind is TokenKind.SOF
+        assert lexer.token.next
+        assert lexer.token.next.kind is TokenKind.COMMENT
+        assert lexer.token.next.next is None
+
+    def applies_the_maximum_of_comments_in_all_parse_functions():
+        message = r"Document contains more than 0 comments\. Parsing aborted\."
+        assert parse_value("# c\n[]", max_comments=1).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_value("# c\n[]", max_comments=0)
+        assert parse_const_value("# c\n[]", max_comments=1).kind == "list_value"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_const_value("# c\n[]", max_comments=0)
+        assert parse_type("# c\nA", max_comments=1).kind == "named_type"
+        with pytest.raises(GraphQLSyntaxError, match=message):
+            parse_type("# c\nA", max_comments=0)
+        # The lexer for schema coordinates does not allow comments at all.
+        parse_schema_coordinate("A.b", max_comments=0)
+
+    def lets_comments_pass_the_maximum_of_lexical_tokens_only():
+        source = "# comment\n" * 1000 + "{ foo }"
+
+        assert parse(source, max_lexical_tokens=3).token_count == 1003
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match=r"Document contains more than 3 comments\. Parsing aborted\.",
+        ):
+            parse(source, max_lexical_tokens=3, max_comments=3)
+        with pytest.raises(
+            GraphQLSyntaxError,
+            match=r"Source contains more than 100 code points\. Parsing aborted\.",
+        ):
+            parse(source, max_lexical_tokens=3, max_source_length=100)
+
+    def reports_the_first_limit_that_is_reached():
+        source = "# c\n" * 10 + "{ foo }"
+
+        def error_for(**options: Any) -> tuple[str, Any]:
+            with pytest.raises(GraphQLSyntaxError) as exc_info:
+                parse(source, **options)
+            error = exc_info.value
+            return error.message, error.positions
+
+        tokens = "Syntax Error: Document contains more than {} tokens. Parsing aborted."
+        comments = (
+            "Syntax Error: Document contains more than {} comments. Parsing aborted."
+        )
+        length = (
+            "Syntax Error: Source contains more than {} code points. Parsing aborted."
+        )
+
+        # The length of the source is checked before anything is read.
+        assert error_for(
+            max_tokens=1, max_lexical_tokens=1, max_comments=1, max_source_length=5
+        ) == (length.format(5), [5])
+        # The comments are read before the first lexical token.
+        assert error_for(max_lexical_tokens=1, max_comments=2, max_tokens=5) == (
+            comments.format(2),
+            [8],
+        )
+        assert error_for(max_lexical_tokens=1, max_comments=5, max_tokens=2) == (
+            tokens.format(2),
+            [8],
+        )
+        # A comment that exceeds two limits is rejected when it is read.
+        assert error_for(max_comments=2, max_tokens=2) == (comments.format(2), [8])
+        # The maximum number of lexical tokens is reached after all the comments.
+        assert error_for(max_lexical_tokens=1, max_comments=10, max_tokens=20) == (
+            tokens.format(1),
+            [42],
+        )
+        # The token that exceeds both limits for tokens reports the lexical limit.
+        assert error_for(max_lexical_tokens=1, max_tokens=11) == (
+            tokens.format(1),
+            [42],
+        )
 
     def counts_comment_tokens_towards_the_maximum():
         # Comment tokens are read and allocated by the lexer but skipped over; they
@@ -151,6 +418,25 @@ def describe_parser():
             match=r"Document contains more than 5 tokens\. Parsing aborted\.",
         ):
             parse("{ a }" + "\n# c" * 1000, max_tokens=5)
+
+    def aborts_a_run_of_comments_as_soon_as_the_maximum_is_exceeded():
+        # The limit must be enforced while the lexer skips over a run of comments,
+        # not only after the whole run has been read and allocated.
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("#\n" * 10_000 + "{ a }", max_tokens=5)
+        error = exc_info.value
+        assert error.message == (
+            "Syntax Error: Document contains more than 5 tokens. Parsing aborted."
+        )
+        assert error.positions == [10]  # the sixth comment
+
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("{ a }" + "\n#" * 10_000, max_tokens=5)
+        assert exc_info.value.positions == [10]  # the third comment
+
+        # Comments that fit into the limit are still accepted.
+        assert parse("#\n" * 2 + "{ a }", max_tokens=5).token_count == 5
+        assert parse("{ a }" + "\n#" * 2, max_tokens=5).token_count == 5
 
     def parses_variable_inline_values():
         parse("{ field(complex: { a: { b: [ $var ] } }) }")
@@ -1068,3 +1354,144 @@ def describe_parse_schema_coordinate():
         assert parse_schema_coordinate("MyType") == parse_schema_coordinate(
             Source("MyType")
         )
+
+
+def describe_too_deeply_nested_sources():
+    # Far beyond the recursion limit on all interpreters. Parsing stops at that limit,
+    # so the size of these sources does not make the tests slow.
+    depth = 100_000
+    message = "Document is nested too deeply. Parsing aborted."
+
+    documents = {
+        "nested fields": "{a" * depth + "}" * depth,
+        "inline fragments": "{" + "...{" * depth + "a" + "}" * depth + "}",
+        "object literal": "{f(a:" + "{a:" * depth + "1" + "}" * depth + ")}",
+        "list literal": "{f(a:" + "[" * depth + "]" * depth + ")}",
+        "list type": "query($a:" + "[" * depth + "A" + "]" * depth + "){f}",
+    }
+
+    def _assert_nested_too_deeply(error: GraphQLSyntaxError) -> None:
+        assert error.description == message
+        assert error.message == f"Syntax Error: {message}"
+        assert error.positions
+        assert next(iter(error.positions)) > 0
+        assert error.locations
+        assert error.locations[0].line == 1
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    @pytest.mark.parametrize("shape", documents)
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def parse_reports_a_syntax_error(shape: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(documents[shape])
+        _assert_nested_too_deeply(exc_info.value)
+
+    @pytest.mark.parametrize(
+        "source", ["[" * depth + "]" * depth, "{a:" * depth + "1" + "}" * depth]
+    )
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def parse_value_reports_a_syntax_error(source: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_value(source)
+        _assert_nested_too_deeply(exc_info.value)
+
+    @pytest.mark.parametrize(
+        "source", ["[" * depth + "]" * depth, "{a:" * depth + "1" + "}" * depth]
+    )
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def parse_const_value_reports_a_syntax_error(source: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_const_value(source)
+        _assert_nested_too_deeply(exc_info.value)
+
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def parse_type_reports_a_syntax_error():
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_type("[" * depth + "A" + "]" * depth)
+        _assert_nested_too_deeply(exc_info.value)
+
+    def parse_schema_coordinate_reports_a_syntax_error(monkeypatch):
+        # Schema coordinates do not nest, so this needs an exhausted stack.
+        def exhausted_stack(_self):
+            raise RecursionError
+
+        monkeypatch.setattr(Parser, "parse_schema_coordinate", exhausted_stack)
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse_schema_coordinate("Type.field")
+        assert exc_info.value.description == message
+        assert exc_info.value.positions == [0]
+        assert exc_info.value.__context__ is None
+
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def reports_the_position_where_parsing_stopped():
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse("\n\n" + documents["list literal"])
+        error = exc_info.value
+        assert error.positions
+        position = next(iter(error.positions))
+        assert position > 7
+        assert error.locations == [(3, position - 1)]
+
+    def still_parses_a_depth_that_fits():
+        assert parse("{a" * 50 + "}" * 50).token_count == 150
+
+    nesting = {
+        "selections": lambda n: "{a" * (n - 1) + "{a" + "}" * n,
+        "list literal": lambda n: "{f(a:" + "[" * (n - 1) + "]" * (n - 1) + ")}",
+        "object literal": lambda n: (
+            "{f(a:" + "{a:" * (n - 2) + "{}" + "}" * (n - 2) + ")}"
+        ),
+        "list type": lambda n: "query($a:" + "[" * n + "A" + "]" * n + "){f}",
+    }
+
+    @pytest.mark.parametrize("shape", nesting)
+    def parses_up_to_the_maximum_nesting_depth(shape: str):
+        # The frames of the tests and the frame size differ between interpreters.
+        recursion_limit = sys.getrecursionlimit()
+        sys.setrecursionlimit(recursion_limit * 4)
+        try:
+            parse(nesting[shape](MAX_NESTING_DEPTH))
+        finally:
+            sys.setrecursionlimit(recursion_limit)
+
+    @pytest.mark.parametrize("shape", nesting)
+    def stops_above_the_maximum_nesting_depth(shape: str):
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(nesting[shape](MAX_NESTING_DEPTH + 1))
+        _assert_nested_too_deeply(exc_info.value)
+
+    def counts_only_the_current_nesting_depth():
+        n = MAX_NESTING_DEPTH - 2
+        nested = "[" * n + "]" * n
+        parse("{" + " ".join(f"a{i}: f(a: {nested})" for i in range(3)) + "}")
+
+    @pytest.mark.skipif(
+        sys.implementation.name == "pypy",
+        reason="The JIT of PyPy can keep these objects alive.",
+    )
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def does_not_keep_the_frames_of_the_recursion_alive(monkeypatch):
+        refs: list[weakref.ref] = []
+        parse_selection_set = Parser.parse_selection_set
+
+        class Tracked:
+            pass
+
+        def tracked_parse_selection_set(self):
+            tracked = Tracked()
+            refs.append(weakref.ref(tracked))
+            return parse_selection_set(self)
+
+        monkeypatch.setattr(Parser, "parse_selection_set", tracked_parse_selection_set)
+        with pytest.raises(GraphQLSyntaxError) as exc_info:
+            parse(documents["nested fields"])
+        gc.collect()
+        assert len(refs) > 10
+        assert all(ref() is None for ref in refs)
+        assert exc_info.value.__context__ is None
+
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def leaves_the_recursion_error_when_using_the_parser_directly():
+        with pytest.raises(RecursionError):
+            Parser(documents["nested fields"]).parse_document()

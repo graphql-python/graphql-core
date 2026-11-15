@@ -2,6 +2,7 @@ from functools import partial
 
 from graphql.utilities import build_schema
 from graphql.validation import SingleFieldSubscriptionsRule
+from graphql.validation import validation_context as validation_context_module
 
 from .harness import assert_validation_errors
 
@@ -404,3 +405,71 @@ def describe_validate_subscriptions_with_single_field():
             [],
             schema=empty_schema,
         )
+
+    def shared_fragment_in_multiple_subscriptions():
+        assert_valid(
+            """
+            subscription sub {
+              ...newMessageFields
+            }
+            subscription other {
+              ...newMessageFields
+            }
+
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage {
+                body
+                sender
+              }
+            }
+            """
+        )
+
+    def collects_fields_with_a_directive_variable():
+        assert_valid(
+            """
+            subscription S($condition: Boolean!) {
+              ...newMessageFields @defer(if: $condition)
+            }
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage {
+                body
+                sender
+              }
+            }
+            """
+        )
+
+    def collects_fields_from_fragments_with_different_defer_conditions():
+        assert_valid(
+            """
+            subscription {
+              ...newMessageFields @defer
+              ...newMessageFields @defer(if: false)
+            }
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage {
+                body
+                sender
+              }
+            }
+            """
+        )
+
+    def spends_fragment_work_like_graphql_js(monkeypatch):
+        # A GraphQL-core-only test: spending the work in a hook instead of a wrapper
+        # must not change the work counted (2 root selections, 1 directive with
+        # 1 argument and 1 fragment selection). GraphQL.js counts 5 here as well.
+        document = """
+            subscription {
+              ...newMessageFields @defer(if: false)
+              newMessage { body }
+            }
+            fragment newMessageFields on SubscriptionRoot {
+              newMessage { body sender }
+            }
+            """
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 5)
+        assert_valid(document)
+        monkeypatch.setattr(validation_context_module, "MAX_FRAGMENT_WORK", 4)
+        assert_errors(document, [{"message": "Validation aborted."}])

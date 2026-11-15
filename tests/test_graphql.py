@@ -80,6 +80,35 @@ def describe_graphql():
         assert result.errors
         assert result.errors[0].message == "no location"
 
+    async def passes_token_limits_through_to_parse():
+        for result in (
+            await graphql(schema, "{ a }", max_tokens=2),
+            await graphql(schema, "{ a }", max_lexical_tokens=2),
+        ):
+            assert result.errors
+            assert result.errors[0].message == (
+                "Syntax Error: Document contains more than 2 tokens. Parsing aborted."
+            )
+            assert result.data is None
+
+    async def passes_comment_limit_through_to_parse():
+        result = await graphql(schema, "# comment\n{ a }", max_comments=0)
+
+        assert result.errors
+        assert result.errors[0].message == (
+            "Syntax Error: Document contains more than 0 comments. Parsing aborted."
+        )
+        assert result.data is None
+
+    async def passes_source_length_limit_through_to_parse():
+        result = await graphql(schema, "{ a }", max_source_length=4)
+
+        assert result.errors
+        assert result.errors[0].message == (
+            "Syntax Error: Source contains more than 4 code points. Parsing aborted."
+        )
+        assert result.data is None
+
     async def passes_validation_options_through_to_validate():
         result = await graphql(schema, "{ contextEho }", hide_suggestions=True)
 
@@ -125,6 +154,26 @@ def describe_graphql():
         )
 
         assert result == ({"syncField": "**rootValue**"}, None)
+
+    async def works_with_a_custom_parse_function_with_a_fixed_parameter_list():
+        def custom_parse(
+            source,
+            no_location=False,
+            max_tokens=None,
+            experimental_fragment_arguments=False,
+        ):
+            return default_harness.parse(
+                source,
+                no_location=no_location,
+                max_tokens=max_tokens,
+                experimental_fragment_arguments=experimental_fragment_arguments,
+            )
+
+        result = graphql_sync(
+            schema, "{ a }", harness=default_harness._replace(parse=custom_parse)
+        )
+
+        assert result == ({"a": "A"}, None)
 
     async def returns_parse_errors_thrown_synchronously_by_a_custom_harness():
         parse_error = GraphQLError("sync parse error")
@@ -235,6 +284,65 @@ def describe_graphql():
         )
 
         assert result == ({"asyncField": "rootValue"}, None)
+
+
+def describe_too_deeply_nested_documents():
+    depth = 100_000
+    message = "Syntax Error: Document is nested too deeply. Parsing aborted."
+
+    documents = {
+        "nested fields": "{a" * depth + "}" * depth,
+        "inline fragments": "{" + "...{" * depth + "a" + "}" * depth + "}",
+        "object literal": "{f(a:" + "{a:" * depth + "1" + "}" * depth + ")}",
+        "list literal": "{f(a:" + "[" * depth + "]" * depth + ")}",
+        "list type": "query($a:" + "[" * depth + "A" + "]" * depth + "){f}",
+    }
+
+    def _assert_parse_error(result):
+        assert result.data is None
+        assert result.errors
+        assert len(result.errors) == 1
+        error = result.errors[0]
+        assert error.message == message
+        assert error.locations
+        assert error.__context__ is None
+        assert error.__cause__ is None
+
+    @pytest.mark.parametrize("shape", documents)
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def graphql_sync_returns_a_parse_error(shape):
+        _assert_parse_error(graphql_sync(schema, documents[shape]))
+
+    @pytest.mark.parametrize("shape", documents)
+    @pytest.mark.usefixtures("without_nesting_limit")
+    async def graphql_returns_a_parse_error(shape):
+        _assert_parse_error(await graphql(schema, documents[shape]))
+
+    def _fragment_chain():
+        # Far beyond the recursion limit on all interpreters.
+        count = 10_000
+        chain = " ".join(
+            f"fragment F{i} on Query {{ ...F{i + 1} }}" for i in range(count)
+        )
+        return f"{{ ...F0 }} {chain} fragment F{count} on Query {{ a }}"
+
+    def _assert_validation_aborted(result):
+        assert result.data is None
+        assert result.errors
+        assert len(result.errors) == 1
+        error = result.errors[0]
+        assert error.message == "Validation aborted."
+        assert error.locations is None
+        assert error.__traceback__ is None
+        assert error.__context__ is None
+
+    @pytest.mark.usefixtures("without_nesting_limit")
+    def graphql_sync_aborts_validation_of_a_fragment_chain():
+        _assert_validation_aborted(graphql_sync(schema, _fragment_chain()))
+
+    @pytest.mark.usefixtures("without_nesting_limit")
+    async def graphql_aborts_validation_of_a_fragment_chain():
+        _assert_validation_aborted(await graphql(schema, _fragment_chain()))
 
 
 def describe_graphql_sync():

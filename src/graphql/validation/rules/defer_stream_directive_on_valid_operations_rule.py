@@ -9,7 +9,6 @@ from ...language import (
     ArgumentNode,
     BooleanValueNode,
     DirectiveNode,
-    FragmentDefinitionNode,
     FragmentSpreadNode,
     OperationDefinitionNode,
     OperationType,
@@ -22,7 +21,7 @@ from ...type import (
     GraphQLSkipDirective,
     GraphQLStreamDirective,
 )
-from . import ASTValidationRule
+from . import ASTValidationContext, ASTValidationRule
 
 __all__ = ["DeferStreamDirectiveOnValidOperationsRule"]
 
@@ -118,6 +117,10 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
     []
     """
 
+    def __init__(self, context: ASTValidationContext) -> None:
+        super().__init__(context)
+        self.checked_fragments: set[str] = set()
+
     def enter_operation_definition(
         self, operation: OperationDefinitionNode, *_args: Any
     ) -> None:
@@ -127,25 +130,26 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
         """
         if operation.operation != OperationType.SUBSCRIPTION:
             return
-        fragments: dict[str, FragmentDefinitionNode] = {}
-        for definition in self.context.document.definitions:
-            if isinstance(definition, FragmentDefinitionNode):
-                fragments[definition.name.value] = definition
-        self.forbid_unconditional_defer_stream(
-            fragments, operation.selection_set, [], set()
-        )
+        visited_fragments: set[str] = set()
+        if self.forbid_unconditional_defer_stream(
+            operation.selection_set, [], visited_fragments
+        ):
+            self.checked_fragments.update(visited_fragments)
 
     def forbid_unconditional_defer_stream(
         self,
-        fragments: dict[str, FragmentDefinitionNode],
         selection_set: SelectionSetNode,
         parent_nodes: list[FragmentSpreadNode],
         visited_fragments: set[str],
-    ) -> None:
+    ) -> bool:
         """Report defer and stream directives that cannot be disabled.
+
+        Returns whether no error was found.
 
         :meta private:
         """
+        valid = True
+        checked_fragments = self.checked_fragments
         for selection in selection_set.selections:
             skip = get_directive(selection, GraphQLSkipDirective.name)
             if skip and can_be_skipped_via_skip_directive(skip):
@@ -171,26 +175,39 @@ class DeferStreamDirectiveOnValidOperationsRule(ASTValidationRule):
                     )
                 else:
                     continue
-                self.report_error(GraphQLError(msg, [directive, *parent_nodes]))
+                valid = False
+                self.report_error(
+                    GraphQLError(msg, [directive, *reversed(parent_nodes)])
+                )
             if isinstance(selection, FragmentSpreadNode):
                 fragment_name = selection.name.value
-                if fragment_name in visited_fragments:
+                if (
+                    fragment_name in visited_fragments
+                    or fragment_name in checked_fragments
+                ):
                     continue
                 visited_fragments.add(fragment_name)
-                fragment = fragments.get(fragment_name)
+                fragment = self.context.get_fragment(fragment_name)
                 if fragment:
-                    self.forbid_unconditional_defer_stream(
-                        fragments,
-                        fragment.selection_set,
-                        [selection, *parent_nodes],
-                        visited_fragments,
+                    parent_nodes.append(selection)
+                    valid = (
+                        self.forbid_unconditional_defer_stream(
+                            fragment.selection_set,
+                            parent_nodes,
+                            visited_fragments,
+                        )
+                        and valid
                     )
+                    parent_nodes.pop()
             else:
                 child_selection_set = getattr(selection, "selection_set", None)
                 if child_selection_set:
-                    self.forbid_unconditional_defer_stream(
-                        fragments,
-                        child_selection_set,
-                        parent_nodes,
-                        visited_fragments,
+                    valid = (
+                        self.forbid_unconditional_defer_stream(
+                            child_selection_set,
+                            parent_nodes,
+                            visited_fragments,
+                        )
+                        and valid
                     )
+        return valid

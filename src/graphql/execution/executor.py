@@ -126,6 +126,8 @@ UNEXPECTED_MULTIPLE_PAYLOADS = (
     " (due to @defer or @stream directive)"
 )
 
+SELECTIONS_NESTED_TOO_DEEPLY = "Selections are nested too deeply. Execution aborted."
+
 DEFER_NOT_SUPPORTED_ON_SUBSCRIPTIONS = (
     "`@defer` directive not supported on subscription operations."
     " Disable `@defer` by setting the `if` argument to `false`."
@@ -696,14 +698,21 @@ class Executor(Generic[TContext]):
                 raise GraphQLError(msg, operation)  # noqa: TRY301
             root_value = self.root_value
 
-            collected_fields = collect_fields(
-                schema,
-                self.fragments,
-                self.variable_values,
-                root_type,
-                operation,
-                self.hide_suggestions,
-            )
+            try:
+                collected_fields = collect_fields(
+                    schema,
+                    self.fragments,
+                    self.variable_values,
+                    root_type,
+                    operation,
+                    self.hide_suggestions,
+                )
+            except RecursionError:
+                collected_fields = None
+            # Leave the block above first, or the RecursionError would be kept as the
+            # context of this error and keep all the frames of the recursion alive.
+            if collected_fields is None:
+                raise GraphQLError(SELECTIONS_NESTED_TOO_DEEPLY, operation)  # noqa: TRY301
 
             grouped_field_set, new_defer_usages, _forbidden = collected_fields
 

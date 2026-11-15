@@ -1,7 +1,16 @@
 from contextlib import contextmanager
+from dataclasses import replace
 from functools import partial
 
-from graphql.language import parse
+import pytest
+
+from graphql.language import (
+    FieldNode,
+    FragmentDefinitionNode,
+    OperationDefinitionNode,
+    parse,
+    print_ast,
+)
 from graphql.utilities import build_schema
 from graphql.validation import (
     FieldsOnCorrectTypeRule,
@@ -36,8 +45,18 @@ budget_schema = build_schema(
 
 @contextmanager
 def budget_of(limit):
-    # Temporarily lower the module-level comparison budget so the budget tests can
+    # Temporarily lower the module-level complexity budget so the budget tests can
     # trigger the guard with small, fast queries.
+    saved = overlapping_module.MAX_COMPLEXITY_BUDGET
+    overlapping_module.MAX_COMPLEXITY_BUDGET = limit
+    try:
+        yield
+    finally:
+        overlapping_module.MAX_COMPLEXITY_BUDGET = saved
+
+
+@contextmanager
+def max_field_comparisons_of(limit):
     saved = overlapping_module.MAX_FIELD_COMPARISONS
     overlapping_module.MAX_FIELD_COMPARISONS = limit
     try:
@@ -47,7 +66,249 @@ def budget_of(limit):
 
 
 def describe_validate_overlapping_fields_can_be_merged():
+    def compares_wrapped_return_types_across_object_types():
+        schema = build_schema(
+            """
+            type Query { result: Result }
+            union Result = A | B
+            type A { value: [Int!]! }
+            type B { value: [String!]! }
+            """
+        )
+        errors = validate(
+            schema,
+            parse(
+                """
+                {
+                  result {
+                    ... on A { value value }
+                    ... on B { value value }
+                  }
+                }
+                """
+            ),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        message = (
+            "Fields 'value' conflict because they return conflicting types"
+            " '[Int!]!' and '[String!]!'."
+            " Use different aliases on the fields to fetch both if this was"
+            " intentional."
+        )
+        assert [error.message for error in errors] == [message] * 4
+
+    def retains_the_first_described_conflict_when_abbreviating_locations():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+
+        def fields(name):
+            return (
+                f"early: child {{ cause: {name} }}\n"
+                f"middle: {'child { ' * 10} leaf: {name} {' }' * 10}\n"
+                f"late: {'child { ' * 10} leaf: {name} {' }' * 10}\n"
+            )
+
+        errors = validate(
+            schema,
+            parse(f"{{ child {{ {fields('left')} }} child {{ {fields('right')} }} }}"),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        assert len(errors) == 1
+        assert "subfields 'early' conflict" in errors[0].message
+        assert errors[0].locations
+        assert len(errors[0].locations) == 40
+        assert errors[0].nodes
+        aliases = [
+            node.alias.value
+            for node in errors[0].nodes
+            if isinstance(node, FieldNode) and node.alias
+        ]
+        assert aliases.count("cause") == 2
+
+    def omits_large_fragment_arguments_only_in_descriptions():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        words = "small words " * 24
+        document = parse(
+            f"""
+            {{ ...Local(x: "{words}") ...Local(x: 2) }}
+            fragment Local($x: Input) on Query {{ field(value: $x) }}
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert [error.message for error in errors] == [
+            (
+                "Spreads 'Local' conflict because Local(...) and Local(x: 2)"
+                " have different fragment arguments."
+            )
+        ]
+        assert words in print_ast(document)
+
+    def prints_structured_fragment_arguments_in_conflict_descriptions():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        document = parse(
+            """
+            query ($outside: Int) {
+              ...Local(x: { list: [null, true, false, 1, 1.5, "text", $outside] })
+              ...Local(x: 0)
+            }
+            fragment Local($x: Input) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert [error.message for error in errors] == [
+            (
+                "Spreads 'Local' conflict because Local(x:"
+                ' { list: [null, true, false, 1, 1.5, "text", $outside] })'
+                " and Local(x: 0) have different fragment arguments."
+            )
+        ]
+
+    def retains_leaf_locations_when_abbreviating_a_long_conflict_path():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+        first = "child { " * 21 + "same: left" + " }" * 21
+        second = "child { " * 21 + "same: right" + " }" * 21
+        errors = validate(
+            schema, parse(f"{{ {first} {second} }}"), [OverlappingFieldsCanBeMergedRule]
+        )
+        assert len(errors) == 1
+        assert errors[0].locations
+        assert len(errors[0].locations) == 40
+        assert errors[0].nodes
+        aliases = [
+            node.alias.value
+            for node in errors[0].nodes
+            if isinstance(node, FieldNode) and node.alias
+        ]
+        assert aliases.count("same") == 2
+
+    def retains_small_nested_descriptions_and_conflict_locations():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+        first = "child { " * 7 + "same: left" + " }" * 7
+        second = "child { " * 7 + "same: right" + " }" * 7
+        errors = validate(
+            schema, parse(f"{{ {first} {second} }}"), [OverlappingFieldsCanBeMergedRule]
+        )
+        assert len(errors) == 1
+        assert "'left' and 'right' are different fields" in errors[0].message
+        assert errors[0].locations
+        assert len(errors[0].locations) == 16
+        assert errors[0].nodes
+        aliases = [
+            node.alias.value
+            for node in errors[0].nodes
+            if isinstance(node, FieldNode) and node.alias
+        ]
+        assert aliases.count("same") == 2
+
+    def abbreviates_long_names_in_conflict_messages():
+        schema = build_schema("type Query { field(value: Int): String }")
+        name = "name" * 260
+        document = parse(f"{{ {name}: {name} {name}: field }}")
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 1
+        assert name[:1000] + "..." in errors[0].message
+        assert name not in errors[0].message
+        assert errors[0].locations
+        assert len(errors[0].locations) == 2
+
+    def abbreviates_long_lists_of_nested_reasons():
+        schema = build_schema("type Query { child: Query, left: Int, right: Int }")
+        names = [f"field{i}_{'detail' * 40}" for i in range(5)]
+        first = " ".join(f"{name}: left" for name in names)
+        second = " ".join(f"{name}: right" for name in names)
+        errors = validate(
+            schema,
+            parse(f"{{ child {{ {first} }} child {{ {second} }} }}"),
+            [OverlappingFieldsCanBeMergedRule],
+        )
+        assert len(errors) == 1
+        assert "..." in errors[0].message
+        assert len(errors[0].message) < 1200
+        assert errors[0].locations
+        assert len(errors[0].locations) == 12
+
+    def reports_conflicts_without_source_locations():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse("{ field(value: 1) field(value: 2) }", no_location=True)
+        errors = validate(schema, document)
+        assert [error.message for error in errors] == [
+            (
+                "Fields 'field' conflict because they have differing arguments."
+                " Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
+        assert errors[0].locations is None
+
+    def reports_fragment_argument_conflicts_when_one_spread_omits_arguments():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse(
+            """
+            { ...Local ...Local(x: 1) }
+            fragment Local($x: Int) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        assert [error.message for error in validate(schema, document)] == [
+            (
+                "Spreads 'Local' conflict because Local and Local(x: 1)"
+                " have different fragment arguments."
+            )
+        ]
+
+    def compares_spreads_that_supply_only_some_declared_arguments():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse(
+            """
+            { ...Local(x: 1) ...Local(x: 1, y: 2) ...Local(x: 1) }
+            fragment Local($x: Int, $y: Int) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert [error.message for error in errors] == [
+            (
+                "Spreads 'Local' conflict because Local(x: 1) and Local(x: 1, y: 2)"
+                " have different fragment arguments."
+            )
+        ]
+
+    def keeps_similarly_named_variables_from_different_scopes_distinct():
+        schema = build_schema("type Query { field(value: Int): String }")
+        document = parse(
+            """
+            query ($__1_x: Int) {
+              ...Local(x: 1)
+              field(value: $__1_x)
+            }
+            fragment Local($x: Int) on Query { field(value: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        assert [error.message for error in validate(schema, document)] == [
+            (
+                "Fields 'field' conflict because they have differing arguments."
+                " Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
+
     def describe_fragment_arguments_must_produce_fields_that_can_be_merged():
+        def ignores_argument_order_and_undeclared_fragment_arguments():
+            assert_valid(
+                """
+                query Query($x: Int, $y: Int) {
+                  ...WithArgs(y: $y, x: $x, ignored: true)
+                  ...WithArgs(x: $x, y: $y)
+                }
+                fragment WithArgs($y: Int, $x: Int) on Type {
+                  a(x: $x)
+                  b(y: $y)
+                }
+                """
+            )
+
         def allows_conflicting_spreads_at_different_depths():
             assert_valid(
                 """
@@ -98,6 +359,31 @@ def describe_validate_overlapping_fields_can_be_merged():
                         " have different fragment arguments.",
                         "locations": [(3, 19), (4, 19)],
                     },
+                ],
+            )
+
+        def reports_a_fragment_argument_conflict_once_when_spreads_are_reversed():
+            assert_errors(
+                """
+                query First {
+                  ...WithArgs(x: 3)
+                  ...WithArgs(x: 4)
+                }
+                query Second {
+                  ...WithArgs(x: 4)
+                  ...WithArgs(x: 3)
+                }
+                fragment WithArgs($x: Int) on Type {
+                  a(x: $x)
+                }
+                """,
+                [
+                    {
+                        "message": "Spreads 'WithArgs' conflict because"
+                        " WithArgs(x: 3) and WithArgs(x: 4)"
+                        " have different fragment arguments.",
+                        "locations": [(3, 19), (4, 19)],
+                    }
                 ],
             )
 
@@ -385,6 +671,48 @@ def describe_validate_overlapping_fields_can_be_merged():
                 """
             )
 
+        def compares_a_shared_selection_set_in_distinct_variable_scopes():
+            schema = build_schema("type Query { child: Query, value(arg: Int): Int }")
+            document = parse(
+                """
+                query ($x: Int) {
+                  child { value(arg: $x) }
+                  child { ...Local(x: 1) }
+                }
+                fragment Local($x: Int) on Query { value(arg: $x) }
+                """,
+                experimental_fragment_arguments=True,
+            )
+            operation = next(
+                definition
+                for definition in document.definitions
+                if isinstance(definition, OperationDefinitionNode)
+            )
+            field = next(
+                selection
+                for selection in operation.selection_set.selections
+                if isinstance(selection, FieldNode)
+            )
+            selection_set = field.selection_set
+            assert selection_set
+            shared_document = replace(
+                document,
+                definitions=tuple(
+                    replace(definition, selection_set=selection_set)
+                    if isinstance(definition, FragmentDefinitionNode)
+                    else definition
+                    for definition in document.definitions
+                ),
+            )
+            for ast in (document, shared_document):
+                assert [error.message for error in validate(schema, ast)] == [
+                    (
+                        "Fields 'child' conflict because subfields 'value' conflict"
+                        " because they have differing arguments. Use different aliases"
+                        " on the fields to fetch both if this was intentional."
+                    )
+                ]
+
         def encounters_nested_field_conflict_in_fragments_that_could_merge():
             assert_errors(
                 """
@@ -515,20 +843,31 @@ def describe_validate_overlapping_fields_can_be_merged():
         assert_valid(
             """
             fragment differentDirectivesWithDifferentAliases on Dog {
+              name
               name @include(if: true)
               name @include(if: false)
             }
             """
         )
 
-    def same_stream_directives_supported():
-        assert_valid(
+    def stream_directive_used_on_different_instances_of_the_same_field():
+        assert_errors(
             """
             fragment differentDirectivesWithDifferentAliases on Dog {
               name @stream(label: "streamLabel", initialCount: 1)
               name @stream(label: "streamLabel", initialCount: 1)
             }
-            """
+            """,
+            [
+                {
+                    "message": "Fields 'name' conflict because they have overlapping"
+                    " stream directives."
+                    " See https://github.com/graphql/defer-stream-wg/discussions/100."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
         )
 
     def different_stream_directive_label():
@@ -541,7 +880,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -559,7 +898,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -577,7 +916,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -595,7 +934,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -612,7 +951,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             }""",
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -630,7 +969,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             [
                 {
-                    "message": "Fields 'name' conflict because they have differing"
+                    "message": "Fields 'name' conflict because they have overlapping"
                     " stream directives. Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -638,14 +977,24 @@ def describe_validate_overlapping_fields_can_be_merged():
             ],
         )
 
-    def same_stream_directive_both_missing_args():
-        assert_valid(
+    def different_stream_directive_both_missing_args():
+        assert_errors(
             """
             fragment conflictingArgs on Dog {
               name @stream
               name @stream
             }
-            """
+            """,
+            [
+                {
+                    "message": "Fields 'name' conflict because they have overlapping"
+                    " stream directives."
+                    " See https://github.com/graphql/defer-stream-wg/discussions/100."
+                    " Use different aliases on the fields"
+                    " to fetch both if this was intentional.",
+                    "locations": [(3, 15), (4, 15)],
+                }
+            ],
         )
 
     def same_aliases_with_different_field_targets():
@@ -839,6 +1188,297 @@ def describe_validate_overlapping_fields_can_be_merged():
             """,
             schema=schema,
         )
+
+    def compares_nested_input_values_with_empty_collections_and_block_strings():
+        schema = build_schema(
+            """
+            input SomeInput {
+              text: String
+              children: [SomeInput]
+            }
+            type Query {
+              someField(arg: SomeInput): String
+            }
+            """
+        )
+        assert_valid(
+            """
+            {
+              someField(arg: {
+                text: \"\"\"first line
+second line\"\"\"
+                children: [{ text: "value", children: [] }, {}]
+              })
+              someField(arg: {
+                children: [{ children: [], text: "value" }, {}]
+                text: \"\"\"first line
+second line\"\"\"
+              })
+            }
+            """,
+            schema=schema,
+        )
+
+    def distinguishes_value_kinds_string_forms_and_collection_order():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        values = [
+            "1",
+            "1.0",
+            '"1"',
+            '"""1"""',
+            "true",
+            "false",
+            "null",
+            "VALUE",
+            "$value",
+            "[]",
+            "{}",
+            "[1, 2]",
+            "[2, 1]",
+            "{ a: 1 }",
+            "{ b: 1 }",
+            "{ a: 2 }",
+            "{ a: 1, a: 2 }",
+            "{ a: 2, a: 1 }",
+        ]
+        for first in values:
+            for second in values:
+                document = parse(f"{{ field(value: {first}) field(value: {second}) }}")
+                errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+                assert len(errors) == (0 if first == second else 1)
+
+    def compares_object_fields_without_changing_the_source_ast():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        document = parse(
+            """{
+            field(value: { z: [{ b: 2, a: 1 }], a: true, a: false })
+            field(value: { a: true, z: [{ a: 1, b: 2 }], a: false })
+            }"""
+        )
+        before = print_ast(document)
+        assert validate(schema, document, [OverlappingFieldsCanBeMergedRule]) == []
+        assert print_ast(document) == before
+
+    def accepts_several_overlapping_fields_with_identical_values():
+        schema = build_schema("type Query { field(value: Int): String }")
+        assert_valid(
+            "{ field(value: 1) field(value: 1) field(value: 1) }", schema=schema
+        )
+
+    def distinguishes_local_references_after_operation_references():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        for value, error_count in (
+            ("[$outside, $outside]", 0),
+            ("[$outside, $x]", 1),
+        ):
+            document = parse(
+                f"""
+                query ($outside: Input) {{ ...Left(x: 1) ...Right(x: 1) }}
+                fragment Left($x: Input) on Query {{ ...Shared(value: {value}) }}
+                fragment Right($x: Input) on Query {{ ...Shared(value: {value}) }}
+                fragment Shared($value: Input) on Query {{ field(value: $value) }}
+                """,
+                experimental_fragment_arguments=True,
+            )
+            errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+            assert len(errors) == error_count
+            if error_count:
+                assert "different fragment arguments" in errors[0].message
+
+    def compares_nested_fragment_arguments_in_their_enclosing_variable_scope():
+        schema = build_schema("scalar Input type Query { field(value: Input): String }")
+        assert_valid(
+            """
+            query First($outside: Input) { ...Outer(x: 1) }
+            query Second($outside: Input) { ...Outer(x: 2) }
+            fragment Outer($x: Input) on Query {
+              ...Inner(value: { values: [$x, $outside, 1], other: true })
+              ...Inner(value: { other: true, values: [$x, $outside, 1] })
+            }
+            fragment Inner($value: Input) on Query { field(value: $value) }
+            """,
+            schema=schema,
+        )
+
+    def reuses_value_comparisons_while_checking_each_variable_scope():
+        schema = build_schema("type Query { child: Query, value(arg: Int): Int }")
+        document = parse(
+            """
+            {
+              same: child { ...F(x: 1) child { ...F(x: 1) } }
+              different: child { ...F(x: 1) child { ...F(x: 2) } }
+            }
+            fragment F($x: Int) on Query {
+              value(arg: $x)
+              child { value(arg: $x) }
+            }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 1
+        assert "they have differing arguments" in errors[0].message
+        locations = errors[0].locations
+        assert locations
+        assert locations[0].line == 4
+
+    def reuses_prepared_spreads_in_different_variable_scopes():
+        schema = build_schema("type Query { child: Query, value(arg: Int): Int }")
+        document = parse(
+            """
+            {
+              a: child { ...Outer(x: 1) value(arg: 1) }
+              b: child { ...Outer(x: 2) value(arg: 1) }
+            }
+            fragment Outer($x: Int) on Query { ...Inner }
+            fragment Inner on Query { value(arg: 2) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "they have differing arguments" in error.message
+
+    def reuses_stream_argument_comparisons_across_fragment_uses():
+        schema = build_schema("type Query { child: Query, list: [Int] }")
+        document = parse(
+            """
+            {
+              a: child { ...A(x: 1) ...B(x: 1) }
+              b: child { ...A(x: 2) ...B(x: 2) }
+            }
+            fragment A($x: Int) on Query { list @stream }
+            fragment B($x: Int) on Query { list @stream }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "they have overlapping stream directives. See" in error.message
+
+    def keeps_variable_scopes_separate_when_fields_share_their_argument_nodes():
+        schema = build_schema("type Query { value(arg: Int): Int }")
+        document = parse(
+            """
+            { ...First(x: 1) ...Second(x: 1) }
+            fragment First($x: Int) on Query { value(arg: $x) }
+            fragment Second($x: Int) on Query { value(arg: $x) }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        first, second = (
+            definition
+            for definition in document.definitions
+            if isinstance(definition, FragmentDefinitionNode)
+        )
+        shared_document = replace(
+            document,
+            definitions=tuple(
+                replace(
+                    second,
+                    selection_set=replace(
+                        second.selection_set,
+                        selections=tuple(
+                            replace(node) for node in first.selection_set.selections
+                        ),
+                    ),
+                )
+                if definition is second
+                else definition
+                for definition in document.definitions
+            ),
+        )
+        errors = validate(schema, shared_document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 1
+        assert "they have differing arguments" in errors[0].message
+
+    def compares_unknown_field_names_consistently_across_fragment_uses():
+        schema = build_schema("type Query { child: Query }")
+        document = parse(
+            """
+            {
+              a: child { ...A(x: 1) ...B(x: 1) }
+              b: child { ...A(x: 2) ...B(x: 2) }
+              c: child { ...A(x: 1) ...C(x: 1) }
+              d: child { ...A(x: 2) ...C(x: 2) }
+            }
+            fragment A($x: Int) on Query { alias: missing }
+            fragment B($x: Int) on Query { alias: missing }
+            fragment C($x: Int) on Query { alias: other }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(schema, document, [OverlappingFieldsCanBeMergedRule])
+        assert len(errors) == 2
+        for error in errors:
+            assert "'missing' and 'other' are different fields" in error.message
+
+    def keeps_field_definitions_separate_when_selection_set_shared_between_types():
+        schema = build_schema(
+            """
+            type Query { node: Union }
+            union Union = First | Second
+            type First { value: Int }
+            type Second { value: String }
+            """
+        )
+        document = parse(
+            """
+            { node { ...First ...Second } }
+            fragment First on First { value }
+            fragment Second on Second { value }
+            """
+        )
+        first, second = (
+            definition
+            for definition in document.definitions
+            if isinstance(definition, FragmentDefinitionNode)
+        )
+        shared_document = replace(
+            document,
+            definitions=tuple(
+                replace(second, selection_set=first.selection_set)
+                if definition is second
+                else definition
+                for definition in document.definitions
+            ),
+        )
+        assert [error.message for error in validate(schema, shared_document)] == [
+            (
+                "Fields 'value' conflict because they return conflicting types"
+                " 'Int' and 'String'. Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
+
+    def keeps_field_definitions_separate_for_equal_selection_sets_without_locations():
+        # Unlike in GraphQL.js, AST nodes are compared by value, and without locations
+        # the selection sets of these two fragments are equal.
+        schema = build_schema(
+            """
+            type Query { node: Union }
+            union Union = First | Second
+            type First { value: Int }
+            type Second { value: String }
+            """
+        )
+        document = parse(
+            """
+            { node { ...First ...Second } }
+            fragment First on First { value }
+            fragment Second on Second { value }
+            """,
+            no_location=True,
+        )
+        assert [error.message for error in validate(schema, document)] == [
+            (
+                "Fields 'value' conflict because they return conflicting types"
+                " 'Int' and 'String'. Use different aliases on the fields"
+                " to fetch both if this was intentional."
+            )
+        ]
 
     def encounters_conflict_in_fragments():
         assert_errors(
@@ -1041,7 +1681,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             [
                 {
                     "message": "Fields 'parent' conflict because"
-                    " they have differing stream directives."
+                    " they have overlapping stream directives."
                     " Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [(3, 15), (4, 15)],
@@ -1161,10 +1801,10 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
             {
               field {
-                ...F
+                ...I
               },
               field {
-                ...I
+                ...F
               }
             }
             fragment F on T {
@@ -1185,19 +1825,19 @@ def describe_validate_overlapping_fields_can_be_merged():
             [
                 {
                     "message": "Fields 'field' conflict"
-                    " because subfields 'x' conflict"
-                    " because 'a' and 'b' are different fields"
-                    " and subfields 'y' conflict"
-                    " because 'c' and 'd' are different fields."
+                    " because subfields 'y' conflict"
+                    " because 'd' and 'c' are different fields"
+                    " and subfields 'x' conflict"
+                    " because 'b' and 'a' are different fields."
                     " Use different aliases on the fields"
                     " to fetch both if this was intentional.",
                     "locations": [
                         (3, 15),
-                        (11, 15),
-                        (15, 15),
-                        (6, 15),
-                        (22, 15),
                         (18, 15),
+                        (22, 15),
+                        (6, 15),
+                        (15, 15),
+                        (11, 15),
                     ],
                     "path": None,
                 }
@@ -1906,34 +2546,28 @@ def describe_validate_overlapping_fields_can_be_merged():
             """
         )
 
-    def describe_comparison_budget():
-        def aborts_validation_when_the_comparison_budget_is_exceeded():
+    def describe_complexity_budget():
+        def aborts_validation_when_the_complexity_budget_is_exceeded():
             # Repeated inline fragments select the same response name, forcing O(n^2)
-            # pairwise comparisons. Once the budget is exhausted the rule aborts with
-            # a single error instead of running the comparison to completion. The
-            # trailing `other` selection set is visited after the abort and must be
-            # skipped, so exactly one error is reported for the whole document.
+            # pairwise comparisons. Once the budget is exhausted the rule aborts the
+            # whole validation instead of running the comparison to completion. The
+            # trailing `other` selection set is never visited, so exactly one error
+            # is reported for the whole document.
             query = (
                 "{ field { " + " ".join(["... on Node { x }"] * 10) + " } other { x } }"
             )
-            with budget_of(5):
+            with budget_of(10):
                 assert_errors(
                     query,
-                    [
-                        {
-                            "message": "Query is too complex to validate for"
-                            " overlapping fields: exceeded 5 field comparisons."
-                            " Validation was aborted."
-                        }
-                    ],
+                    [{"message": "Validation aborted."}],
                     schema=budget_schema,
                 )
 
         def error_does_not_keep_the_exceeded_budget_alive():
-            # The error is created while the internal budget signal is handled,
-            # but must not adopt its traceback, which keeps the comparison alive.
+            # The error is raised from deep inside the conflict search,
+            # but must not keep its traceback, which keeps the comparison alive.
             query = "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
-            with budget_of(5):
+            with budget_of(10):
                 errors = validate(
                     budget_schema,
                     parse(query, no_location=True),
@@ -1941,16 +2575,16 @@ def describe_validate_overlapping_fields_can_be_merged():
                 )
             assert len(errors) == 1
             error = errors[0]
-            assert error.message.startswith("Query is too complex to validate")
+            assert error.message == "Validation aborted."
             assert error.__traceback__ is None
             assert error.__context__ is None
 
         def aborted_error_does_not_keep_the_exceeded_budget_alive():
-            # The unknown field reaches the error limit, so reporting the exceeded
-            # budget aborts the validation. This happens while the internal budget
-            # signal is handled, which must not stay attached to the aborted error.
+            # The unknown field reaches the error limit, and the exceeded budget then
+            # aborts the validation, without discarding the earlier error and without
+            # anything staying attached to the aborted error.
             query = "{ unknown field { " + " ".join(["... on Node { x }"] * 10) + " } }"
-            with budget_of(5):
+            with budget_of(10):
                 errors = validate(
                     budget_schema,
                     parse(query, no_location=True),
@@ -1959,15 +2593,25 @@ def describe_validate_overlapping_fields_can_be_merged():
                 )
             assert errors == [
                 {"message": "Cannot query field 'unknown' on type 'Query'."},
-                {
-                    "message": "Too many validation errors, error limit reached."
-                    " Validation aborted."
-                },
+                {"message": "Validation aborted."},
             ]
             error = errors[-1]
             assert isinstance(error, ValidationAbortedError)
             assert error.__traceback__ is None
             assert error.__context__ is None
+
+        def creates_a_new_error_for_every_abort():
+            # A shared error would add the frames of every validation to its traceback.
+            query = parse("{ field { " + " ".join(["... on Node { x }"] * 10) + " } }")
+            with budget_of(10):
+                errors1 = validate(
+                    budget_schema, query, [OverlappingFieldsCanBeMergedRule]
+                )
+                errors2 = validate(
+                    budget_schema, query, [OverlappingFieldsCanBeMergedRule]
+                )
+            assert errors1 == errors2 == [{"message": "Validation aborted."}]
+            assert errors1[0] is not errors2[0]
 
         def deduplication_alone_would_not_bound_this_query():
             # Each `f` selection shares the response name `f` but wraps a distinct
@@ -1975,7 +2619,7 @@ def describe_validate_overlapping_fields_can_be_merged():
             # structural fingerprint and none conflicts with another (differing
             # aliases merge cleanly). A fix based purely on deduplicating structurally
             # identical fields cannot remove any of these, so it would still perform
-            # O(n^2) comparisons; the comparison budget bounds the work regardless.
+            # O(n^2) comparisons; the complexity budget bounds the work regardless.
             query = (
                 "{ field { "
                 + " ".join(f"... on Node {{ f {{ a{i}: x }} }}" for i in range(20))
@@ -1987,24 +2631,168 @@ def describe_validate_overlapping_fields_can_be_merged():
                 assert_valid(query, schema=budget_schema)
             # With a small budget the same query is aborted rather than validated in
             # quadratic time.
-            with budget_of(10):
+            with budget_of(20):
                 assert_errors(
                     query,
-                    [
-                        {
-                            "message": "Query is too complex to validate for"
-                            " overlapping fields: exceeded 10 field comparisons."
-                            " Validation was aborted."
-                        }
-                    ],
+                    [{"message": "Validation aborted."}],
                     schema=budget_schema,
                 )
 
         def does_not_abort_queries_that_stay_within_the_budget():
             # A valid overlapping query well under the budget validates normally, with
             # no spurious abort error.
-            with budget_of(50):
+            with budget_of(100):
                 assert_valid(
                     "{ field { ... on Node { x } ... on Node { x } } }",
                     schema=budget_schema,
                 )
+
+        def reads_the_budget_when_the_validation_of_the_rule_starts():
+            document = parse(
+                "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+            )
+            with budget_of(90):
+                errors = validate(
+                    budget_schema, document, [OverlappingFieldsCanBeMergedRule]
+                )
+            assert errors == []
+            with budget_of(89):
+                errors = validate(
+                    budget_schema, document, [OverlappingFieldsCanBeMergedRule]
+                )
+            assert errors == [{"message": "Validation aborted."}]
+
+        def aborts_for_many_fragments_with_disjoint_response_names():
+            schema = build_schema("type Query { name: String }")
+
+            def document(count):
+                spreads = " ".join(f"...G{i}" for i in range(count))
+                fragments = "\n".join(
+                    f"fragment G{i} on Query {{ a{i}: name }}" for i in range(count)
+                )
+                return parse(f"{{ {spreads} }}\n{fragments}")
+
+            rules = [OverlappingFieldsCanBeMergedRule]
+            assert validate(schema, document(400), rules) == []
+            errors = validate(schema, document(800), rules)
+            assert errors == [{"message": "Validation aborted."}]
+            assert errors[0].locations is None
+
+        def spends_the_budget_linearly_for_spreads_of_undefined_fragments():
+            schema = build_schema("type Query { name: String }")
+            rules = [OverlappingFieldsCanBeMergedRule]
+
+            def document(count):
+                spreads = " ".join(f"...missing{i}" for i in range(count))
+                return parse(f"{{ node {{ {spreads} }} }}")
+
+            assert validate(schema, document(8192), rules) == []
+            # one unit per resolved spread and one for the only remaining fragment
+            for count in (1024, 8192):
+                with budget_of(count + 1):
+                    assert validate(schema, document(count), rules) == []
+                with budget_of(count):
+                    assert validate(schema, document(count), rules) == [
+                        {"message": "Validation aborted."}
+                    ]
+
+        def spends_one_unit_per_wrapper_level_of_compared_return_types():
+            rules = [OverlappingFieldsCanBeMergedRule]
+            query = parse("{ result { ... on A { value } ... on B { value } } }")
+
+            for depth in (1, 2, 8):
+                wrapped = "Int!"
+                for _ in range(depth):
+                    wrapped = f"[{wrapped}]!"
+                schema = build_schema(
+                    f"""
+                    type Query {{ result: Result }}
+                    union Result = A | B
+                    type A {{ value: {wrapped} }}
+                    type B {{ value: {wrapped} }}
+                    """
+                )
+                # two units for the pair of fields, one per list and non-null type
+                cost = 2 + (1 + 2 * depth)
+                with budget_of(cost):
+                    assert validate(schema, query, rules) == []
+                with budget_of(cost - 1):
+                    assert validate(schema, query, rules) == [
+                        {"message": "Validation aborted."}
+                    ]
+
+        def spends_nothing_for_identical_return_types():
+            schema = build_schema("type Query { wrapped: [[Int!]!]!, named: Int }")
+            rules = [OverlappingFieldsCanBeMergedRule]
+            for query in ("{ wrapped wrapped }", "{ named named }"):
+                document = parse(query)
+                with budget_of(2):
+                    assert validate(schema, document, rules) == []
+                with budget_of(1):
+                    assert validate(schema, document, rules) == [
+                        {"message": "Validation aborted."}
+                    ]
+
+        def aborts_when_comparing_return_types_like_everywhere_else():
+            schema = build_schema(
+                """
+                type Query { conflict: Node, result: Result }
+                type Node { a: Int, b: Int }
+                union Result = A | B
+                type A { value: [Int] }
+                type B { value: [Int] }
+                """
+            )
+            document = parse(
+                """
+                {
+                  conflict { x: a x: b }
+                  result { ... on A { value } ... on B { value } }
+                }
+                """
+            )
+            rules = [OverlappingFieldsCanBeMergedRule]
+            conflict = (
+                "Fields 'x' conflict because 'a' and 'b' are different fields."
+                " Use different aliases on the fields to fetch both if this was"
+                " intentional."
+            )
+            # two field pairs cost four units, and the last unit is for the list type
+            with budget_of(5):
+                errors = validate(schema, document, rules)
+            assert [error.message for error in errors] == [conflict]
+            with budget_of(4):
+                errors = validate(schema, document, rules)
+            assert [error.message for error in errors] == [
+                conflict,
+                "Validation aborted.",
+            ]
+            aborted = errors[-1]
+            assert aborted.locations is None
+            assert aborted.__traceback__ is None
+            assert aborted.__context__ is None
+
+        def describe_deprecated_max_field_comparisons():
+            def has_the_default_of_half_the_complexity_budget():
+                assert (
+                    2 * overlapping_module.MAX_FIELD_COMPARISONS
+                    == overlapping_module.MAX_COMPLEXITY_BUDGET
+                )
+
+            def is_used_with_a_warning_if_it_was_changed():
+                document = parse(
+                    "{ field { " + " ".join(["... on Node { x }"] * 10) + " } }"
+                )
+                rules = [OverlappingFieldsCanBeMergedRule]
+                with (
+                    max_field_comparisons_of(45),
+                    pytest.warns(DeprecationWarning, match="MAX_FIELD_COMPARISONS"),
+                ):
+                    assert validate(budget_schema, document, rules) == []
+                with (
+                    max_field_comparisons_of(44),
+                    pytest.warns(DeprecationWarning, match="MAX_COMPLEXITY_BUDGET"),
+                ):
+                    assert validate(budget_schema, document, rules) == [
+                        {"message": "Validation aborted."}
+                    ]

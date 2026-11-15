@@ -3,30 +3,34 @@
 from __future__ import annotations
 
 import json
-from itertools import chain
+import warnings
 from typing import TYPE_CHECKING, Any, NamedTuple, TypeAlias, cast
 
 from ...error import GraphQLError
 from ...language import (
     ArgumentNode,
+    BooleanValueNode,
     DirectiveNode,
+    EnumValueNode,
     FieldNode,
+    FloatValueNode,
     FragmentArgumentNode,
     FragmentDefinitionNode,
     FragmentSpreadNode,
     InlineFragmentNode,
+    IntValueNode,
     ListValueNode,
     NameNode,
-    ObjectFieldNode,
+    NullValueNode,
     ObjectValueNode,
     SelectionSetNode,
+    StringValueNode,
     ValueNode,
     VariableNode,
     print_ast,
 )
 from ...pyutils import RefMap
 from ...type import (
-    GraphQLCompositeType,
     GraphQLField,
     GraphQLNamedType,
     GraphQLOutputType,
@@ -38,7 +42,6 @@ from ...type import (
     is_object_type,
 )
 from ...utilities import type_from_ast
-from ...utilities.sort_value_node import sort_value_node
 from . import ValidationContext, ValidationRule
 
 if TYPE_CHECKING:
@@ -46,36 +49,28 @@ if TYPE_CHECKING:
 
     from ...utilities.type_info import FragmentSignature
 
-__all__ = ["MAX_FIELD_COMPARISONS", "OverlappingFieldsCanBeMergedRule"]
+__all__ = [
+    "MAX_COMPLEXITY_BUDGET",
+    "MAX_FIELD_COMPARISONS",
+    "OverlappingFieldsCanBeMergedRule",
+]
 
-# The maximum number of pairwise field comparisons performed while validating a
-# single document with the OverlappingFieldsCanBeMerged rule. The rule compares
-# every pair of fields that share a response name and recurses into their
-# sub-selections, which is O(n^2) in the number of such fields (and worse when
-# inline fragments repeat the same response name at multiple nesting levels). A
-# crafted query can therefore drive validation into minutes of CPU on a single
-# request. Once this many comparisons have been made, validation is aborted with a
-# GraphQLError instead of running to completion. The default is high enough that any
-# realistic query stays far below it; it can be raised or lowered by assigning to
-# ``graphql.validation.rules.overlapping_fields_can_be_merged.MAX_FIELD_COMPARISONS``.
+# Meter work that can grow through repeated comparisons and fragment scopes. Once the
+# budget is exhausted, the whole validation is aborted with an error. Collecting a
+# selection set's fields is shared across scopes and is not charged. The default is high
+# enough that any realistic query stays far below it; it can be raised or lowered by
+# assigning to this module attribute, which is read when the validation of the rule
+# starts.
+MAX_COMPLEXITY_BUDGET = 500_000
+
+# Deprecated, use MAX_COMPLEXITY_BUDGET instead. If this is changed, the budget is two
+# times its value, because a comparison of two fields costs two units of the budget.
 MAX_FIELD_COMPARISONS = 250_000
 
-
-class ComparisonBudgetExceededError(Exception):
-    """Internal signal that the field-comparison budget has been exhausted.
-
-    Raised deep inside the recursive conflict search and caught by the rule to abort
-    validation. Never surfaces to callers of ``validate``.
-    """
-
-
-def reason_message(reason: ConflictReasonMessage) -> str:
-    if isinstance(reason, list):
-        return " and ".join(
-            f"subfields '{response_name}' conflict because {reason_message(sub_reason)}"
-            for response_name, sub_reason in reason
-        )
-    return reason
+# Keep diagnostic detail bounded independently of document size.
+MAX_CONFLICT_DETAIL_LENGTH = 1000
+MAX_CONFLICT_NODES = 20
+MAX_FRAGMENT_ARGUMENT_SIZE = 256
 
 
 class OverlappingFieldsCanBeMergedRule(ValidationRule):
@@ -105,11 +100,7 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
     def __init__(self, context: ValidationContext) -> None:
         super().__init__(context)
         self.rule_context = RuleContext()
-        self.fragment_var_map: VariableMap | None = None
-
-        # Set once the comparison budget is exhausted. Further selection sets are then
-        # skipped, since validation has already been aborted with an error.
-        self._budget_exceeded = False
+        self.fragment_scope: VariableScope | None = None
 
     def enter_fragment_definition(
         self, node: FragmentDefinitionNode, *_args: Any
@@ -122,46 +113,43 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
         fragment_signature = self.context.get_fragment_signature_by_name()(
             fragment_name
         )
-        self.fragment_var_map = get_var_map(fragment_signature, fragment_name)
+        self.fragment_scope = get_variable_scope(fragment_signature)
 
     def leave_fragment_definition(self, *_args: Any) -> None:
         """Called when leaving a fragment definition node.
 
         :meta private:
         """
-        self.fragment_var_map = None
+        self.fragment_scope = None
 
-    def enter_selection_set(self, selection_set: SelectionSetNode, *_args: Any) -> None:
+    def enter_selection_set(
+        self, selection_set: SelectionSetNode, _key: Any, parent: Any, *_args: Any
+    ) -> None:
         """Called when entering a selection set node.
 
         :meta private:
         """
-        if self._budget_exceeded:
+        # Inline fragments are flattened into their enclosing response level.
+        # Their fields' own selection sets are still visited independently.
+        if isinstance(parent, InlineFragmentNode):
             return
-        try:
-            conflicts = find_conflicts_within_selection_set(
-                self.context,
-                self.rule_context,
-                self.context.get_parent_type(),
-                selection_set,
-                self.fragment_var_map,
-            )
-        except ComparisonBudgetExceededError:
-            self._budget_exceeded = True
+        selections = selection_set.selections
+        if len(selections) <= 1 and not (
+            selections and isinstance(selections[0], InlineFragmentNode)
+        ):
+            return
+        conflicts = find_conflicts_within_selection_set(
+            self.context,
+            self.rule_context,
+            self.context.get_parent_type(),
+            selection_set,
+            self.fragment_scope,
+        )
+        for response_name, reason, fields1, fields2 in conflicts:
             self.report_error(
                 GraphQLError(
-                    "Query is too complex to validate for overlapping fields:"
-                    f" exceeded {MAX_FIELD_COMPARISONS} field comparisons."
-                    " Validation was aborted.",
-                    selection_set,
-                )
-            )
-            return
-        for (reason_name, reason), fields1, fields2 in conflicts:
-            reason_msg = reason_message(reason)
-            self.report_error(
-                GraphQLError(
-                    f"Fields '{reason_name}' conflict because {reason_msg}."
+                    f"Fields '{maybe_abbreviate(response_name)}'"
+                    f" conflict because {reason}."
                     " Use different aliases on the fields to fetch both"
                     " if this was intentional.",
                     fields1 + fields2,
@@ -169,57 +157,216 @@ class OverlappingFieldsCanBeMergedRule(ValidationRule):
             )
 
 
-Conflict: TypeAlias = tuple["ConflictReason", list[FieldNode], list[FieldNode]]
-# Field name and reason.
-ConflictReason: TypeAlias = tuple[str, "ConflictReasonMessage"]
-# Reason is a string, or a nested list of conflicts.
-ConflictReasonMessage: TypeAlias = str | list[ConflictReason]
-# Tuple defining a field node in a context.
-NodeAndDef: TypeAlias = tuple[GraphQLCompositeType, FieldNode, GraphQLField | None]
-# Dictionary of lists of those.
-NodeAndDefCollection: TypeAlias = dict[str, list[NodeAndDef]]
-# Variable-map identity distinguishes fragment scopes in the caches.
-VariableMap: TypeAlias = dict[str, ValueNode]
+class Conflict(NamedTuple):
+    """A conflict with the field nodes on both sides."""
+
+    response_name: str
+    reason: str
+    fields1: list[FieldNode]
+    fields2: list[FieldNode]
 
 
-class FragmentSpread(NamedTuple):
-    """A fragment spread with its conflict key and fragment variable map."""
+class FieldDetails:
+    """A field node and its definition in the parent-type context."""
 
-    key: str
-    node: FragmentSpreadNode
-    var_map: VariableMap | None
+    __slots__ = (
+        "definition",
+        "info",
+        "is_simple_leaf",
+        "node",
+        "parent_type",
+        "stream_directive",
+    )
+
+    info: FieldInfo | None
+
+    def __init__(
+        self,
+        parent_type: GraphQLNamedType | None,
+        node: FieldNode,
+        definition: GraphQLField | None,
+        is_simple_leaf: bool,
+        stream_directive: DirectiveNode | None,
+    ) -> None:
+        self.parent_type = parent_type
+        self.node = node
+        self.definition = definition
+        self.info = None
+        self.is_simple_leaf = is_simple_leaf
+        self.stream_directive = stream_directive
 
 
-FieldsAndFragmentSpreads: TypeAlias = tuple[NodeAndDefCollection, list[FragmentSpread]]
-FieldsAndFragmentSpreadsCache: TypeAlias = dict[
-    SelectionSetNode, RefMap[VariableMap | None, FieldsAndFragmentSpreads]
-]
+class FieldInfo:
+    """Argument and stream metadata of a field that is compared with other fields."""
+
+    __slots__ = (
+        "arguments",
+        "comparisons",
+        "named_type",
+        "stream_arguments",
+        "type_string",
+    )
+
+    def __init__(
+        self,
+        named_type: GraphQLNamedType | None,
+        arguments: ArgumentInfo | None,
+        stream_arguments: ArgumentInfo | None,
+    ) -> None:
+        self.comparisons: dict[FieldInfo, FieldComparison] = {}
+        self.named_type = named_type
+        self.arguments = arguments
+        self.stream_arguments = stream_arguments
+        self.type_string: str | None = None
+
+
+class FieldComparison:
+    """The source comparisons of a field pair, made when they are needed first."""
+
+    __slots__ = "arguments", "same_name", "stream_arguments"
+
+    same_name: bool | None
+    arguments: ArgumentComparison | None
+    stream_arguments: ArgumentComparison | None
+
+    def __init__(self) -> None:
+        self.same_name = None
+        self.arguments = None
+        self.stream_arguments = None
+
+
+class ArgumentComparison(NamedTuple):
+    """The result of comparing the source arguments of a field pair."""
+
+    same_structure: bool
+    values_with_variables: list[ValueInfo]
+
+
+FieldDetailsList: TypeAlias = list[FieldDetails]
+GroupedFieldSet: TypeAlias = dict[str, FieldDetailsList]
+
+
+class OverlappingFields(NamedTuple):
+    """The fields of two collections that have the same response name."""
+
+    response_name: str
+    field_details_list1: FieldDetailsList
+    field_details_list2: FieldDetailsList
+
+
+class VariableScope:
+    """The variable scope of a fragment use.
+
+    Equivalent spreads share a scope. The signature identifies declarations;
+    object identity distinguishes scopes with different fragment arguments.
+    """
+
+    __slots__ = ("signature",)
+
+    def __init__(self, signature: FragmentSignature) -> None:
+        self.signature = signature
+
+
+class FragmentSpread:
+    """A fragment spread with its fragment definition and variable scope."""
+
+    __slots__ = "definition", "node", "scope"
+
+    def __init__(
+        self,
+        node: FragmentSpreadNode,
+        scope: VariableScope | None,
+        definition: FragmentDefinitionNode | None,
+    ) -> None:
+        self.node = node
+        self.scope = scope
+        self.definition = definition
+
+
+class CollectFieldsResult:
+    """The fields and fragment spreads collected from a selection set."""
+
+    __slots__ = "by_scope", "grouped_field_set", "overlapping_fields", "spreads"
+
+    by_scope: dict[VariableScope | None, list[FragmentSpread]] | None
+    overlapping_fields: dict[CollectFieldsResult, list[OverlappingFields]] | None
+
+    def __init__(
+        self,
+        grouped_field_set: GroupedFieldSet,
+        spreads: list[FragmentSpreadNode],
+    ) -> None:
+        self.grouped_field_set = grouped_field_set
+        self.spreads = spreads
+        self.by_scope = None
+        self.overlapping_fields = None
+
+
+ArgumentNodes: TypeAlias = "Sequence[ArgumentNode] | Sequence[FragmentArgumentNode]"
+
+
+class ArgumentInfo(NamedTuple):
+    """Argument nodes together with their values by name."""
+
+    nodes: ArgumentNodes
+    values: dict[str, ValueNode]
+
+
+class FragmentSpreadInfo:
+    """The prepared source of equivalent fragment spreads."""
+
+    __slots__ = "by_scope", "signature", "values"
+
+    def __init__(
+        self, signature: FragmentSignature | None, values: list[ValueInfo]
+    ) -> None:
+        self.signature = signature
+        self.values = values
+        # Cache the resulting fragment scope by the arguments' enclosing scope.
+        # A None key means no local references; a None value means the target fragment
+        # declares no variables.
+        self.by_scope: dict[VariableScope | None, VariableScope | None] = {}
 
 
 class RuleContext:
     """The state of the rule that is shared during the validation of a document."""
 
     __slots__ = (
-        "cached_fields_and_fragment_spreads",
+        "cached_collect_fields_results",
         "compared_fields_and_fragment_pairs",
         "compared_fragment_pairs",
-        "field_comparisons",
+        "fragment_spread_info_by_key",
+        "fragment_spread_info_by_node",
+        "remaining_complexity_budget",
+        "value_info_by_node",
     )
 
     def __init__(self) -> None:
         # A memoization for when fields and a fragment or two fragments are compared
         # "between" each other for conflicts. Comparisons may be made many times, so
         # memoizing this can dramatically improve the performance of this validator.
-        self.compared_fields_and_fragment_pairs = OrderedPairSet()
-        self.compared_fragment_pairs = PairSet()
+        self.compared_fields_and_fragment_pairs: dict[
+            VariableScope | None, dict[VariableScope | None, OrderedPairSet]
+        ] = {}
+        self.compared_fragment_pairs: dict[
+            VariableScope | None, dict[VariableScope | None, PairSet]
+        ] = {}
 
         # A cache for the "field map" and list of fragment spreads found in any given
         # selection set.
-        self.cached_fields_and_fragment_spreads: FieldsAndFragmentSpreadsCache = {}
+        self.cached_collect_fields_results: dict[
+            GraphQLNamedType | None,
+            RefMap[SelectionSetNode, CollectFieldsResult],
+        ] = {}
 
-        # The number of pairwise field comparisons made so far, which is limited by
-        # the comparison budget.
-        self.field_comparisons = 0
+        self.value_info_by_node: RefMap[ValueNode, ValueInfo] = RefMap()
+
+        self.fragment_spread_info_by_node: RefMap[
+            FragmentSpreadNode, FragmentSpreadInfo
+        ] = RefMap()
+        self.fragment_spread_info_by_key: dict[str, FragmentSpreadInfo] = {}
+
+        self.remaining_complexity_budget = get_complexity_budget()
 
 
 # Algorithm:
@@ -280,19 +427,18 @@ def find_conflicts_within_selection_set(
     rule_context: RuleContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> list[Conflict]:
     """Find conflicts within selection set.
 
     Find all conflicts found "within" a selection set, including those found via
-    spreading in fragments.
-
-    Called when visiting each SelectionSet in the GraphQL Document.
+    spreading in fragments. Inline-fragment selection sets are included in their
+    enclosing collection.
     """
     conflicts: list[Conflict] = []
 
-    field_map, fragment_spreads = get_fields_and_fragment_spreads(
-        validation_context, rule_context, parent_type, selection_set, var_map
+    collect_fields_result = collect_fields(
+        validation_context, rule_context, parent_type, selection_set
     )
 
     # (A) Find all conflicts "within" the fields of this selection set.
@@ -301,11 +447,16 @@ def find_conflicts_within_selection_set(
         validation_context,
         rule_context,
         conflicts,
-        field_map,
-        var_map,
+        collect_fields_result,
+        scope,
     )
 
-    if fragment_spreads:
+    # Prepare fragment uses only for comparisons with fields or another spread.
+    spreads = collect_fields_result.spreads
+    if spreads and (collect_fields_result.grouped_field_set or len(spreads) > 1):
+        fragment_spreads = get_fragment_spreads(
+            validation_context, rule_context, collect_fields_result, scope
+        )
         # (B) Then collect conflicts between these fields and those represented by each
         # spread found.
         for i, fragment_spread in enumerate(fragment_spreads):
@@ -314,8 +465,8 @@ def find_conflicts_within_selection_set(
                 rule_context,
                 conflicts,
                 False,
-                field_map,
-                var_map,
+                collect_fields_result,
+                scope,
                 fragment_spread,
             )
             # (C) Then compare this fragment with all other fragments found in this
@@ -340,8 +491,8 @@ def collect_conflicts_between_fields_and_fragment(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     are_mutually_exclusive: bool,
-    field_map: NodeAndDefCollection,
-    var_map: VariableMap | None,
+    collect_fields_result: CollectFieldsResult,
+    scope: VariableScope | None,
     fragment_spread: FragmentSpread,
 ) -> None:
     """Collect conflicts between fields and fragment.
@@ -349,37 +500,51 @@ def collect_conflicts_between_fields_and_fragment(
     Collect all conflicts found between a set of fields and a fragment reference
     including via spreading in any nested fragments.
     """
-    if not field_map:
+    # Callers can enumerate more field-map/fragment pairs than document nodes.
+    # Count attempts even when an empty collection or the pair cache skips them.
+    spend_complexity_budget(rule_context, 1)
+
+    if not collect_fields_result.grouped_field_set:
         return
 
-    compared_fields_and_fragment_pairs = rule_context.compared_fields_and_fragment_pairs
-    fragment_key = fragment_spread.key
+    # Fields and fragments can each be compared in different variable scopes.
+    # Keep a separate pair history for each pair of scopes.
+    fragment = fragment_spread.definition
+    by_fragment_scope = rule_context.compared_fields_and_fragment_pairs.get(scope)
+    if by_fragment_scope is None:
+        by_fragment_scope = {}
+        rule_context.compared_fields_and_fragment_pairs[scope] = by_fragment_scope
+    compared_pairs = by_fragment_scope.get(fragment_spread.scope)
+    if compared_pairs is None:
+        compared_pairs = OrderedPairSet()
+        by_fragment_scope[fragment_spread.scope] = compared_pairs
 
     # Memoize so the fields and fragments are not compared for conflicts more
     # than once.
-    if compared_fields_and_fragment_pairs.has(
-        field_map, fragment_key, are_mutually_exclusive
-    ):
+    if compared_pairs.has(collect_fields_result, fragment, are_mutually_exclusive):
         return
-    compared_fields_and_fragment_pairs.add(
-        field_map, fragment_key, are_mutually_exclusive
-    )
+    compared_pairs.add(collect_fields_result, fragment, are_mutually_exclusive)
 
-    fragment = validation_context.get_fragment(fragment_spread.node.name.value)
     if not fragment:
         return
 
-    field_map2, referenced_fragment_spreads = (
-        get_referenced_fields_and_fragment_spreads(
-            validation_context,
-            rule_context,
-            fragment,
-            fragment_spread.var_map,
-        )
+    collect_fields_result2 = collect_fragment_fields(
+        validation_context,
+        rule_context,
+        fragment,
+    )
+    referenced_fragment_spreads = get_fragment_spreads(
+        validation_context,
+        rule_context,
+        collect_fields_result2,
+        fragment_spread.scope,
     )
 
-    # Do not compare a fragment's fieldMap to itself.
-    if field_map is field_map2:
+    # Do not compare a selection set to itself in the same variable scope.
+    if (
+        collect_fields_result is collect_fields_result2
+        and scope is fragment_spread.scope
+    ):
         return
 
     # (D) First collect any conflicts between the provided collection of fields and the
@@ -389,10 +554,10 @@ def collect_conflicts_between_fields_and_fragment(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        field_map,
-        var_map,
-        field_map2,
-        fragment_spread.var_map,
+        collect_fields_result,
+        scope,
+        collect_fields_result2,
+        fragment_spread.scope,
     )
 
     # (E) Then collect any conflicts between the provided collection of fields and any
@@ -403,8 +568,8 @@ def collect_conflicts_between_fields_and_fragment(
             rule_context,
             conflicts,
             are_mutually_exclusive,
-            field_map,
-            var_map,
+            collect_fields_result,
+            scope,
             referenced_fragment_spread,
         )
 
@@ -422,22 +587,44 @@ def collect_conflicts_between_fragments(
     Collect all conflicts found between two fragments, including via spreading in any
     nested fragments.
     """
-    compared_fragment_pairs = rule_context.compared_fragment_pairs
+    fragment1 = fragment_spread1.definition
+    fragment2 = fragment_spread2.definition
+    scope1 = fragment_spread1.scope
+    scope2 = fragment_spread2.scope
+    # Count attempted fragment pairs, including identity and cache hits.
+    spend_complexity_budget(rule_context, 2)
+
     # No need to compare a fragment to itself.
-    if fragment_spread1.key == fragment_spread2.key:
+    if fragment1 is fragment2 and scope1 is scope2:
         return
 
-    if fragment_spread1.node.name.value == fragment_spread2.node.name.value:
-        if compared_fragment_pairs.has(
-            fragment_spread1.key, fragment_spread2.key, False
-        ):
+    # Scope pairs share a comparison history indexed by fragment definitions.
+    all_compared_pairs = rule_context.compared_fragment_pairs
+    by_scope = all_compared_pairs.get(scope1)
+    compared_fragment_pairs = None if by_scope is None else by_scope.get(scope2)
+    if compared_fragment_pairs is None:
+        other_by_scope = all_compared_pairs.get(scope2)
+        if other_by_scope is not None:
+            compared_fragment_pairs = other_by_scope.get(scope1)
+    if compared_fragment_pairs is None:
+        if by_scope is None:
+            by_scope = all_compared_pairs[scope1] = {}
+        compared_fragment_pairs = by_scope[scope2] = PairSet()
+
+    if fragment1 is fragment2:
+        if compared_fragment_pairs.has(fragment1, fragment2, False):
             return
-        compared_fragment_pairs.add(fragment_spread1.key, fragment_spread2.key, False)
+        compared_fragment_pairs.add(fragment1, fragment2, False)
+        description1 = get_fragment_spread_description(
+            rule_context, fragment_spread1.node
+        )
+        description2 = get_fragment_spread_description(
+            rule_context, fragment_spread2.node
+        )
         validation_context.report_error(
             GraphQLError(
-                f"Spreads '{fragment_spread1.node.name.value}' conflict because"
-                f" {get_fragment_spread_description(fragment_spread1.node)}"
-                f" and {get_fragment_spread_description(fragment_spread2.node)}"
+                f"Spreads '{maybe_abbreviate(fragment_spread1.node.name.value)}'"
+                f" conflict because {description1} and {description2}"
                 " have different fragment arguments.",
                 [fragment_spread1.node, fragment_spread2.node],
             )
@@ -445,35 +632,34 @@ def collect_conflicts_between_fragments(
         return
 
     # Memoize so two fragments are not compared for conflicts more than once.
-    if compared_fragment_pairs.has(
-        fragment_spread1.key, fragment_spread2.key, are_mutually_exclusive
-    ):
+    if compared_fragment_pairs.has(fragment1, fragment2, are_mutually_exclusive):
         return
-    compared_fragment_pairs.add(
-        fragment_spread1.key, fragment_spread2.key, are_mutually_exclusive
-    )
+    compared_fragment_pairs.add(fragment1, fragment2, are_mutually_exclusive)
 
-    fragment1 = validation_context.get_fragment(fragment_spread1.node.name.value)
-    fragment2 = validation_context.get_fragment(fragment_spread2.node.name.value)
     if not fragment1 or not fragment2:
         return
 
-    field_map1, referenced_fragment_spreads1 = (
-        get_referenced_fields_and_fragment_spreads(
-            validation_context,
-            rule_context,
-            fragment1,
-            fragment_spread1.var_map,
-        )
+    collect_fields_result1 = collect_fragment_fields(
+        validation_context,
+        rule_context,
+        fragment1,
     )
-
-    field_map2, referenced_fragment_spreads2 = (
-        get_referenced_fields_and_fragment_spreads(
-            validation_context,
-            rule_context,
-            fragment2,
-            fragment_spread2.var_map,
-        )
+    referenced_fragment_spreads1 = get_fragment_spreads(
+        validation_context,
+        rule_context,
+        collect_fields_result1,
+        fragment_spread1.scope,
+    )
+    collect_fields_result2 = collect_fragment_fields(
+        validation_context,
+        rule_context,
+        fragment2,
+    )
+    referenced_fragment_spreads2 = get_fragment_spreads(
+        validation_context,
+        rule_context,
+        collect_fields_result2,
+        fragment_spread2.scope,
     )
 
     # (F) First, collect all conflicts between these two collections of fields
@@ -483,10 +669,10 @@ def collect_conflicts_between_fragments(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        field_map1,
-        fragment_spread1.var_map,
-        field_map2,
-        fragment_spread2.var_map,
+        collect_fields_result1,
+        fragment_spread1.scope,
+        collect_fields_result2,
+        fragment_spread2.scope,
     )
 
     # (G) Then collect conflicts between the first fragment and any nested fragments
@@ -520,10 +706,10 @@ def find_conflicts_between_sub_selection_sets(
     are_mutually_exclusive: bool,
     parent_type1: GraphQLNamedType | None,
     selection_set1: SelectionSetNode,
-    var_map1: VariableMap | None,
+    scope1: VariableScope | None,
     parent_type2: GraphQLNamedType | None,
     selection_set2: SelectionSetNode,
-    var_map2: VariableMap | None,
+    scope2: VariableScope | None,
 ) -> list[Conflict]:
     """Find conflicts between sub selection sets.
 
@@ -533,19 +719,29 @@ def find_conflicts_between_sub_selection_sets(
     """
     conflicts: list[Conflict] = []
 
-    field_map1, fragment_spreads1 = get_fields_and_fragment_spreads(
+    collect_fields_result1 = collect_fields(
         validation_context,
         rule_context,
         parent_type1,
         selection_set1,
-        var_map1,
     )
-    field_map2, fragment_spreads2 = get_fields_and_fragment_spreads(
+    fragment_spreads1 = get_fragment_spreads(
+        validation_context,
+        rule_context,
+        collect_fields_result1,
+        scope1,
+    )
+    collect_fields_result2 = collect_fields(
         validation_context,
         rule_context,
         parent_type2,
         selection_set2,
-        var_map2,
+    )
+    fragment_spreads2 = get_fragment_spreads(
+        validation_context,
+        rule_context,
+        collect_fields_result2,
+        scope2,
     )
 
     # (H) First, collect all conflicts between these two collections of field.
@@ -554,10 +750,10 @@ def find_conflicts_between_sub_selection_sets(
         rule_context,
         conflicts,
         are_mutually_exclusive,
-        field_map1,
-        var_map1,
-        field_map2,
-        var_map2,
+        collect_fields_result1,
+        scope1,
+        collect_fields_result2,
+        scope2,
     )
 
     # (I) Then collect conflicts between the first collection of fields and those
@@ -569,8 +765,8 @@ def find_conflicts_between_sub_selection_sets(
                 rule_context,
                 conflicts,
                 are_mutually_exclusive,
-                field_map1,
-                var_map1,
+                collect_fields_result1,
+                scope1,
                 fragment_spread2,
             )
 
@@ -583,8 +779,8 @@ def find_conflicts_between_sub_selection_sets(
                 rule_context,
                 conflicts,
                 are_mutually_exclusive,
-                field_map2,
-                var_map2,
+                collect_fields_result2,
+                scope2,
                 fragment_spread1,
             )
 
@@ -609,31 +805,32 @@ def collect_conflicts_within(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     conflicts: list[Conflict],
-    field_map: NodeAndDefCollection,
-    var_map: VariableMap | None,
+    collect_fields_result: CollectFieldsResult,
+    scope: VariableScope | None,
 ) -> None:
     """Collect all Conflicts "within" one collection of fields."""
     # A field map is a keyed collection, where each key represents a response name and
     # the value at that key is a list of all fields which provide that response name.
     # For every response name, if there are multiple fields, they must be compared to
     # find a potential conflict.
-    for response_name, fields in field_map.items():
+    grouped_field_set = collect_fields_result.grouped_field_set
+    for response_name, field_details_list in grouped_field_set.items():
         # This compares every field in the list to every other field in this list
         # (except to itself). If the list only has one item, nothing needs to be
         # compared.
-        if len(fields) > 1:
-            for i, field in enumerate(fields):
-                for other_field in fields[i + 1 :]:
+        if len(field_details_list) > 1:
+            for i, field_details in enumerate(field_details_list):
+                for other_field_details in field_details_list[i + 1 :]:
                     conflict = find_conflict(
                         validation_context,
                         rule_context,
                         # within one collection is never mutually exclusive
                         False,
                         response_name,
-                        field,
-                        var_map,
-                        other_field,
-                        var_map,
+                        field_details,
+                        scope,
+                        other_field_details,
+                        scope,
                     )
                     if conflict:
                         conflicts.append(conflict)
@@ -644,10 +841,10 @@ def collect_conflicts_between(
     rule_context: RuleContext,
     conflicts: list[Conflict],
     parent_fields_are_mutually_exclusive: bool,
-    field_map1: NodeAndDefCollection,
-    var_map1: VariableMap | None,
-    field_map2: NodeAndDefCollection,
-    var_map2: VariableMap | None,
+    collect_fields_result1: CollectFieldsResult,
+    scope1: VariableScope | None,
+    collect_fields_result2: CollectFieldsResult,
+    scope2: VariableScope | None,
 ) -> None:
     """Collect all Conflicts between two collections of fields.
 
@@ -656,30 +853,72 @@ def collect_conflicts_between(
     already been called on each provided collection of fields. This is true because
     this validator traverses each individual selection set.
     """
-    if not field_map1 or not field_map2:
+    if (
+        not collect_fields_result1.grouped_field_set
+        or not collect_fields_result2.grouped_field_set
+    ):
         return
     # A field map is a keyed collection, where each key represents a response name and
     # the value at that key is a list of all fields which provide that response name.
     # For any response name which appears in both provided field maps, each field from
     # the first field map must be compared to every field in the second field map to
     # find potential conflicts.
-    for response_name, fields1 in field_map1.items():
-        fields2 = field_map2.get(response_name)
-        if fields2:
-            for field1 in fields1:
-                for field2 in fields2:
-                    conflict = find_conflict(
-                        validation_context,
-                        rule_context,
-                        parent_fields_are_mutually_exclusive,
-                        response_name,
-                        field1,
-                        var_map1,
-                        field2,
-                        var_map2,
-                    )
-                    if conflict:
-                        conflicts.append(conflict)
+    for (
+        response_name,
+        field_details_list1,
+        field_details_list2,
+    ) in get_overlapping_fields(
+        rule_context, collect_fields_result1, collect_fields_result2
+    ):
+        for field_details1 in field_details_list1:
+            for field_details2 in field_details_list2:
+                conflict = find_conflict(
+                    validation_context,
+                    rule_context,
+                    parent_fields_are_mutually_exclusive,
+                    response_name,
+                    field_details1,
+                    scope1,
+                    field_details2,
+                    scope2,
+                )
+                if conflict:
+                    conflicts.append(conflict)
+
+
+def get_overlapping_fields(
+    rule_context: RuleContext,
+    collect_fields_result1: CollectFieldsResult,
+    collect_fields_result2: CollectFieldsResult,
+) -> list[OverlappingFields]:
+    """Get the fields of two collections that have the same response name.
+
+    Matching response names is independent of variable scopes. Reuse that matching
+    across scopes, while still comparing fields in their own scope.
+    """
+    by_collect_fields_result = collect_fields_result1.overlapping_fields
+    if by_collect_fields_result is None:
+        by_collect_fields_result = collect_fields_result1.overlapping_fields = {}
+    cached = by_collect_fields_result.get(collect_fields_result2)
+    if cached is not None:
+        return cached
+    overlapping_fields: list[OverlappingFields] = []
+    grouped_field_set2 = collect_fields_result2.grouped_field_set
+    for (
+        response_name,
+        field_details_list1,
+    ) in collect_fields_result1.grouped_field_set.items():
+        # A field map can participate in many distinct comparisons.
+        spend_complexity_budget(rule_context, 1)
+        field_details_list2 = grouped_field_set2.get(response_name)
+        if field_details_list2:
+            overlapping_fields.append(
+                OverlappingFields(
+                    response_name, field_details_list1, field_details_list2
+                )
+            )
+    by_collect_fields_result[collect_fields_result2] = overlapping_fields
+    return overlapping_fields
 
 
 def find_conflict(
@@ -687,24 +926,24 @@ def find_conflict(
     rule_context: RuleContext,
     parent_fields_are_mutually_exclusive: bool,
     response_name: str,
-    field1: NodeAndDef,
-    var_map1: VariableMap | None,
-    field2: NodeAndDef,
-    var_map2: VariableMap | None,
+    field_details1: FieldDetails,
+    scope1: VariableScope | None,
+    field_details2: FieldDetails,
+    scope2: VariableScope | None,
 ) -> Conflict | None:
     """Find conflict.
 
     Determines if there is a conflict between two particular fields, including comparing
     their sub-fields.
     """
-    # Charge this comparison against the document-wide budget and abort validation once
-    # it is exhausted, guarding against quadratic-blowup denial of service.
-    rule_context.field_comparisons += 1
-    if rule_context.field_comparisons > MAX_FIELD_COMPARISONS:
-        raise ComparisonBudgetExceededError
-
-    parent_type1, node1, def1 = field1
-    parent_type2, node2, def2 = field2
+    parent_type1 = field_details1.parent_type
+    node1 = field_details1.node
+    def1 = field_details1.definition
+    stream_directive1 = field_details1.stream_directive
+    parent_type2 = field_details2.parent_type
+    node2 = field_details2.node
+    def2 = field_details2.definition
+    stream_directive2 = field_details2.stream_directive
 
     # If it is known that two fields could not possibly apply at the same time, due to
     # the parent types, then it is safe to permit them to diverge in aliased field or
@@ -722,33 +961,72 @@ def find_conflict(
     type1 = cast("GraphQLOutputType | None", def1 and def1.type)
     type2 = cast("GraphQLOutputType | None", def2 and def2.type)
 
+    # Count attempted field pairs, including pairs skipped by type exclusivity.
+    spend_complexity_budget(rule_context, 2)
+    if (
+        field_details1.is_simple_leaf
+        and field_details2.is_simple_leaf
+        and type1 is type2
+        and node1.name.value == node2.name.value
+    ):
+        return None
+    field_info1 = get_field_info(field_details1)
+    field_info2 = get_field_info(field_details2)
+    comparison = field_info1.comparisons.get(field_info2)
+    if comparison is None:
+        comparison = field_info1.comparisons[field_info2] = FieldComparison()
+
     if not are_mutually_exclusive:
         # Two aliases must refer to the same field.
         name1 = node1.name.value
         name2 = node2.name.value
-        if name1 != name2:
-            return (
-                (response_name, f"'{name1}' and '{name2}' are different fields"),
+        # Field names do not depend on the fragment scope.
+        same_name = comparison.same_name
+        if same_name is None:
+            same_name = comparison.same_name = name1 == name2
+        if not same_name:
+            return Conflict(
+                response_name,
+                f"'{maybe_abbreviate(name1)}' and '{maybe_abbreviate(name2)}'"
+                " are different fields",
                 [node1],
                 [node2],
             )
 
         # Two field calls must have the same arguments.
-        if not same_arguments(node1.arguments, var_map1, node2.arguments, var_map2):
-            return (response_name, "they have differing arguments"), [node1], [node2]
+        compared_arguments = comparison.arguments
+        if compared_arguments is None:
+            compared_arguments = comparison.arguments = compare_arguments(
+                rule_context, field_info1.arguments, field_info2.arguments
+            )
+        if not same_arguments(rule_context, compared_arguments, scope1, scope2):
+            return Conflict(
+                response_name, "they have differing arguments", [node1], [node2]
+            )
 
-    directives1 = node1.directives
-    directives2 = node2.directives
-    if not same_streams(directives1, directives2):
-        return (
-            (response_name, "they have differing stream directives"),
-            [node1],
-            [node2],
-        )
+    if stream_directive1 or stream_directive2:
+        reason = "they have overlapping stream directives"
+        if stream_directive1 and stream_directive2:
+            compared_arguments = comparison.stream_arguments
+            if compared_arguments is None:
+                compared_arguments = comparison.stream_arguments = compare_arguments(
+                    rule_context,
+                    field_info1.stream_arguments,
+                    field_info2.stream_arguments,
+                )
+            if same_arguments(rule_context, compared_arguments, scope1, scope2):
+                # This was allowed in previous alpha versions of GraphQL.js.
+                reason += (
+                    ". See https://github.com/graphql/defer-stream-wg/discussions/100"
+                )
+        return Conflict(response_name, reason, [node1], [node2])
 
-    if type1 and type2 and do_types_conflict(type1, type2):
-        return (
-            (response_name, f"they return conflicting types '{type1}' and '{type2}'"),
+    if type1 and type2 and do_types_conflict(rule_context, type1, type2):
+        type1_string = field_info1.type_string = field_info1.type_string or str(type1)
+        type2_string = field_info2.type_string = field_info2.type_string or str(type2)
+        return Conflict(
+            response_name,
+            f"they return conflicting types '{type1_string}' and '{type2_string}'",
             [node1],
             [node2],
         )
@@ -763,120 +1041,199 @@ def find_conflict(
             validation_context,
             rule_context,
             are_mutually_exclusive,
-            get_named_type(type1),
+            field_info1.named_type,
             selection_set1,
-            var_map1,
-            get_named_type(type2),
+            scope1,
+            field_info2.named_type,
             selection_set2,
-            var_map2,
+            scope2,
         )
         return subfield_conflicts(conflicts, response_name, node1, node2)
 
     return None  # no conflict
 
 
-def same_arguments(
-    args1: Sequence[ArgumentNode | FragmentArgumentNode] | None,
-    var_map1: VariableMap | None,
-    args2: Sequence[ArgumentNode | FragmentArgumentNode] | None,
-    var_map2: VariableMap | None,
-) -> bool:
-    if not args1:
-        return not args2
-
-    if not args2:
-        return False
-
-    if len(args1) != len(args2):
-        return False
-
-    values2 = {
-        arg.name.value: (
-            arg.value
-            if var_map2 is None
-            else replace_fragment_variables(arg.value, var_map2)
+def get_field_info(field_details: FieldDetails) -> FieldInfo:
+    """Prepare argument and directive lookups only when a field overlaps."""
+    info = field_details.info
+    if info is None:
+        definition = field_details.definition
+        stream_directive = field_details.stream_directive
+        info = field_details.info = FieldInfo(
+            get_named_type(definition.type if definition else None),
+            get_argument_info(field_details.node.arguments),
+            get_argument_info(stream_directive.arguments) if stream_directive else None,
         )
-        for arg in args2
-    }
+    return info
 
-    for arg1 in args1:
-        value1 = arg1.value
-        if var_map1:
-            value1 = replace_fragment_variables(value1, var_map1)
+
+def get_argument_info(args: ArgumentNodes | None) -> ArgumentInfo | None:
+    if not args:
+        return None
+    return ArgumentInfo(args, {arg.name.value: arg.value for arg in args})
+
+
+def compare_arguments(
+    rule_context: RuleContext,
+    argument_info1: ArgumentInfo | None,
+    argument_info2: ArgumentInfo | None,
+) -> ArgumentComparison:
+    """Compare names and source values once per field pair.
+
+    Retain only values containing variables, whose meaning can differ between fragment
+    scopes.
+    """
+    values_with_variables: list[ValueInfo] = []
+    if argument_info1 is None:
+        return ArgumentComparison(argument_info2 is None, values_with_variables)
+    if argument_info2 is None or len(argument_info1.nodes) != len(argument_info2.nodes):
+        return ArgumentComparison(False, values_with_variables)
+    values2 = argument_info2.values
+    for arg1 in argument_info1.nodes:
+        # A prepared argument list can participate in many field-pair comparisons.
+        spend_complexity_budget(rule_context, 1)
         value2 = values2.get(arg1.name.value)
-        if value2 is None or stringify_value(value1) != stringify_value(value2):
-            return False
+        if value2 is None:
+            return ArgumentComparison(False, values_with_variables)
+        value_info1 = get_value_info(rule_context, arg1.value)
+        if (
+            value_info1.comparison_key
+            != get_value_info(rule_context, value2).comparison_key
+        ):
+            return ArgumentComparison(False, values_with_variables)
+        if value_info1.variables:
+            values_with_variables.append(value_info1)
+    return ArgumentComparison(True, values_with_variables)
 
+
+def same_arguments(
+    rule_context: RuleContext,
+    comparison: ArgumentComparison,
+    scope1: VariableScope | None,
+    scope2: VariableScope | None,
+) -> bool:
+    if not comparison.same_structure:
+        return False
+    # Equal expressions refer to the same variables within a scope. Across scopes,
+    # they agree only when every reference is an operation variable.
+    if scope1 is not scope2:
+        for value in comparison.values_with_variables:
+            # Different scope pairs can revisit the same prepared values.
+            spend_complexity_budget(rule_context, 1)
+            if uses_local_variables(
+                rule_context, value, scope1
+            ) or uses_local_variables(rule_context, value, scope2):
+                return False
     return True
 
 
-def replace_fragment_variables(
-    value_node: ValueNode, var_map: VariableMap
-) -> ValueNode:
-    """Replace fragment variable references in a value node using the variable map."""
-    if isinstance(value_node, VariableNode):
-        return var_map.get(value_node.name.value, value_node)
-    if isinstance(value_node, ListValueNode):
-        return ListValueNode(
-            values=tuple(
-                replace_fragment_variables(node, var_map) for node in value_node.values
-            ),
-            loc=value_node.loc,
-        )
-    if isinstance(value_node, ObjectValueNode):
-        return ObjectValueNode(
-            fields=tuple(
-                ObjectFieldNode(
-                    name=field.name,
-                    value=replace_fragment_variables(field.value, var_map),
-                    loc=field.loc,
-                )
-                for field in value_node.fields
-            ),
-            loc=value_node.loc,
-        )
-    return value_node
+class ValueInfo:
+    """The comparison key and the variable names of a value node."""
+
+    __slots__ = "comparison_key", "scope_dependencies", "variables"
+
+    scope_dependencies: RefMap[FragmentSignature, bool] | None
+
+    def __init__(self, comparison_key: str, variables: list[str]) -> None:
+        self.comparison_key = comparison_key
+        self.variables = variables
+        self.scope_dependencies = None
 
 
-def stringify_value(value: ValueNode) -> str:
-    return print_ast(sort_value_node(value))
-
-
-def get_stream_directive(
-    directives: Sequence[DirectiveNode] | None,
-) -> DirectiveNode | None:
-    for directive in directives or ():
-        if directive.name.value == "stream":
-            return directive
-    return None
-
-
-def same_streams(
-    directives1: Sequence[DirectiveNode] | None,
-    directives2: Sequence[DirectiveNode] | None,
+def uses_local_variables(
+    rule_context: RuleContext, value: ValueInfo, scope: VariableScope | None
 ) -> bool:
-    stream1 = get_stream_directive(directives1)
-    stream2 = get_stream_directive(directives2)
-    if not stream1 and not stream2:
-        # both fields do not have streams
-        return True
-    if stream1 and stream2:
-        # check if both fields have equivalent streams
-        return same_arguments(stream1.arguments, None, stream2.arguments, None)
-    # fields have a mix of stream and no stream
-    return False
+    if scope is None:
+        return False
+    # Declaration membership does not depend on the fragment arguments.
+    dependencies = value.scope_dependencies
+    if dependencies is None:
+        dependencies = value.scope_dependencies = RefMap()
+    signature = scope.signature
+    cached = dependencies.get(signature)
+    if cached is not None:
+        return cached
+    variable_definitions = signature.variable_definitions
+    depends_on_scope = False
+    for variable in value.variables:
+        # A source value can be checked in several declaration contexts.
+        spend_complexity_budget(rule_context, 1)
+        if variable in variable_definitions:
+            depends_on_scope = True
+            break
+    dependencies[signature] = depends_on_scope
+    return depends_on_scope
 
 
-def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> bool:
+def get_value_info(rule_context: RuleContext, value: ValueNode) -> ValueInfo:
+    """Keep variable names in the representation and compare their scopes separately."""
+    cached = rule_context.value_info_by_node.get(value)
+    if cached is not None:
+        return cached
+    variables: list[str] = []
+    comparison_key = json.dumps(
+        get_value_structure(value, variables),
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+    value_info = ValueInfo(comparison_key, variables)
+    rule_context.value_info_by_node[value] = value_info
+    return value_info
+
+
+VALUE_KIND_NAMES: dict[type[ValueNode], str] = {
+    BooleanValueNode: "BooleanValue",
+    EnumValueNode: "EnumValue",
+    FloatValueNode: "FloatValue",
+    IntValueNode: "IntValue",
+}
+
+
+def get_value_structure(node: ValueNode, variables: list[str]) -> list[Any]:
+    """Get a structure of nested lists that serializes like in GraphQL.js.
+
+    The kind names are the ones of GraphQL.js, and object fields are ordered by name.
+    The names of the variables are added to the given list.
+    """
+    if isinstance(node, VariableNode):
+        variables.append(node.name.value)
+        return ["Variable", node.name.value]
+    if isinstance(node, ObjectValueNode):
+        fields = sorted(node.fields, key=lambda field: field.name.value)
+        return [
+            "ObjectValue",
+            [
+                [field.name.value, get_value_structure(field.value, variables)]
+                for field in fields
+            ],
+        ]
+    if isinstance(node, ListValueNode):
+        return [
+            "ListValue",
+            [get_value_structure(value, variables) for value in node.values],
+        ]
+    if isinstance(node, StringValueNode):
+        return ["StringValue", node.value, node.block is True]
+    if isinstance(node, NullValueNode):
+        return ["NullValue", None]
+    return [VALUE_KIND_NAMES[type(node)], node.value]  # type: ignore
+
+
+def do_types_conflict(
+    rule_context: RuleContext, type1: GraphQLOutputType, type2: GraphQLOutputType
+) -> bool:
     """Check whether two types conflict
 
     Two types conflict if both types could not apply to a value simultaneously.
     Composite types are ignored as their individual field types will be compared later
     recursively. However List and Non-Null types must match.
     """
+    if type1 is type2:
+        return False
+    spend_complexity_budget(rule_context, 1)
     if is_list_type(type1):
         return (
-            do_types_conflict(type1.of_type, type2.of_type)
+            do_types_conflict(rule_context, type1.of_type, type2.of_type)
             if is_list_type(type2)
             else True
         )
@@ -884,7 +1241,7 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
         return True
     if is_non_null_type(type1):
         return (
-            do_types_conflict(type1.of_type, type2.of_type)
+            do_types_conflict(rule_context, type1.of_type, type2.of_type)
             if is_non_null_type(type2)
             else True
         )
@@ -895,76 +1252,68 @@ def do_types_conflict(type1: GraphQLOutputType, type2: GraphQLOutputType) -> boo
     return False
 
 
-def get_fields_and_fragment_spreads(
+def collect_fields(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    var_map: VariableMap | None,
-) -> FieldsAndFragmentSpreads:
+) -> CollectFieldsResult:
     """Get fields and referenced fragment spreads
 
     Given a selection set, return the collection of fields (a mapping of response name
     to field nodes and definitions) as well as a list of fragment spreads referenced
-    via fragment spreads.
+    via fragment spreads. Share source fields across scopes; only resolving spreads
+    depends on the scope.
     """
-    cached_fields_and_fragment_spreads = rule_context.cached_fields_and_fragment_spreads
-    cache = cached_fields_and_fragment_spreads.get(selection_set)
-    if cache is None:
-        cache = cached_fields_and_fragment_spreads[selection_set] = RefMap()
-    cached = cache.get(var_map)
-    if not cached:
-        node_and_defs: NodeAndDefCollection = {}
-        fragment_spreads: dict[str, FragmentSpread] = {}
-        collect_fields_and_fragment_spreads(
+    cached_collect_fields_results = rule_context.cached_collect_fields_results
+    # A programmatically built document can share a selection-set object between
+    # different parent types; their field definitions must not share a cache entry.
+    # Selection sets are compared by identity, because AST nodes are compared by value
+    # and equal selection sets can occur in different fragments of one document.
+    by_selection_set = cached_collect_fields_results.get(parent_type)
+    if by_selection_set is None:
+        by_selection_set = cached_collect_fields_results[parent_type] = RefMap()
+    collect_fields_result = by_selection_set.get(selection_set)
+    if collect_fields_result is None:
+        grouped_field_set: GroupedFieldSet = {}
+        spreads: list[FragmentSpreadNode] = []
+        collect_fields_impl(
             validation_context,
             parent_type,
             selection_set,
-            node_and_defs,
-            fragment_spreads,
-            var_map,
+            grouped_field_set,
+            spreads,
         )
-        cached = (node_and_defs, list(fragment_spreads.values()))
-        cache[var_map] = cached
-    return cached
+        collect_fields_result = CollectFieldsResult(grouped_field_set, spreads)
+        by_selection_set[selection_set] = collect_fields_result
+    return collect_fields_result
 
 
-def get_referenced_fields_and_fragment_spreads(
+def collect_fragment_fields(
     validation_context: ValidationContext,
     rule_context: RuleContext,
     fragment: FragmentDefinitionNode,
-    var_map: VariableMap | None,
-) -> FieldsAndFragmentSpreads:
+) -> CollectFieldsResult:
     """Get referenced fields and nested fragment spreads
 
     Given a reference to a fragment, return the represented collection of fields as well
     as a list of nested fragment spreads referenced via fragment spreads.
     """
-    cached_fields_and_fragment_spreads = rule_context.cached_fields_and_fragment_spreads
-    # Short-circuit building a type from the node if possible.
-    cache = cached_fields_and_fragment_spreads.get(fragment.selection_set)
-    if cache is not None:
-        cached = cache.get(var_map)
-        if cached:
-            return cached
-
     fragment_type = type_from_ast(validation_context.schema, fragment.type_condition)
-    return get_fields_and_fragment_spreads(
+    return collect_fields(
         validation_context,
         rule_context,
         fragment_type,
         fragment.selection_set,
-        var_map,
     )
 
 
-def collect_fields_and_fragment_spreads(
+def collect_fields_impl(
     validation_context: ValidationContext,
     parent_type: GraphQLNamedType | None,
     selection_set: SelectionSetNode,
-    node_and_defs: NodeAndDefCollection,
-    fragment_spreads: dict[str, FragmentSpread],
-    var_map: VariableMap | None,
+    grouped_field_set: GroupedFieldSet,
+    fragment_spreads: list[FragmentSpreadNode],
 ) -> None:
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
@@ -975,16 +1324,35 @@ def collect_fields_and_fragment_spreads(
                 else None
             )
             response_name = selection.alias.value if selection.alias else field_name
-            if not node_and_defs.get(response_name):
-                node_and_defs[response_name] = []
-            node_and_defs[response_name].append(
-                cast("NodeAndDef", (parent_type, selection, field_def))
+            field_details_list = grouped_field_set.get(response_name)
+            if not field_details_list:
+                field_details_list = grouped_field_set[response_name] = []
+            directives = selection.directives
+            stream_directive = (
+                next(
+                    (
+                        directive
+                        for directive in directives
+                        if directive.name.value == "stream"
+                    ),
+                    None,
+                )
+                if directives
+                else None
+            )
+            field_details_list.append(
+                FieldDetails(
+                    parent_type,
+                    selection,
+                    field_def,
+                    not selection.arguments
+                    and not selection.selection_set
+                    and stream_directive is None,
+                    stream_directive,
+                )
             )
         elif isinstance(selection, FragmentSpreadNode):
-            fragment_spread = get_fragment_spread(
-                validation_context, selection, var_map
-            )
-            fragment_spreads[fragment_spread.key] = fragment_spread
+            fragment_spreads.append(selection)
         elif isinstance(selection, InlineFragmentNode):  # pragma: no branch
             type_condition = selection.type_condition
             inline_fragment_type = (
@@ -992,64 +1360,146 @@ def collect_fields_and_fragment_spreads(
                 if type_condition
                 else parent_type
             )
-            collect_fields_and_fragment_spreads(
+            collect_fields_impl(
                 validation_context,
                 inline_fragment_type,
                 selection.selection_set,
-                node_and_defs,
+                grouped_field_set,
                 fragment_spreads,
-                var_map,
             )
+
+
+def get_fragment_spreads(
+    validation_context: ValidationContext,
+    rule_context: RuleContext,
+    collect_fields_result: CollectFieldsResult,
+    scope: VariableScope | None,
+) -> list[FragmentSpread]:
+    """Resolve the spreads of a source collection in the enclosing variable scope."""
+    by_scope = collect_fields_result.by_scope
+    if by_scope is None:
+        by_scope = collect_fields_result.by_scope = {}
+    cached = by_scope.get(scope)
+    if cached is not None:
+        return cached
+
+    spreads_by_scope: dict[
+        VariableScope | None, RefMap[FragmentDefinitionNode | None, FragmentSpread]
+    ] = {}
+    result: list[FragmentSpread] = []
+    for spread_node in collect_fields_result.spreads:
+        spread = get_fragment_spread(
+            validation_context, rule_context, spread_node, scope
+        )
+        by_definition = spreads_by_scope.get(spread.scope)
+        if by_definition is None:
+            by_definition = spreads_by_scope[spread.scope] = RefMap()
+        previous = by_definition.get(spread.definition)
+        if previous is None:
+            by_definition[spread.definition] = spread
+            result.append(spread)
+        else:
+            # Keep first-occurrence order and the last occurrence's error location.
+            previous.node = spread.node
+    by_scope[scope] = result
+    return result
 
 
 def get_fragment_spread(
     validation_context: ValidationContext,
+    rule_context: RuleContext,
     fragment_spread_node: FragmentSpreadNode,
-    var_map: VariableMap | None,
+    scope: VariableScope | None,
 ) -> FragmentSpread:
-    """Build a fragment spread with a conflict key and resolved fragment variables."""
-    key = fragment_spread_node.name.value
-    fragment_signature = validation_context.get_fragment_signature_by_name()(
-        fragment_spread_node.name.value
+    """Build a fragment spread with its fragment definition and variable scope."""
+    # New enclosing scopes can repeat spread resolution, including cache hits.
+    spend_complexity_budget(rule_context, 1)
+    fragment_spread_info = rule_context.fragment_spread_info_by_node.get(
+        fragment_spread_node
     )
-    if fragment_signature is not None:
-        arg_map: dict[str, ValueNode] = {}
-        if fragment_spread_node.arguments:
-            for arg in fragment_spread_node.arguments:
-                arg_map[arg.name.value] = arg.value
-        key += "("
-        for var_name in fragment_signature.variable_definitions:
-            value = arg_map.get(var_name)
-            if value:
-                scoped_value = (
-                    replace_fragment_variables(value, var_map) if var_map else value
-                )
-                key += var_name + ": " + stringify_value(scoped_value)
-        key += ")"
+    if fragment_spread_info is None:
+        signature = validation_context.get_fragment_signature_by_name()(
+            fragment_spread_node.name.value
+        )
+        argument_info = get_argument_info(fragment_spread_node.arguments)
+        parts: list[str] = []
+        values: list[ValueInfo] = []
+        if signature and argument_info is not None:
+            arg_map = argument_info.values
+            variable_definitions = signature.variable_definitions
+            # Order only supplied, declared arguments, once per source spread.
+            for name in sorted(
+                name for name in arg_map if name in variable_definitions
+            ):
+                argument = get_value_info(rule_context, arg_map[name])
+                parts += (name, argument.comparison_key)
+                if argument.variables:
+                    values.append(argument)
+        fragment_spread_info_key = json.dumps(
+            [signature.definition.name.value if signature else None, parts],
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        fragment_spread_info = rule_context.fragment_spread_info_by_key.get(
+            fragment_spread_info_key
+        )
+        if fragment_spread_info is None:
+            fragment_spread_info = FragmentSpreadInfo(signature, values)
+            rule_context.fragment_spread_info_by_key[fragment_spread_info_key] = (
+                fragment_spread_info
+            )
+        rule_context.fragment_spread_info_by_node[fragment_spread_node] = (
+            fragment_spread_info
+        )
+
+    # The source key fixes the variable names. Any local reference identifies
+    # the enclosing scope; otherwise all references are operation variables.
+    variable_scope = None
+    for value in fragment_spread_info.values:
+        # Enclosing scopes can revisit these prepared argument values.
+        spend_complexity_budget(rule_context, 1)
+        if uses_local_variables(rule_context, value, scope):
+            variable_scope = scope
+            break
+    by_scope = fragment_spread_info.by_scope
+    signature = fragment_spread_info.signature
+    if variable_scope in by_scope:
+        fragment_scope = by_scope[variable_scope]
+    else:
+        fragment_scope = by_scope[variable_scope] = get_variable_scope(signature)
     return FragmentSpread(
-        key=key,
-        node=fragment_spread_node,
-        var_map=get_var_map(fragment_signature, key),
+        fragment_spread_node,
+        fragment_scope,
+        signature.definition if signature else None,
     )
 
 
-def get_var_map(
-    fragment_signature: FragmentSignature | None, key: str = ""
-) -> VariableMap | None:
-    """Get a map of fragment variables to variables unique to the fragment scope."""
+def get_variable_scope(
+    fragment_signature: FragmentSignature | None,
+) -> VariableScope | None:
     if not fragment_signature or not fragment_signature.variable_definitions:
         return None
-    return {
-        variable_name: VariableNode(
-            name=NameNode(value=json.dumps([key, variable_name], separators=(",", ":")))
-        )
-        for variable_name in fragment_signature.variable_definitions
-    }
+    return VariableScope(fragment_signature)
 
 
-def get_fragment_spread_description(node: FragmentSpreadNode) -> str:
+def get_fragment_spread_description(
+    rule_context: RuleContext, node: FragmentSpreadNode
+) -> str:
     """Print the fragment spread without its directives and the leading dots."""
-    return print_ast(FragmentSpreadNode(name=node.name, arguments=node.arguments))[3:]
+    name = maybe_abbreviate(node.name.value)
+    # Use the cached representation's length to print only small arguments.
+    size = 1
+    for argument in node.arguments or ():
+        size += (
+            2
+            + len(argument.name.value)
+            + len(get_value_info(rule_context, argument.value).comparison_key)
+        )
+        if size > MAX_FRAGMENT_ARGUMENT_SIZE:
+            return name + "(...)"
+    return print_ast(
+        FragmentSpreadNode(name=NameNode(value=name), arguments=node.arguments)
+    )[3:]
 
 
 def subfield_conflicts(
@@ -1061,12 +1511,66 @@ def subfield_conflicts(
     Conflict.
     """
     if conflicts:
-        return (
-            (response_name, [conflict[0] for conflict in conflicts]),
-            list(chain([node1], *[conflict[1] for conflict in conflicts])),
-            list(chain([node2], *[conflict[2] for conflict in conflicts])),
+        # Abbreviate while combining child reasons, not after expanding a whole
+        # tree of conflicts.
+        message = ""
+        for name, reason, _fields1, _fields2 in conflicts:
+            message += (
+                f"{' and ' if message else ''}"
+                f"subfields '{maybe_abbreviate(name)}' conflict because {reason}"
+            )
+            if len(message) > MAX_CONFLICT_DETAIL_LENGTH:
+                break
+        return Conflict(
+            response_name,
+            maybe_abbreviate(message),
+            collect_conflict_nodes(node1, [conflict.fields1 for conflict in conflicts]),
+            collect_conflict_nodes(node2, [conflict.fields2 for conflict in conflicts]),
         )
     return None  # no conflict
+
+
+def collect_conflict_nodes(
+    node: FieldNode, conflict_fields: list[list[FieldNode]]
+) -> list[FieldNode]:
+    nodes = [node]
+    for fields in conflict_fields:
+        remaining = MAX_CONFLICT_NODES - len(nodes)
+        # Locations start with the enclosing field. Take from the end so that
+        # truncation favors the deeper fields involved in the conflict.
+        nodes += fields[-remaining:]
+        if len(nodes) == MAX_CONFLICT_NODES:
+            break
+    return nodes
+
+
+def get_complexity_budget() -> int:
+    """Get the initial complexity budget for the validation of a document."""
+    if MAX_FIELD_COMPARISONS != 250_000:
+        warnings.warn(
+            "MAX_FIELD_COMPARISONS is deprecated, use MAX_COMPLEXITY_BUDGET instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return 2 * MAX_FIELD_COMPARISONS
+    return MAX_COMPLEXITY_BUDGET
+
+
+def spend_complexity_budget(rule_context: RuleContext, cost: int) -> None:
+    rule_context.remaining_complexity_budget -= cost
+    if rule_context.remaining_complexity_budget < 0:
+        from ..validate import ValidationAbortedError
+
+        msg = "Validation aborted."
+        raise ValidationAbortedError(msg)
+
+
+def maybe_abbreviate(text: str) -> str:
+    return (
+        text[:MAX_CONFLICT_DETAIL_LENGTH] + "..."
+        if len(text) > MAX_CONFLICT_DETAIL_LENGTH
+        else text
+    )
 
 
 class OrderedPairSet:
@@ -1077,33 +1581,33 @@ class OrderedPairSet:
     Provides a third argument for has/add to allow flagging the pair as weakly or
     strongly present within the collection.
 
-    The first element is matched by object identity (its ``id``), since field maps
-    are unhashable mappings that are kept alive for the duration of the validation.
+    The elements are matched by object identity (their ``id``), because AST nodes are
+    compared by value. They are kept alive for the duration of the validation.
     """
 
     __slots__ = ("_data",)
 
-    _data: dict[int, dict[str, bool]]
+    _data: dict[int, dict[int, bool]]
 
     def __init__(self) -> None:
         self._data = {}
 
-    def has(self, a: NodeAndDefCollection, b: str, weakly_present: bool) -> bool:
+    def has(self, a: object, b: object, weakly_present: bool) -> bool:
         map_ = self._data.get(id(a))
         if map_ is None:
             return False
-        result = map_.get(b)
+        result = map_.get(id(b))
         if result is None:
             return False
 
         return True if weakly_present else weakly_present == result
 
-    def add(self, a: NodeAndDefCollection, b: str, weakly_present: bool) -> None:
+    def add(self, a: object, b: object, weakly_present: bool) -> None:
         map_ = self._data.get(id(a))
         if map_ is None:
-            self._data[id(a)] = {b: weakly_present}
+            self._data[id(a)] = {id(b): weakly_present}
         else:
-            map_[b] = weakly_present
+            map_[id(b)] = weakly_present
 
 
 class PairSet:
@@ -1112,33 +1616,18 @@ class PairSet:
     A way to keep track of pairs of things when the ordering of the pair doesn't matter.
     """
 
-    __slots__ = ("_data",)
-
-    _data: dict[str, dict[str, bool]]
+    __slots__ = ("_ordered_pair_set",)
 
     def __init__(self) -> None:
-        self._data = {}
+        self._ordered_pair_set = OrderedPairSet()
 
-    def has(self, a: str, b: str, are_mutually_exclusive: bool) -> bool:
-        key1, key2 = (a, b) if a < b else (b, a)
+    def has(self, a: object, b: object, weakly_present: bool) -> bool:
+        # weakly_present being False is a superset of being True, hence if we want to
+        # know if this PairSet "has" these two with no exclusivity, we have to ensure
+        # it was added as such.
+        return self._ordered_pair_set.has(
+            a, b, weakly_present
+        ) or self._ordered_pair_set.has(b, a, weakly_present)
 
-        map_ = self._data.get(key1)
-        if map_ is None:
-            return False
-        result = map_.get(key2)
-        if result is None:
-            return False
-
-        # are_mutually_exclusive being False is a superset of being True,
-        # hence if we want to know if this PairSet "has" these two with no exclusivity,
-        # we have to ensure it was added as such.
-        return True if are_mutually_exclusive else are_mutually_exclusive == result
-
-    def add(self, a: str, b: str, are_mutually_exclusive: bool) -> None:
-        key1, key2 = (a, b) if a < b else (b, a)
-
-        map_ = self._data.get(key1)
-        if map_ is None:
-            self._data[key1] = {key2: are_mutually_exclusive}
-        else:
-            map_[key2] = are_mutually_exclusive
+    def add(self, a: object, b: object, weakly_present: bool) -> None:
+        self._ordered_pair_set.add(a, b, weakly_present)

@@ -21,10 +21,11 @@ from ..language import (
     VisitorAction,
     visit,
 )
+from ..pyutils import RefMap
 from ..utilities import TypeInfo, TypeInfoVisitor
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Collection
 
     from ..error import GraphQLError
     from ..type import (
@@ -42,6 +43,7 @@ if TYPE_CHECKING:
 from typing import TypeAlias
 
 __all__ = [
+    "MAX_FRAGMENT_WORK",
     "ASTValidationContext",
     "SDLValidationContext",
     "ValidationContext",
@@ -50,6 +52,13 @@ __all__ = [
 ]
 
 NodeWithSelectionSet: TypeAlias = OperationDefinitionNode | FragmentDefinitionNode
+
+# The maximum amount of work spent on fragments shared by the operations of a single
+# document, counted in fragment spreads and variable usages. Once it is exhausted,
+# validation is aborted with a "Validation aborted." error. Unlike GraphQL.js, the
+# budget can be raised or lowered by assigning to
+# ``graphql.validation.validation_context.MAX_FRAGMENT_WORK``.
+MAX_FRAGMENT_WORK = 50_000
 
 
 class VariableUsage(NamedTuple):
@@ -129,15 +138,17 @@ class ASTValidationContext:
     document: DocumentNode
     """The document AST being validated."""
 
+    _remaining_fragment_work: int
     _fragments: dict[str, FragmentDefinitionNode] | None
     _fragment_spreads: dict[SelectionSetNode, list[FragmentSpreadNode]]
     _recursively_referenced_fragments: dict[
-        OperationDefinitionNode, list[FragmentDefinitionNode]
+        frozenset[str], list[FragmentDefinitionNode]
     ]
 
     def __init__(
         self, ast: DocumentNode, on_error: Callable[[GraphQLError], None]
     ) -> None:
+        self._remaining_fragment_work = MAX_FRAGMENT_WORK
         self.document = ast
         self.on_error = on_error  # type: ignore
         self._fragments = None
@@ -239,6 +250,8 @@ class ASTValidationContext:
             self._fragment_spreads[node] = spreads
         return spreads
 
+    # TODO: In the next major version, accept multiple operations here and
+    # remove get_recursively_referenced_fragments_for_operations.
     def get_recursively_referenced_fragments(
         self, operation: OperationDefinitionNode
     ) -> list[FragmentDefinitionNode]:
@@ -260,28 +273,80 @@ class ASTValidationContext:
         >>> [fragment.name.value for fragment in fragments]
         ['A', 'B']
         """
-        fragments = self._recursively_referenced_fragments.get(operation)
+        return self.get_recursively_referenced_fragments_for_operations([operation])
+
+    def get_recursively_referenced_fragments_for_operations(
+        self, operations: Collection[OperationDefinitionNode]
+    ) -> list[FragmentDefinitionNode]:
+        """Get all fragments referenced by the operations, directly or indirectly.
+
+        :param operations: The operation definitions to inspect.
+        :returns: The fragment definitions reachable from any of the operations.
+
+        >>> from graphql import parse
+        >>> from graphql.validation import ASTValidationContext
+        >>> document = parse('''
+        ...     query One { ...A }
+        ...     query Two { ...B }
+        ...     fragment A on Query { greeting }
+        ...     fragment B on Query { farewell }
+        ...     fragment C on Query { greeting }
+        ... ''')
+        >>> context = ASTValidationContext(document, print)
+        >>> operations = document.definitions[:2]
+        >>> fragments = context.get_recursively_referenced_fragments_for_operations(
+        ...     operations)
+        >>> sorted(fragment.name.value for fragment in fragments)
+        ['A', 'B']
+        """
+        get_fragment_spreads = self.get_fragment_spreads
+        # keep the names in the order in which they are spread
+        fragment_names = list(
+            dict.fromkeys(
+                spread.name.value
+                for operation in operations
+                for spread in get_fragment_spreads(operation.selection_set)
+            )
+        )
+        key = frozenset(fragment_names)
+        fragments = self._recursively_referenced_fragments.get(key)
         if fragments is None:
             fragments = []
             append_fragment = fragments.append
-            collected_names: set[str] = set()
+            spend_fragment_work = self.spend_fragment_work
+            spend_fragment_work(len(fragment_names))
+            collected_names = set(fragment_names)
             add_name = collected_names.add
-            nodes_to_visit = [operation.selection_set]
-            append_node = nodes_to_visit.append
-            pop_node = nodes_to_visit.pop
+            # the list grows while it is iterated, like a set in JavaScript
+            append_name = fragment_names.append
             get_fragment = self.get_fragment
-            get_fragment_spreads = self.get_fragment_spreads
-            while nodes_to_visit:
-                visited_node = pop_node()
-                for spread in get_fragment_spreads(visited_node):
-                    frag_name = spread.name.value
-                    if frag_name not in collected_names:
-                        add_name(frag_name)
-                        if fragment := get_fragment(frag_name):
-                            append_fragment(fragment)
-                            append_node(fragment.selection_set)
-            self._recursively_referenced_fragments[operation] = fragments
+            for frag_name in fragment_names:
+                if fragment := get_fragment(frag_name):
+                    append_fragment(fragment)
+                    spreads = get_fragment_spreads(fragment.selection_set)
+                    spend_fragment_work(len(spreads))
+                    for spread in spreads:
+                        spread_name = spread.name.value
+                        if spread_name not in collected_names:
+                            add_name(spread_name)
+                            append_name(spread_name)
+            self._recursively_referenced_fragments[key] = fragments
         return fragments
+
+    def spend_fragment_work(self, cost: int) -> None:
+        """Spend work on shared fragments and abort validation when exhausted.
+
+        :param cost: The amount of work to spend.
+        :raises ValidationAbortedError: If the budget for fragment work is exhausted.
+
+        :meta private:
+        """
+        self._remaining_fragment_work -= cost
+        if self._remaining_fragment_work < 0:
+            from .validate import ValidationAbortedError
+
+            msg = "Validation aborted."
+            raise ValidationAbortedError(msg)
 
 
 class SDLValidationContext(ASTValidationContext):
@@ -359,6 +424,7 @@ class ValidationContext(ASTValidationContext):
     _type_info: TypeInfo
     _variable_usages: dict[NodeWithSelectionSet, list[VariableUsage]]
     _recursive_variable_usages: dict[OperationDefinitionNode, list[VariableUsage]]
+    _fragment_variable_usages: RefMap[list[FragmentDefinitionNode], list[VariableUsage]]
     _hide_suggestions: bool
     _allow_empty_selection_sets: bool
 
@@ -376,6 +442,7 @@ class ValidationContext(ASTValidationContext):
         self._type_info = type_info
         self._variable_usages = {}
         self._recursive_variable_usages = {}
+        self._fragment_variable_usages = RefMap()
         self._hide_suggestions = hide_suggestions
         self._allow_empty_selection_sets = allow_empty_selection_sets
 
@@ -450,9 +517,20 @@ class ValidationContext(ASTValidationContext):
         usages = self._recursive_variable_usages.get(operation)
         if usages is None:
             get_variable_usages = self.get_variable_usages
-            usages = get_variable_usages(operation)
-            for fragment in self.get_recursively_referenced_fragments(operation):
-                usages.extend(get_variable_usages(fragment))
+            fragments = self.get_recursively_referenced_fragments(operation)
+            fragment_usages = self._fragment_variable_usages.get(fragments)
+            spend_fragment_work = self.spend_fragment_work
+            if fragment_usages is None:
+                spend_fragment_work(len(fragments))
+                fragment_usages = []
+                extend_usages = fragment_usages.extend
+                for fragment in fragments:
+                    local_usages = get_variable_usages(fragment)
+                    spend_fragment_work(len(local_usages))
+                    extend_usages(local_usages)
+                self._fragment_variable_usages[fragments] = fragment_usages
+            spend_fragment_work(len(fragment_usages))
+            usages = [*get_variable_usages(operation), *fragment_usages]
             self._recursive_variable_usages[operation] = usages
         return usages
 

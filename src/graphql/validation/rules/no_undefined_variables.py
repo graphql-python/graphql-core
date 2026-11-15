@@ -5,10 +5,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ...error import GraphQLError
-from . import ValidationContext, ValidationRule
+from . import ValidationRule
 
 if TYPE_CHECKING:
-    from ...language import OperationDefinitionNode, VariableDefinitionNode
+    from ...language import OperationDefinitionNode
 
 __all__ = ["NoUndefinedVariablesRule"]
 
@@ -35,32 +35,23 @@ class NoUndefinedVariablesRule(ValidationRule):
     []
     """
 
-    def __init__(self, context: ValidationContext) -> None:
-        super().__init__(context)
-        self.defined_variable_names: set[str] = set()
-
-    def enter_operation_definition(self, *_args: Any) -> None:
+    def enter_operation_definition(
+        self, operation: OperationDefinitionNode, *_args: Any
+    ) -> None:
         """Called when entering an operation definition node.
 
         :meta private:
         """
-        self.defined_variable_names.clear()
-
-    def leave_operation_definition(
-        self, operation: OperationDefinitionNode, *_args: Any
-    ) -> None:
-        """Called when leaving an operation definition node.
-
-        :meta private:
-        """
+        variable_name_defined = {
+            node.variable.name.value for node in operation.variable_definitions or ()
+        }
         usages = self.context.get_recursive_variable_usages(operation)
-        defined_variables = self.defined_variable_names
         for usage in usages:
-            node = usage.node
             if usage.fragment_variable_definition:
                 continue
+            node = usage.node
             var_name = node.name.value
-            if var_name not in defined_variables:
+            if var_name not in variable_name_defined:
                 self.report_error(
                     GraphQLError(
                         f"Variable '${var_name}' is not defined"
@@ -70,12 +61,3 @@ class NoUndefinedVariablesRule(ValidationRule):
                         [node, operation],
                     )
                 )
-
-    def enter_variable_definition(
-        self, node: VariableDefinitionNode, *_args: Any
-    ) -> None:
-        """Called when entering a variable definition node.
-
-        :meta private:
-        """
-        self.defined_variable_names.add(node.variable.name.value)

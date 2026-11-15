@@ -1,6 +1,12 @@
 from functools import partial
 
-from graphql.validation import NoUnusedVariablesRule
+from graphql.language import parse
+from graphql.utilities import build_schema
+from graphql.validation import (
+    FieldsOnCorrectTypeRule,
+    NoUnusedVariablesRule,
+    validate,
+)
 
 from .harness import assert_validation_errors
 
@@ -282,3 +288,36 @@ def describe_validate_no_unused_variables():
                 },
             ],
         )
+
+    def reports_before_errors_inside_the_definition():
+        # A GraphQL-core-only test: like GraphQL.js, the rule reports when entering
+        # an operation or fragment, before errors found inside of it.
+        schema = build_schema("type Query { a: Int }")
+        document = parse(
+            """
+            query Q($a: String) { unknownField ...F(b: 1) }
+            fragment F($b: Int) on Query { otherField }
+            """,
+            experimental_fragment_arguments=True,
+        )
+        errors = validate(
+            schema, document, [FieldsOnCorrectTypeRule, NoUnusedVariablesRule]
+        )
+        assert errors == [
+            {
+                "message": "Variable '$a' is never used in operation 'Q'.",
+                "locations": [(2, 21)],
+            },
+            {
+                "message": "Cannot query field 'unknownField' on type 'Query'.",
+                "locations": [(2, 35)],
+            },
+            {
+                "message": "Variable '$b' is never used in fragment 'F'.",
+                "locations": [(3, 24)],
+            },
+            {
+                "message": "Cannot query field 'otherField' on type 'Query'.",
+                "locations": [(3, 44)],
+            },
+        ]

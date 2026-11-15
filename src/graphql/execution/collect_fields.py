@@ -32,6 +32,8 @@ from .values import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from .get_variable_signature import GraphQLVariableSignature
 
 __all__ = [
@@ -44,6 +46,7 @@ __all__ = [
     "GroupedFieldSet",
     "collect_fields",
     "collect_subfields",
+    "visit_selection_sets",
 ]
 
 
@@ -88,6 +91,7 @@ class CollectFieldsContext(NamedTuple):
     hide_suggestions: bool
     forbidden_directive_instances: list[DirectiveNode]
     forbid_skip_and_include: bool
+    on_selection_set: Callable[[SelectionSetNode], None] | None = None
 
 
 class CollectedFields(NamedTuple):
@@ -106,6 +110,7 @@ def collect_fields(
     operation: OperationDefinitionNode,
     hide_suggestions: bool = False,
     forbid_skip_and_include: bool = False,
+    on_selection_set: Callable[[SelectionSetNode], None] | None = None,
 ) -> CollectedFields:
     """Collect fields.
 
@@ -129,9 +134,10 @@ def collect_fields(
         hide_suggestions,
         [],
         forbid_skip_and_include,
+        on_selection_set,
     )
 
-    collect_fields_impl(
+    visit_selection_sets(
         context, operation.selection_set, grouped_field_set, new_defer_usages
     )
     return CollectedFields(
@@ -176,7 +182,7 @@ def collect_subfields(
     for field_detail in field_details_list:
         node = field_detail.node
         if node.selection_set:
-            collect_fields_impl(
+            visit_selection_sets(
                 context,
                 node.selection_set,
                 sub_grouped_field_set,
@@ -190,7 +196,7 @@ def collect_subfields(
     )
 
 
-def collect_fields_impl(
+def visit_selection_sets(
     context: CollectFieldsContext,
     selection_set: SelectionSetNode,
     grouped_field_set: dict[str, list[FieldDetails]],
@@ -198,7 +204,10 @@ def collect_fields_impl(
     defer_usage: DeferUsage | None = None,
     fragment_variable_values: FragmentVariableValues | None = None,
 ) -> None:
-    """Collect fields (internal implementation)."""
+    """Collect the fields of a selection set and the selection sets it contains.
+
+    For internal use only.
+    """
     (
         schema,
         fragments,
@@ -209,7 +218,11 @@ def collect_fields_impl(
         hide_suggestions,
         _forbidden_directive_instances,
         _forbid_skip_and_include,
+        on_selection_set,
     ) = context
+
+    if on_selection_set:
+        on_selection_set(selection_set)
 
     for selection in selection_set.selections:
         if isinstance(selection, FieldNode):
@@ -235,7 +248,7 @@ def collect_fields_impl(
             )
 
             if new_defer_usage is None:
-                collect_fields_impl(
+                visit_selection_sets(
                     context,
                     selection.selection_set,
                     grouped_field_set,
@@ -245,7 +258,7 @@ def collect_fields_impl(
                 )
             else:
                 new_defer_usages.append(new_defer_usage)
-                collect_fields_impl(
+                visit_selection_sets(
                     context,
                     selection.selection_set,
                     grouped_field_set,
@@ -307,7 +320,7 @@ def collect_fields_impl(
                     hide_suggestions,
                 )
 
-            collect_fields_impl(
+            visit_selection_sets(
                 context,
                 fragment.definition.selection_set,
                 grouped_field_set,

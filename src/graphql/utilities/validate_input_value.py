@@ -14,8 +14,8 @@ from ..language import (
     ObjectValueNode,
     ValueNode,
     VariableNode,
-    print_ast,
 )
+from ..language.printer import print_for_error
 from ..pyutils import (
     Path,
     Undefined,
@@ -440,7 +440,7 @@ def validate_input_literal_impl(
             report_invalid_literal(
                 context.on_error,
                 f"Expected value of type '{type_}' to be an object,"
-                f" found: {print_ast(value_node)}.",
+                f" found: {print_for_error(value_node)}.",
                 value_node,
                 path,
             )
@@ -456,7 +456,7 @@ def validate_input_literal_impl(
                     report_invalid_literal(
                         context.on_error,
                         f"Expected value of type '{type_}' to include required"
-                        f" field '{field_name}', found: {print_ast(value_node)}.",
+                        f" field '{field_name}', found: {print_for_error(value_node)}.",
                         value_node,
                         path,
                     )
@@ -518,7 +518,7 @@ def validate_input_literal_impl(
                     f"Expected value of type '{type_}' not to include unknown"
                     f" field '{field_name}'"
                     + (f".{suggestion} Found" if suggestion else ", found")
-                    + f": {print_ast(value_node)}.",
+                    + f": {print_for_error(value_node)}.",
                     field_node,
                     path,
                 )
@@ -589,7 +589,7 @@ def validate_input_literal_impl(
                     if caught_error is not None
                     else ", found"
                 )
-                + f": {print_ast(value_node)}.",
+                + f": {print_for_error(value_node)}.",
                 value_node,
                 path,
                 caught_error,

@@ -25,6 +25,7 @@ from ..pyutils.is_awaitable import (
 from .async_iterables import map_async_iterable
 from .collect_fields import collect_fields
 from .executor import (
+    SELECTIONS_NESTED_TOO_DEEPLY,
     UNEXPECTED_MULTIPLE_PAYLOADS,
     AsyncWorkFinishedInfo,
     ExecutionHooks,
@@ -998,6 +999,13 @@ def create_source_event_stream(
         event_stream = execute_subscription(executor)
     except GraphQLError as error:
         return ExecutionResult(None, errors=[error])
+    except RecursionError:
+        # This error is never raised, so it has no traceback or context
+        # that would keep all the frames of the recursion alive.
+        return ExecutionResult(
+            None,
+            errors=[GraphQLError(SELECTIONS_NESTED_TOO_DEEPLY, executor.operation)],
+        )
 
     if executor.is_awaitable(event_stream):
 

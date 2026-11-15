@@ -12,9 +12,15 @@ from typing import TYPE_CHECKING
 import pytest
 
 from graphql.error import GraphQLError
+from graphql.execution import (
+    ExperimentalIncrementalExecutionResults,
+    experimental_execute_incrementally,
+)
 from graphql.execution.incremental import IncrementalPublisher
 from graphql.execution.incremental.incremental_publisher import ensure_graphql_error
+from graphql.language import parse
 from graphql.pyutils import AbortController
+from graphql.utilities import build_schema
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Sequence
@@ -96,6 +102,33 @@ def describe_incremental_publisher():
         assert work_queue.cancelled
         assert context.cancelled
         assert context.hook_run
+
+    async def builds_the_path_list_once_for_defers_at_the_same_path():
+        schema = build_schema("""
+            type A { b: String, c: String }
+            type Query { a: A }
+            """)
+        document = parse("""
+            {
+              a {
+                ... @defer(label: "B") { b }
+                ... @defer(label: "C") { c }
+              }
+            }
+            """)
+
+        result = experimental_execute_incrementally(
+            schema, document, {"a": {"b": "b", "c": "c"}}
+        )
+
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        pending = result.initial_result.pending
+        assert [(item.path, item.label) for item in pending] == [
+            (["a"], "B"),
+            (["a"], "C"),
+        ]
+        assert pending[0].path is pending[1].path
+        await result.subsequent_results.aclose()
 
     def describe_ensure_graphql_error():
         def passes_graphql_errors_through():

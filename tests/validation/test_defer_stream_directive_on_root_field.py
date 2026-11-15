@@ -422,3 +422,21 @@ def describe_defer_stream_on_root_field():
             [],
             schema=query_only_schema,
         )
+
+    def fragment_spread_cycle_shared_by_multiple_root_mutations():
+        assert_valid(
+            """
+            mutation First {
+              ...rootFragment
+            }
+            mutation Second {
+              ...rootFragment
+            }
+            fragment rootFragment on MutationRoot {
+              ...otherFragment
+            }
+            fragment otherFragment on MutationRoot {
+              ...rootFragment
+            }
+            """
+        )
