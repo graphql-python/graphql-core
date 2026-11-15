@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 
 __all__ = ["Lexer", "is_punctuator_token_kind"]
 
+# NameContinue is ASCII letters, digits and underscore only
+_re_name_continue = re.compile("[0-9A-Z_a-z]*")
+
 
 class EscapeSequence(NamedTuple):
     """The string value and lexed size of an escape sequence."""
@@ -70,8 +73,6 @@ class Lexer:
         self.line, self.line_start = 1, 0
         self._max_tokens = self._comment_budget = self._max_comments = None
         self._comment_count = 0
-        # NameContinue is ASCII letters, digits and underscore only
-        self._match_name_continue = re.compile("[0-9A-Z_a-z]*").match
 
     def advance(self) -> Token:
         """Advance the token stream to the next non-ignored token.
@@ -166,7 +167,9 @@ class Lexer:
 
         :meta private:
         """
-        return Token(kind, start, end, self.line, 1 + start - self.line_start, value)
+        line = self.line
+        col = 1 + start - self.line_start
+        return Token(kind, start, end, line, col, value)
 
     def read_next_token(self, start: int) -> Token:
         """Get the next token from the source starting at the given position.
@@ -664,8 +667,8 @@ class Lexer:
         :meta private:
         """
         body = self.source.body
-        # the pattern can match an empty string, so the match is never None
-        position = self._match_name_continue(body, start + 1).end()  # type: ignore[union-attr]
+        # NameContinue* can match the empty string, so the match is never None
+        position = _re_name_continue.match(body, start + 1).end()  # type: ignore[union-attr]
 
         return self.create_token(TokenKind.NAME, start, position, body[start:position])
 
