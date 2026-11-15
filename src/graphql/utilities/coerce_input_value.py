@@ -224,14 +224,10 @@ def coerce_input_literal(
     if is_non_null_type(type_):
         if isinstance(value_node, NullValueNode):
             return Undefined  # Invalid: intentionally return no value.
-        return coerce_input_literal(
-            value_node,
-            type_.of_type,
-            variable_values,
-            fragment_variable_values,
-        )
-
-    if isinstance(value_node, NullValueNode):
+        # Unlike GraphQL.js, we unwrap the type in place instead of recursing,
+        # because function calls are costly in Python.
+        type_ = type_.of_type
+    elif isinstance(value_node, NullValueNode):
         return None  # Explicitly return the value null.
 
     if is_list_type(type_):
