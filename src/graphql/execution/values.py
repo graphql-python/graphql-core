@@ -28,7 +28,9 @@ from ..type import (
     GraphQLDirective,
     GraphQLField,
     GraphQLSchema,
+    get_nullable_type,
     is_input_object_type,
+    is_leaf_type,
     is_list_type,
     is_non_null_type,
     is_required_argument,
@@ -223,7 +225,11 @@ def input_is_nested_too_deeply(value: Any, type_: GraphQLInputType) -> bool:
             type_ = type_.of_type
         if is_list_type(type_):
             items = value if isinstance(value, (list, tuple)) else [value]
-            stack.extend((item, type_.of_type, depth + 1) for item in items)
+            item_type = type_.of_type
+            if not is_leaf_type(get_nullable_type(item_type)):
+                stack.extend((item, item_type, depth + 1) for item in items)
+            elif items and depth >= MAX_NESTING_DEPTH:
+                return True  # the leaf items would be nested too deeply
         elif is_input_object_type(type_) and isinstance(value, dict):
             stack.extend(
                 (value[name], field.type, depth + 1)
