@@ -29,6 +29,8 @@ def assert_name(name: str) -> str:
     if not name:
         msg = "Expected name to be a non-empty string."
         raise GraphQLError(msg)
+    if name.isascii() and name.isidentifier():
+        return name  # an ASCII identifier is exactly a GraphQL name
     if not all(is_name_continue(char) for char in name[1:]):
         msg = f"Names must only contain [_a-zA-Z0-9] but {name!r} does not."
         raise GraphQLError(msg)

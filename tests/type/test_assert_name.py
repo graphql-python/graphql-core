@@ -8,6 +8,16 @@ def describe_assert_name():
     def pass_through_valid_name():
         assert assert_name("_ValidName123") == "_ValidName123"
 
+    def pass_through_valid_name_without_the_shortcut():
+        class Name(str):
+            __slots__ = ()
+
+            def isidentifier(self) -> bool:
+                return False
+
+        name = Name("_ValidName123")
+        assert assert_name(name) is name
+
     def throws_on_empty_strings():
         with pytest.raises(GraphQLError) as exc_info:
             assert_name("")
