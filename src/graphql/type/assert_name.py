@@ -1,6 +1,7 @@
 """Assertions for naming conventions"""
 
 from ..error import GraphQLError
+from ..language.character_classes import is_name_continue, is_name_start
 
 __all__ = ["assert_enum_value_name", "assert_name"]
 
@@ -19,10 +20,6 @@ def assert_name(name: str) -> str:
     ...
     graphql.error.graphql_error.GraphQLError: Names must start with [_a-zA-Z] ...
     """
-    # an ASCII identifier is exactly a GraphQL name: [_a-zA-Z][_a-zA-Z0-9]*
-    if isinstance(name, str) and name.isascii() and name.isidentifier():
-        return name
-    # only invalid names get here, so find out what is wrong with them
     if name is None:
         msg = "Must provide name."
         raise TypeError(msg)
@@ -32,13 +29,15 @@ def assert_name(name: str) -> str:
     if not name:
         msg = "Expected name to be a non-empty string."
         raise GraphQLError(msg)
-    # report a bad tail first, since a valid tail implies a bad first char
-    tail = name[1:].replace("_", "")
-    if tail and not (tail.isascii() and tail.isalnum()):
+    if name.isascii() and name.isidentifier():
+        return name  # an ASCII identifier is exactly a GraphQL name
+    if not all(is_name_continue(char) for char in name[1:]):
         msg = f"Names must only contain [_a-zA-Z0-9] but {name!r} does not."
         raise GraphQLError(msg)
-    msg = f"Names must start with [_a-zA-Z] but {name!r} does not."
-    raise GraphQLError(msg)
+    if not is_name_start(name[0]):
+        msg = f"Names must start with [_a-zA-Z] but {name!r} does not."
+        raise GraphQLError(msg)
+    return name
 
 
 def assert_enum_value_name(name: str) -> str:
