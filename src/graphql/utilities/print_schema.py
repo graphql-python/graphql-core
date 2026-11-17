@@ -396,10 +396,12 @@ def print_description(
 
     # Unlike GraphQL.js, we print the string directly instead of printing a
     # StringValueNode, because running the AST printer for one node is costly.
-    if is_printable_as_block_string(description):
-        block_string = print_block_string(description)
-    else:
-        block_string = print_string(description)
+    # Keep this in sync with print_string_value in the printer.
+    block_string = (
+        print_block_string(description)
+        if is_printable_as_block_string(description)
+        else print_string(description)
+    )
 
     prefix = "\n" + indentation if indentation and not first_in_block else indentation
 
