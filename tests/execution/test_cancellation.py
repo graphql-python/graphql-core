@@ -1262,100 +1262,100 @@ def describe_execute_cancellation():
         assert return_called is True
 
 
-@pytest.mark.parametrize("operation", ["query", "subscription"])
-async def test_cancels_pending_work_when_the_consumer_task_is_cancelled(operation):
-    controller = AbortController()
-    started = Event()
-    finished = Event()
-    pending_task: Future | None = None
+def describe_consumer_cancellation():
+    @pytest.mark.parametrize("operation", ["query", "subscription"])
+    async def cancels_pending_work_when_the_consumer_task_is_cancelled(operation):
+        controller = AbortController()
+        started = Event()
+        finished = Event()
+        pending_task: Future | None = None
 
-    async def pending(_info=None):
-        nonlocal pending_task
-        pending_task = current_task()
-        started.set()
+        async def pending(_info=None):
+            nonlocal pending_task
+            pending_task = current_task()
+            started.set()
+            try:
+                await Future()
+            finally:
+                finished.set()
+
+        async def events():
+            yield {"foo": await pending()}
+
+        if operation == "query":
+            result = execute(
+                schema,
+                parse("{ blocker }"),
+                root_value={"blocker": pending},
+                abort_signal=controller.signal,
+            )
+            assert is_awaitable(result)
+        else:
+            stream = subscribe(
+                schema,
+                parse("subscription { foo }"),
+                root_value={"foo": events()},
+                abort_signal=controller.signal,
+            )
+            assert isinstance(stream, AsyncIterator)
+            result = anext(stream)
+        consumer = ensure_future(result)
         try:
-            await Future()
+            await wait_for(started.wait(), 1)
+            consumer.cancel()
+            with pytest.raises(CancelledError):
+                await consumer
+            assert finished.is_set()
+            assert not controller.signal.aborted
         finally:
-            finished.set()
+            consumer.cancel()
+            if pending_task is not None:
+                pending_task.cancel()
+                await gather(consumer, pending_task, return_exceptions=True)
+            else:  # pragma: no cover - only reached if starting the resolver fails
+                await gather(consumer, return_exceptions=True)
 
-    async def events():
-        yield {"foo": await pending()}
+    @pytest.mark.parametrize("enable_early_execution", [False, True])
+    async def settles_incremental_work_when_the_consumer_times_out(
+        enable_early_execution,
+    ):
+        controller = AbortController()
+        started = Event()
+        finished = Event()
+        errors = []
+        loop = get_running_loop()
+        previous_handler = loop.get_exception_handler()
+        loop.set_exception_handler(lambda _loop, context: errors.append(context))
 
-    if operation == "query":
-        result = execute(
+        async def blocker(_info):
+            started.set()
+            try:
+                await Future()
+            finally:
+                await sleep(0)
+                finished.set()
+
+        result = experimental_execute_incrementally(
             schema,
-            parse("{ blocker }"),
-            root_value={"blocker": pending},
+            parse("{ ... @defer { blocker } }"),
+            root_value={"blocker": blocker},
             abort_signal=controller.signal,
+            enable_early_execution=enable_early_execution,
         )
-        assert is_awaitable(result)
-    else:
-        stream = subscribe(
-            schema,
-            parse("subscription { foo }"),
-            root_value={"foo": events()},
-            abort_signal=controller.signal,
-        )
-        assert isinstance(stream, AsyncIterator)
-        result = anext(stream)
-    consumer = ensure_future(result)
-    try:
-        await wait_for(started.wait(), 1)
-        consumer.cancel()
-        with pytest.raises(CancelledError):
-            await consumer
-        assert finished.is_set()
-        assert not controller.signal.aborted
-    finally:
-        consumer.cancel()
-        if pending_task is not None:
-            pending_task.cancel()
-            await gather(consumer, pending_task, return_exceptions=True)
-        else:  # pragma: no cover - only reached if starting the resolver fails
+        assert isinstance(result, ExperimentalIncrementalExecutionResults)
+        consumer = ensure_future(anext(result.subsequent_results))
+        try:
+            await wait_for(started.wait(), 1)
+            with pytest.raises(asyncio.TimeoutError):
+                await wait_for(consumer, 0.01)
+            assert finished.is_set()
+            assert not errors
+            assert not controller.signal.aborted
+        finally:
+            consumer.cancel()
             await gather(consumer, return_exceptions=True)
-
-
-@pytest.mark.parametrize("enable_early_execution", [False, True])
-async def test_settles_incremental_work_when_the_consumer_times_out(
-    enable_early_execution,
-):
-    controller = AbortController()
-    started = Event()
-    finished = Event()
-    errors = []
-    loop = get_running_loop()
-    previous_handler = loop.get_exception_handler()
-    loop.set_exception_handler(lambda _loop, context: errors.append(context))
-
-    async def blocker(_info):
-        started.set()
-        try:
-            await Future()
-        finally:
-            await sleep(0)
-            finished.set()
-
-    result = experimental_execute_incrementally(
-        schema,
-        parse("{ ... @defer { blocker } }"),
-        root_value={"blocker": blocker},
-        abort_signal=controller.signal,
-        enable_early_execution=enable_early_execution,
-    )
-    assert isinstance(result, ExperimentalIncrementalExecutionResults)
-    consumer = ensure_future(anext(result.subsequent_results))
-    try:
-        await wait_for(started.wait(), 1)
-        with pytest.raises(asyncio.TimeoutError):
-            await wait_for(consumer, 0.01)
-        assert finished.is_set()
-        assert not errors
-        assert not controller.signal.aborted
-    finally:
-        consumer.cancel()
-        await gather(consumer, return_exceptions=True)
-        await result.subsequent_results.aclose()
-        loop.set_exception_handler(previous_handler)
+            await result.subsequent_results.aclose()
+            loop.set_exception_handler(previous_handler)
 
 
 def describe_abort_reason_traceback():
