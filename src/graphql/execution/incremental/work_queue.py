@@ -331,7 +331,10 @@ class WorkQueue:
         cancel_awaitables: list[Awaitable[Any]],
     ) -> None:
         """Cancel a task with the streams produced by it."""
+        pending_future = task.computation.pending_future
         abort_result = task.computation.abort(reason)
+        if pending_future is not None:
+            cancel_awaitables.append(pending_future)
         if is_awaitable(abort_result):
             cancel_awaitables.append(abort_result)
         task_node = self._task_nodes.get(task)
