@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from asyncio import FIRST_COMPLETED, ensure_future, wait
+from asyncio import FIRST_COMPLETED, CancelledError, ensure_future, gather, wait
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 from ...error import GraphQLError, located_error
@@ -183,6 +183,11 @@ class IncrementalPublisher:
                     abort = ensure_future(abort_signal.wait())
                     try:
                         await wait({next_batch, abort}, return_when=FIRST_COMPLETED)
+                    except CancelledError:
+                        next_batch.cancel()
+                        abort.cancel()
+                        await gather(next_batch, abort, return_exceptions=True)
+                        raise
                     finally:
                         if not abort.done():
                             abort.cancel()

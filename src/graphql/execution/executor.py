@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from asyncio import (
     FIRST_COMPLETED,
+    CancelledError,
     ensure_future,
     gather,
     get_running_loop,
@@ -1214,6 +1215,11 @@ class Executor(Generic[TContext]):
             abort = ensure_future(abort_signal.wait())
             try:
                 await wait({task, abort}, return_when=FIRST_COMPLETED)
+            except CancelledError:
+                task.cancel()
+                with suppress(BaseException):
+                    await task
+                raise
             finally:
                 if not abort.done():
                     abort.cancel()
@@ -1261,6 +1267,11 @@ class Executor(Generic[TContext]):
             abort = ensure_future(abort_signal.wait())  # type: ignore[union-attr]
             try:
                 await wait({task, abort}, return_when=FIRST_COMPLETED)
+            except CancelledError:
+                task.cancel()
+                with suppress(BaseException):
+                    await task
+                raise
             finally:
                 if not abort.done():
                     abort.cancel()
