@@ -331,6 +331,7 @@ class WorkQueue:
         cancel_awaitables: list[Awaitable[Any]],
     ) -> None:
         """Cancel a task with the streams produced by it."""
+        # not in GraphQL.js: also settle the future that abort() cancels
         pending_future = task.computation.pending_future
         abort_result = task.computation.abort(reason)
         if pending_future is not None:
