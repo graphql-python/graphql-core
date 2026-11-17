@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ..language import StringValueNode, print_ast
-from ..language.block_string import is_printable_as_block_string
+from ..language.block_string import is_printable_as_block_string, print_block_string
+from ..language.print_string import print_string
 from ..pyutils import inspect
 from ..type import (
     DEFAULT_DEPRECATION_REASON,
@@ -393,10 +394,13 @@ def print_description(
     if description is None:
         return ""
 
-    block_string = print_ast(
-        StringValueNode(
-            value=description, block=is_printable_as_block_string(description)
-        )
+    # Unlike GraphQL.js, we print the string directly instead of printing a
+    # StringValueNode, because running the AST printer for one node is costly.
+    # Keep this in sync with print_string_value in the printer.
+    block_string = (
+        print_block_string(description)
+        if is_printable_as_block_string(description)
+        else print_string(description)
     )
 
     prefix = "\n" + indentation if indentation and not first_in_block else indentation
