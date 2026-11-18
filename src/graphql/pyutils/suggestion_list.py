@@ -48,15 +48,12 @@ class LexicalDistance:
 
     _input: str
     _input_lower_case: str
-    _input_list: list[int]
     _rows: list[list[int]]
 
     def __init__(self, input_: str) -> None:
         self._input = input_
         self._input_lower_case = input_.lower()
         row_size = len(input_) + 1
-        self._input_list = list(map(ord, self._input_lower_case))
-
         self._rows = [[0] * row_size, [0] * row_size, [0] * row_size]
 
     def measure(self, option: str, threshold: int) -> int | None:
@@ -69,47 +66,69 @@ class LexicalDistance:
         if self._input_lower_case == option_lower_case:
             return 1
 
-        a, b = list(map(ord, option_lower_case)), self._input_list
-        a_len, b_len = len(a), len(b)
+        a = self._input_lower_case
+        b = option_lower_case
+        a_len = len(a)
+        b_len = len(b)
         if a_len < b_len:
             a, b = b, a
             a_len, b_len = b_len, a_len
 
+        # Too many missing characters to fit under the threshold.
         if a_len - b_len > threshold:
             return None
 
-        rows = self._rows
+        # Matching characters at the start or end of both strings never need
+        # an edit in an optimal alignment, so only the middle part is scored.
+        start = 0
+        while start < b_len and a[start] == b[start]:
+            start += 1
+        end = 0
+        while end < b_len - start and a[a_len - 1 - end] == b[b_len - 1 - end]:
+            end += 1
+        a = a[start : a_len - end]
+        b = b[start : b_len - end]
+        a_len = len(a)
+        b_len = len(b)
+
+        # Rotate three row buffers instead of allocating a table per option.
+        # ``prev`` is row i-1, ``cur`` is the row being computed and ``prev2``
+        # is row i-2, needed for the transposition check.
+        prev2, prev, cur = self._rows[2], self._rows[0], self._rows[1]
         for j in range(b_len + 1):
-            rows[0][j] = j
+            prev[j] = j
 
         for i in range(1, a_len + 1):
-            up_row = rows[(i - 1) % 3]
-            current_row = rows[i % 3]
-
-            smallest_cell = current_row[0] = i
+            a_char = a[i - 1]
+            smallest_cell = cur[0] = i
             for j in range(1, b_len + 1):
-                cost = 0 if a[i - 1] == b[j - 1] else 1
+                if a_char == b[j - 1]:
+                    # Equal characters cost nothing: the diagonal cell is
+                    # always the smallest of the three candidates.
+                    current_cell = prev[j - 1]
+                else:
+                    current_cell = prev[j] + 1  # delete
+                    insert = cur[j - 1] + 1
+                    substitute = prev[j - 1] + 1
+                    if insert < current_cell:
+                        current_cell = insert
+                    if substitute < current_cell:
+                        current_cell = substitute
 
-                current_cell = min(
-                    up_row[j] + 1,  # delete
-                    current_row[j - 1] + 1,  # insert
-                    up_row[j - 1] + cost,  # substitute
-                )
+                if i > 1 and j > 1 and a_char == b[j - 2] and a[i - 2] == b[j - 1]:
+                    transposition = prev2[j - 2] + 1
+                    if transposition < current_cell:
+                        current_cell = transposition
 
-                if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
-                    # transposition
-                    double_diagonal_cell = rows[(i - 2) % 3][j - 2]
-                    current_cell = min(current_cell, double_diagonal_cell + 1)
-
-                if current_cell < smallest_cell:  # noqa: PLR1730 (faster than min)
+                if current_cell < smallest_cell:
                     smallest_cell = current_cell
+                cur[j] = current_cell
 
-                current_row[j] = current_cell
-
-            # Early exit, since distance can't go smaller than smallest element
-            # of the previous row.
+            # The distance cannot fall below the smallest cell of this row.
             if smallest_cell > threshold:
                 return None
 
-        distance = rows[a_len % 3][b_len]
+            prev2, prev, cur = prev, cur, prev2
+
+        distance = prev[b_len]
         return distance if distance <= threshold else None
